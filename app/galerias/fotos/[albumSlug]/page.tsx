@@ -6,7 +6,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { galleryPhotos } from "@/lib/constants/mockData";
 
 interface PageProps {
-  params: { albumSlug: string };
+  params: Promise<{ albumSlug: string }>;
 }
 
 const knownAlbums: Record<string, string> = {
@@ -41,8 +41,8 @@ export async function generateStaticParams() {
   ];
 }
 
-export default function AlbumPage({ params }: PageProps) {
-  const { albumSlug } = params;
+export default async function AlbumPage({ params }: PageProps) {
+  const { albumSlug } = await params;
   const albumTitle = formatSlugTitle(albumSlug);
   const albumPhotos = galleryPhotos.slice(0, 6);
 

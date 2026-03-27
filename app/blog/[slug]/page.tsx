@@ -12,7 +12,7 @@ import { formatDate } from "@/lib/utils/formatDate";
 import { cn } from "@/lib/utils/cn";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 const categoryColor: Record<string, "primary" | "accent" | "secondary" | "success" | "warning"> = {
@@ -37,8 +37,8 @@ export async function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
 
-export default function BlogPostPage({ params }: PageProps) {
-  const { slug } = params;
+export default async function BlogPostPage({ params }: PageProps) {
+  const { slug } = await params;
   const post = blogPosts.find((p) => p.slug === slug) ?? blogPosts[0];
 
   const relatedPosts = blogPosts.filter((p) => p.slug !== post.slug).slice(0, 2);
