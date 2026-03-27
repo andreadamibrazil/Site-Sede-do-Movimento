@@ -1,12 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, Clock } from "lucide-react";
-import { BlogPost } from "@/types";
+import { SanityPost } from "@/lib/sanity/types";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";
 import { formatDateShort } from "@/lib/utils/formatDate";
+import { urlFor } from "@/sanity/lib/image";
 
 interface BlogPostCardProps {
-  post: BlogPost;
+  post: SanityPost;
   variant?: "vertical" | "horizontal";
 }
 
@@ -19,11 +21,17 @@ const categoryColor: Record<string, "primary" | "accent" | "secondary" | "succes
 };
 
 export default function BlogPostCard({ post, variant = "vertical" }: BlogPostCardProps) {
+  const imageUrl = post.coverImage ? urlFor(post.coverImage).width(600).height(400).url() : null;
+
   if (variant === "horizontal") {
     return (
       <Link href={`/blog/${post.slug}`} className="group flex gap-4 bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-        <div className="w-32 sm:w-40 shrink-0 aspect-square bg-gray-100">
-          <PlaceholderImage className="w-full h-full rounded-none border-none" label={post.title} />
+        <div className="w-32 sm:w-40 shrink-0 aspect-square bg-gray-100 relative overflow-hidden">
+          {imageUrl ? (
+            <Image src={imageUrl} alt={post.title} fill className="object-cover" />
+          ) : (
+            <PlaceholderImage className="w-full h-full rounded-none border-none" label={post.title} />
+          )}
         </div>
         <div className="flex flex-col justify-center py-3 pr-4">
           <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs" className="mb-2 w-fit">{post.category}</Badge>
@@ -36,8 +44,12 @@ export default function BlogPostCard({ post, variant = "vertical" }: BlogPostCar
 
   return (
     <Link href={`/blog/${post.slug}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-      <div className="aspect-[16/9] bg-gray-100 overflow-hidden">
-        <PlaceholderImage className="w-full h-full rounded-none border-none" label={post.title} />
+      <div className="aspect-[16/9] bg-gray-100 overflow-hidden relative">
+        {imageUrl ? (
+          <Image src={imageUrl} alt={post.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+        ) : (
+          <PlaceholderImage className="w-full h-full rounded-none border-none" label={post.title} />
+        )}
       </div>
       <div className="p-5">
         <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs" className="mb-3">{post.category}</Badge>

@@ -8,8 +8,11 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import BlogPostCard from "@/components/sections/BlogPostCard";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { stats, blogPosts, espetaculos } from "@/lib/constants/mockData";
+import { stats, espetaculos } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { allPostsQuery } from "@/lib/sanity/queries";
+import type { SanityPost } from "@/lib/sanity/types";
 
 const modalidades = [
   { icon: "💃", title: "Dança", description: "Ballet, Jazz, Contemporâneo, Sapateado, Danças Urbanas e mais. Formação técnica completa para todas as idades.", href: "/ensino/modalidades", color: "from-brand-purple-600 to-brand-secondary" },
@@ -33,7 +36,9 @@ const jornadas = [
   { name: "Jornada de Música – Canto", ages: "2 a 18+" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { data } = await sanityFetch({ query: allPostsQuery });
+  const recentPosts = ((data as SanityPost[]) ?? []).slice(0, 3);
   return (
     <>
       {/* ── 1. HERO SLIDER ─────────────────────────────────────────────────── */}
@@ -375,8 +380,8 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {blogPosts.slice(0, 3).map((post, i) => (
-              <ScrollReveal key={post.slug} delay={i * 0.07}>
+            {recentPosts.map((post, i) => (
+              <ScrollReveal key={post._id} delay={i * 0.07}>
                 <BlogPostCard post={post} />
               </ScrollReveal>
             ))}
