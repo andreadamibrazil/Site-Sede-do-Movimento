@@ -1,0 +1,20 @@
+SLIDES DO HERO — INSTRUÇÕES
+═══════════════════════════════════════════════════════
+
+Coloque aqui as fotos do banner principal do site.
+
+Nomes esperados:
+  arcanum-2026.jpg        → slide 1 (espetáculo)
+  matriculas-2026.jpg     → slide 2 (matrículas abertas)
+  grupo-competicao.jpg    → slide 3 (grupo de competição)
+  institucional.jpg       → slide 4 (foto institucional)
+
+Dicas:
+  • Formato recomendado: JPG ou WEBP
+  • Tamanho ideal: 1920 × 880 pixels (proporção ~16:9 largo)
+  • Qualidade: 85%
+  • Peso máximo por foto: ~300 KB (para carregamento rápido)
+  • O texto pode vir embutido na própria imagem (recomendado)
+
+Para adicionar ou editar slides, edite o arquivo:
+  sede-do-movimento/lib/constants/slides.ts

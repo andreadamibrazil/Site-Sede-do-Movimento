@@ -1,0 +1,16 @@
+PASTA DE IMAGENS DO SITE
+═══════════════════════════════════════════════════════
+
+Estrutura:
+  images/
+  ├── logo.png              ← Logotipo principal (coloque aqui)
+  └── slides/               ← Fotos do banner/slider da homepage
+
+LOGOTIPO
+  Nome do arquivo: logo.png
+  Coloque em: public/images/logo.png
+  Formato: PNG com fundo transparente (recomendado)
+  Altura ideal: 80–120 pixels de altura
+
+SLIDES
+  Veja as instruções dentro da pasta slides/

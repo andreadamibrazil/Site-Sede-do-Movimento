@@ -1,101 +1,388 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Star, Heart, Users, Quote } from "lucide-react";
+import HeroSliderServer from "@/components/sections/HeroSliderServer";
+import StatsSection from "@/components/sections/StatsSection";
+import SectionTitle from "@/components/ui/SectionTitle";
+import Button from "@/components/ui/Button";
+import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import BlogPostCard from "@/components/sections/BlogPostCard";
+import EspetaculoCard from "@/components/sections/EspetaculoCard";
+import ScrollReveal from "@/components/ui/ScrollReveal";
+import { stats, blogPosts, espetaculos } from "@/lib/constants/mockData";
+import { siteConfig } from "@/lib/constants/siteConfig";
 
-export default function Home() {
+const modalidades = [
+  { icon: "💃", title: "Dança", description: "Ballet, Jazz, Contemporâneo, Sapateado, Danças Urbanas e mais. Formação técnica completa para todas as idades.", href: "/ensino/modalidades", color: "from-brand-purple-600 to-brand-secondary" },
+  { icon: "🎭", title: "Teatro", description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas.", href: "/ensino/modalidades", color: "from-brand-pink-600 to-brand-pink" },
+  { icon: "🎵", title: "Música", description: "Canto, musicalização e educação musical integrada à formação em artes cênicas.", href: "/ensino/modalidades", color: "from-brand-secondary to-brand-purple-400" },
+];
+
+const pilares = [
+  { icon: Heart, label: "Saúde", description: "Bem-estar físico e emocional como base do crescimento artístico." },
+  { icon: Users, label: "Família", description: "Comunidade acolhedora onde famílias fazem parte do processo." },
+  { icon: Star, label: "Educação", description: "Formação pedagógica sólida, revisada e com propósito." },
+];
+
+const jornadas = [
+  { name: "Jornada do Ballet", ages: "2 a 18+" },
+  { name: "Jornada do Jazz", ages: "5 a 17+" },
+  { name: "Jornada do Sapateado", ages: "5 a 18+" },
+  { name: "Jornada das Danças Urbanas", ages: "5 a 18+" },
+  { name: "Jornada da Dança Contemporânea", ages: "11 a 18+" },
+  { name: "Jornada do Teatro", ages: "4 a 18+" },
+  { name: "Jornada de Música – Canto", ages: "2 a 18+" },
+];
+
+export default function HomePage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <>
+      {/* ── 1. HERO SLIDER ─────────────────────────────────────────────────── */}
+      <HeroSliderServer />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* ── BREATH — transição suave do hero para o conteúdo ──────────────── */}
+      <div className="h-0 bg-gradient-to-b from-gray-900/5 to-transparent" aria-hidden />
+
+      {/* ── 2. SEÇÃO EMOCIONAL (NOVA) ──────────────────────────────────────── */}
+      <section id="historia" className="py-14 md:py-28 bg-white">
+        <div className="container-main">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+
+            {/* Foto */}
+            <ScrollReveal>
+              <div className="relative">
+                <div className="rounded-2xl overflow-hidden aspect-[4/3] shadow-lg">
+                  <PlaceholderImage
+                    className="w-full h-full rounded-none border-none"
+                    label="Crianças em aula de dança"
+                  />
+                </div>
+                {/* Floating badge */}
+                <div className="absolute -bottom-4 right-3 sm:-bottom-5 sm:-right-5 bg-white rounded-xl px-4 py-3 sm:px-5 sm:py-4 shadow-brand-md border border-gray-100">
+                  <p className="text-3xl font-extrabold text-gradient leading-none">2021</p>
+                  <p className="text-xs text-gray-400 mt-1">Fundada no Rio de Janeiro</p>
+                </div>
+                {/* Decorative dot */}
+                <div className="absolute -top-4 -left-4 w-24 h-24 rounded-full bg-brand-light opacity-60 -z-10" />
+              </div>
+            </ScrollReveal>
+
+            {/* Texto emocional */}
+            <ScrollReveal delay={0.15}>
+              <p className="text-brand-purple-500 font-semibold text-[11px] uppercase tracking-[0.15em] mb-5">
+                Nossa história
+              </p>
+              <h2 className="text-[2rem] sm:text-[2.4rem] font-bold text-gray-900 leading-[1.18] mb-6">
+                Mais do que uma escola de artes.{" "}
+                <span className="text-gradient">Um lar para quem precisa se expressar.</span>
+              </h2>
+              <p className="text-gray-500 text-[1.05rem] leading-[1.85] mb-5">
+                A Sede do Movimento nasceu em abril de 2021, em um casarão de mais de 650m² no coração do Rio Comprido. Desde o primeiro dia, a missão foi clara: criar um espaço onde cada criança, jovem ou adulto pudesse encontrar sua voz através da arte.
+              </p>
+              <p className="text-gray-400 text-[1rem] leading-[1.85] mb-8">
+                Hoje, mais de 300 alunos passam por nossas salas todos os dias — levando para casa muito mais do que passos de dança ou técnica cênica. Levam confiança, disciplina, pertencimento e uma versão mais inteira de si mesmos.
+              </p>
+
+              {/* Quote destaque */}
+              <div className="border-l-[3px] border-brand-purple-200 pl-5 mb-8">
+                <Quote size={18} className="text-brand-purple-300 mb-2" />
+                <p className="text-gray-500 text-[0.95rem] leading-[1.75] italic">
+                  &ldquo;No final, não é só sobre o que se aprende — é sobre quem você se torna.&rdquo;
+                </p>
+                <p className="text-brand-purple-500 text-xs font-semibold mt-2 tracking-wide">
+                  — Carlos Fontinelle, Diretor Artístico
+                </p>
+              </div>
+
+              <Link href="/a-escola/historia-e-estrutura">
+                <Button variant="ghost" size="md" rightIcon={<ArrowRight size={15} />}>
+                  Conheça nossa história
+                </Button>
+              </Link>
+            </ScrollReveal>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </section>
+
+      {/* ── 3. STATS — com contexto emocional ─────────────────────────────── */}
+      <div id="stats">
+        {/* Headline acima dos números */}
+        <div className="bg-white pt-4 pb-0">
+          <div className="container-main text-center">
+            <ScrollReveal>
+              <p className="text-gray-400 text-sm tracking-wide">
+                Famílias que confiam no nosso trabalho
+              </p>
+            </ScrollReveal>
+          </div>
+        </div>
+        <StatsSection stats={stats} />
+      </div>
+
+      {/* ── 4. POR QUE EXISTIMOS ────────────────────────────────────────────── */}
+      <section id="missao" className="py-14 md:py-28 bg-white">
+        <div className="container-main">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+
+            {/* Texto */}
+            <ScrollReveal>
+              <p className="text-brand-purple-500 font-semibold text-[11px] uppercase tracking-[0.15em] mb-5">
+                Por que existimos
+              </p>
+              <h2 className="text-[2rem] sm:text-[2.4rem] font-bold text-gray-900 leading-[1.18] mb-6">
+                Quando uma criança entra no universo das artes, ela aprende{" "}
+                <span className="text-gradient">muito mais</span> que técnica.
+              </h2>
+              <p className="text-gray-500 text-[1.05rem] leading-[1.85] mb-5">
+                Somos um complexo cultural onde diferentes linguagens — dança, música, teatro e circo — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo.
+              </p>
+              <p className="text-gray-400 text-[1rem] leading-[1.85] mb-10">
+                Ele atravessa o pensamento, a criatividade e a forma de existir no mundo. E integramos a isso: desenvolvimento da inteligência emocional, autonomia, consciência social e introdução à economia criativa.
+              </p>
+
+              {/* Pilares */}
+              <div className="grid grid-cols-3 gap-3 sm:gap-5 mb-10">
+                {pilares.map(({ icon: Icon, label, description }) => (
+                  <div key={label} className="text-center">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                      <Icon size={16} className="text-brand-purple-600" />
+                    </div>
+                    <p className="font-semibold text-xs sm:text-sm text-gray-800">{label}</p>
+                    <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 leading-snug">{description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <Link href="/a-escola/apresentacao">
+                <Button variant="primary" size="lg" rightIcon={<ArrowRight size={16} />}>
+                  Conheça nossa missão
+                </Button>
+              </Link>
+            </ScrollReveal>
+
+            {/* Foto */}
+            <ScrollReveal delay={0.2}>
+              <div className="relative">
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-brand-md">
+                  <PlaceholderImage
+                    className="w-full h-full rounded-none border-none"
+                    label="Alunos em espetáculo"
+                  />
+                </div>
+                <div className="absolute -bottom-5 -left-5 w-28 h-28 rounded-full bg-brand-purple-50 -z-10" />
+                <div className="absolute -top-5 -right-5 w-16 h-16 rounded-full bg-brand-pink/20 -z-10" />
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. MODALIDADES PREVIEW ──────────────────────────────────────────── */}
+      <section id="jornadas" className="section-padding bg-[#F9F8FC]">
+        <div className="container-main">
+          <SectionTitle
+            eyebrow="Nosso ensino"
+            title="7 Jornadas Artísticas"
+            subtitle="Uma formação completa em dança, teatro e música, para todas as idades e níveis."
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
+            {modalidades.map((mod) => (
+              <Link key={mod.title} href={mod.href} className="group block">
+                <div className="bg-white rounded-xl p-5 sm:p-7 md:p-8 shadow-sm hover:shadow-brand-sm border border-gray-100 transition-all duration-300 hover:-translate-y-1.5 text-center">
+                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${mod.color} flex items-center justify-center text-2xl mx-auto mb-4 shadow-md`}>
+                    {mod.icon}
+                  </div>
+                  <h3 className="font-bold text-gray-900 text-xl mb-3">{mod.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{mod.description}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-center mb-8">
+            {jornadas.map((j) => (
+              <Link
+                key={j.name}
+                href="/ensino/jornadas-artisticas"
+                className="bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:border-brand-purple-600 hover:text-brand-purple-600 hover:bg-brand-light transition-all"
+              >
+                {j.name}
+                <span className="ml-2 text-xs text-gray-400">{j.ages}</span>
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link href="/ensino">
+              <Button variant="primary" size="lg" rightIcon={<ArrowRight size={16} />}>
+                Ver todos os cursos e horários
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. GALERIA PREVIEW ──────────────────────────────────────────────── */}
+      <section id="galeria" className="section-padding bg-white overflow-hidden">
+        <div className="container-main">
+          <div className="flex items-end justify-between mb-5 md:mb-8">
+            <SectionTitle
+              eyebrow="Galeria"
+              title="Momentos que ficam"
+              subtitle="Registros de apresentações, bastidores e o dia a dia da Sede."
+              align="left"
+              className="mb-0"
+            />
+            <Link href="/galerias" className="hidden md:flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all">
+              Ver galeria completa <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2.5">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ScrollReveal key={i} delay={i * 0.04}>
+                <div className={`group relative overflow-hidden rounded-lg cursor-pointer ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Foto ${i + 1}`} />
+                  <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/50 transition-all duration-300" />
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <div className="text-center mt-6 md:hidden">
+            <Link href="/galerias">
+              <Button variant="ghost" size="md" rightIcon={<ArrowRight size={16} />}>
+                Ver galeria completa
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. METODOLOGIA PREVIEW ──────────────────────────────────────────── */}
+      <section id="metodologia" className="section-padding bg-gradient-dark text-white overflow-hidden">
+        <div className="container-main">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <ScrollReveal>
+              <p className="text-brand-pink font-semibold text-[11px] uppercase tracking-[0.15em] mb-4">
+                Nossa metodologia
+              </p>
+              <h2 className="text-[2rem] sm:text-[2.4rem] font-bold text-white leading-[1.18] mb-6">
+                Método Movimento Integrado
+              </h2>
+              <p className="text-white/65 text-[1.05rem] leading-[1.85] mb-8">
+                Um sistema formativo único que integra dança, teatro e música, aliado ao desenvolvimento da inteligência emocional, pensamento criativo e visão de futuro.
+              </p>
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                {["Corpo", "Expressão", "Consciência", "Projeção"].map((pilar, i) => (
+                  <div key={pilar} className="bg-white/8 rounded-xl p-4 border border-white/10">
+                    <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink font-bold text-sm mb-2">
+                      {i + 1}
+                    </div>
+                    <p className="font-semibold text-white">{pilar}</p>
+                  </div>
+                ))}
+              </div>
+              <Link href="/ensino/metodologia">
+                <Button variant="outline" size="lg" rightIcon={<ArrowRight size={16} />}>
+                  Conheça a metodologia
+                </Button>
+              </Link>
+            </ScrollReveal>
+
+            <ScrollReveal delay={0.2}>
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden">
+                <PlaceholderImage className="w-full h-full rounded-none border-none opacity-70" label="Aula de metodologia" />
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. ESPETÁCULOS PREVIEW ──────────────────────────────────────────── */}
+      <section id="espetaculos" className="section-padding bg-white">
+        <div className="container-main">
+          <div className="flex items-end justify-between mb-7 md:mb-10">
+            <SectionTitle
+              eyebrow="Espetáculos"
+              title="No palco e no mundo"
+              subtitle="Apresentações de alto nível artístico em grandes teatros do Rio de Janeiro."
+              align="left"
+              className="mb-0"
+            />
+            <Link href="/a-escola/espetaculos" className="hidden md:flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all">
+              Ver todos <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {espetaculos.slice(0, 3).map((esp, i) => (
+              <ScrollReveal key={esp.slug} delay={i * 0.08}>
+                <EspetaculoCard espetaculo={esp} featured={i === 0} />
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 9. CTA ──────────────────────────────────────────────────────────── */}
+      <section id="contato" className="relative py-16 sm:py-24 bg-gradient-brand overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-black/10 blur-[60px]" />
+        </div>
+        <div className="container-main relative z-10 text-center">
+          <ScrollReveal>
+            <p className="text-white/70 font-semibold text-[11px] uppercase tracking-[0.15em] mb-5">
+              Próximos passos
+            </p>
+            <h2 className="text-[1.9rem] sm:text-5xl font-bold text-white mb-5 sm:mb-6 leading-[1.15]">
+              Pronto para começar<br />sua jornada artística?
+            </h2>
+            <p className="text-white/75 text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-8 sm:mb-10">
+              Vagas limitadas por turma. Venha conhecer a Sede do Movimento e descubra a jornada certa para você ou seu filho.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center">
+              <Link href="/contato" className="w-full sm:w-auto">
+                <Button variant="outline" size="xl" fullWidth rightIcon={<ArrowRight size={18} />}>
+                  Agendar visita
+                </Button>
+              </Link>
+              <a href={siteConfig.social.whatsapp} target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                <Button size="xl" fullWidth className="bg-white text-brand-purple-700 hover:bg-white/90 shadow-lg font-bold">
+                  💬 Falar pelo WhatsApp
+                </Button>
+              </a>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ── 10. BLOG PREVIEW ─────────────────────────────────────────────────── */}
+      <section id="blog" className="section-padding bg-gray-50">
+        <div className="container-main">
+          <div className="flex items-end justify-between mb-7 md:mb-10">
+            <SectionTitle
+              eyebrow="Blog"
+              title="Novidades e conteúdo"
+              subtitle="Artigos, notícias e histórias do universo da Sede do Movimento."
+              align="left"
+              className="mb-0"
+            />
+            <Link href="/blog" className="hidden md:flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all">
+              Ver todos os posts <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {blogPosts.slice(0, 3).map((post, i) => (
+              <ScrollReveal key={post.slug} delay={i * 0.07}>
+                <BlogPostCard post={post} />
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
