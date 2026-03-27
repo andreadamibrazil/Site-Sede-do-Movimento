@@ -45,13 +45,14 @@ export default function YouTubeEmbed({ url, title, thumbnail, className }: YouTu
           {thumbnail ? (
             <Image src={thumbnail} alt={title} fill className="object-cover" />
           ) : (
-            <img
+            <Image
               src={ytThumbnail}
               alt={title}
-              className="w-full h-full object-cover"
-              loading="lazy"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
+                (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
           )}
