@@ -5,6 +5,7 @@ import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { BLUR_DATA_URL } from "@/lib/utils/blurDataUrl";
+import { trackGalleryOpen } from "@/lib/analytics";
 
 export interface GalleryPhoto {
   src: string;      // image URL (can be empty for placeholder)
@@ -80,7 +81,7 @@ export default function GalleryViewer({ photos, columns = 4, className }: Galler
         {photos.map((photo, i) => (
           <button
             key={i}
-            onClick={() => setLightboxIndex(i)}
+            onClick={() => { setLightboxIndex(i); trackGalleryOpen(photo.alt); }}
             className="group relative overflow-hidden rounded-lg aspect-square cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600"
             aria-label={`Abrir foto: ${photo.alt}`}
           >

@@ -11,6 +11,7 @@ import { navigationItems } from "@/lib/constants/navigation";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { dropdownVariants, drawerVariants, backdropVariants } from "@/lib/animations";
 import Button from "@/components/ui/Button";
+import { trackWhatsAppClick } from "@/lib/analytics";
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
@@ -134,7 +135,7 @@ export default function SiteHeader() {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => window.open(siteConfig.social.whatsapp, "_blank")}
+                onClick={() => { trackWhatsAppClick('header', 'global'); window.open(siteConfig.social.whatsapp, "_blank"); }}
                 leftIcon={<Phone size={14} />}
               >
                 Fale conosco
@@ -240,7 +241,7 @@ export default function SiteHeader() {
                   variant="primary"
                   size="lg"
                   fullWidth
-                  onClick={() => { window.open(siteConfig.social.whatsapp, "_blank"); setDrawerOpen(false); }}
+                  onClick={() => { trackWhatsAppClick('header', 'global'); window.open(siteConfig.social.whatsapp, "_blank"); setDrawerOpen(false); }}
                   leftIcon={<Phone size={18} />}
                 >
                   Fale conosco pelo WhatsApp

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { trackCTAClick } from "@/lib/analytics";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
 interface HeroSectionProps {
@@ -87,12 +88,12 @@ export default function HeroSection({
             transition={{ duration: 0.5, delay: 0.85 }}
             className="flex flex-wrap gap-3"
           >
-            <Link href={primaryCta.href}>
+            <Link href={primaryCta.href} onClick={() => trackCTAClick(primaryCta.label, 'hero-section', 'section')}>
               <Button variant="cta" size="xl" rightIcon={<ArrowRight size={18} />}>
                 {primaryCta.label}
               </Button>
             </Link>
-            <Link href={secondaryCta.href}>
+            <Link href={secondaryCta.href} onClick={() => trackCTAClick(secondaryCta.label, 'hero-section', 'section')}>
               <Button variant="outline" size="xl">
                 {secondaryCta.label}
               </Button>

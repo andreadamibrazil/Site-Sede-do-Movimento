@@ -1,3 +1,12 @@
+// ─── DIVERGÊNCIAS CONHECIDAS ──────────────────────────────────────────────────
+// postSlugsQuery: definida abaixo e documentada em CMS_EDITABLE_AREAS.md como
+// sendo usada em app/blog/[slug]/page.tsx para generateStaticParams.
+// Na prática, app/blog/[slug]/page.tsx usa mockData.blogPosts (dados estáticos)
+// em vez de sanityFetch + postSlugsQuery. A integração com Sanity ainda não foi
+// feita nessa página. Quando for implementada, importar postSlugsQuery aqui e
+// substituir o generateStaticParams atual.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { groq } from "next-sanity";
 
 // ─── Hero Slides ────────────────────────────────────────────────────────────

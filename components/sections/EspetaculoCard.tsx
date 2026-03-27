@@ -7,6 +7,7 @@ import { Espetaculo } from "@/types";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
+import { trackCTAClick } from "@/lib/analytics";
 
 interface EspetaculoCardProps {
   espetaculo: Espetaculo;
@@ -48,6 +49,7 @@ export default function EspetaculoCard({ espetaculo, featured = false }: Espetac
         <Link
           href={`/a-escola/espetaculos#${espetaculo.slug}`}
           className="inline-flex items-center gap-1.5 text-brand-purple-600 text-sm font-semibold hover:gap-2.5 transition-all"
+          onClick={() => trackCTAClick('Saiba mais', 'espetaculo-card', 'espetaculos')}
         >
           Saiba mais <ArrowRight size={14} />
         </Link>

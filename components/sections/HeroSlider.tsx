@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { type HeroSlide } from "@/lib/constants/slides";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { BLUR_DATA_URL } from "@/lib/utils/blurDataUrl";
+import { trackHeroClick } from "@/lib/analytics";
 
 const AUTOPLAY_INTERVAL = 6000; // ms
 
@@ -183,7 +184,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
   // Section anchor (starts with #) — use plain <a> for same-page scroll
   if (slide.link!.startsWith("#")) {
     return (
-      <a href={slide.link} className="absolute inset-0 block">
+      <a href={slide.link} className="absolute inset-0 block" onClick={() => trackHeroClick(slide.alt)}>
         {inner}
       </a>
     );
@@ -192,7 +193,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
   // External link
   if (slide.link!.startsWith("http")) {
     return (
-      <a href={slide.link} target="_blank" rel="noopener noreferrer" className="absolute inset-0 block">
+      <a href={slide.link} target="_blank" rel="noopener noreferrer" className="absolute inset-0 block" onClick={() => trackHeroClick(slide.alt)}>
         {inner}
       </a>
     );
@@ -200,7 +201,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
 
   // Internal page
   return (
-    <Link href={slide.link!} className="absolute inset-0 block">
+    <Link href={slide.link!} className="absolute inset-0 block" onClick={() => trackHeroClick(slide.alt)}>
       {inner}
     </Link>
   );
