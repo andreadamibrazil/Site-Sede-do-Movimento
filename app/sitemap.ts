@@ -3,7 +3,7 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { postSlugsQuery, allGalleryAlbumsQuery } from "@/lib/sanity/queries";
 import type { SanityGalleryAlbum } from "@/lib/sanity/types";
 
-const BASE_URL = "https://sededomovimento.com.br";
+const BASE_URL = "https://sededomovimento.art";
 
 type ChangeFrequency = "daily" | "weekly" | "monthly";
 

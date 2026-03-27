@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Sede do Movimento",
   tagline: "Arte, Movimento e Transformação",
   description: "Complexo cultural e escola de artes cênicas no Rio de Janeiro. Dança, teatro, música e formação artística completa.",
-  url: "https://sededomovimento.com.br",
+  url: "https://sededomovimento.art",
   phone: "(21) 9 9999-9999",
   email: "contato@sededomovimento.com.br",
   address: {

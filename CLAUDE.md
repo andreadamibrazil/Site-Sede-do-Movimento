@@ -111,6 +111,7 @@ import { cn } from '@/lib/utils/cn'
 NEXT_PUBLIC_SANITY_PROJECT_ID    # required
 NEXT_PUBLIC_SANITY_DATASET       # required (production)
 NEXT_PUBLIC_SANITY_API_VERSION   # optional (default: 2026-03-24)
+NEXT_PUBLIC_GTM_ID               # optional — Google Tag Manager container ID (ex: GTM-XXXXXXX)
 ```
 
 Never commit `.env.local`. It is gitignored.
