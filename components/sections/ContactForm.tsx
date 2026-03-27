@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { cn } from "@/lib/utils/cn";
 
@@ -12,13 +12,44 @@ interface ContactFormProps {
 export default function ContactForm({ formType = "general" }: ContactFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setSubmitted(true);
+    setError("");
+
+    const form = e.currentTarget;
+    const data = {
+      formType,
+      nome: (form.elements.namedItem("nome") as HTMLInputElement).value,
+      email: (form.elements.namedItem("email") as HTMLInputElement).value,
+      telefone: (form.elements.namedItem("telefone") as HTMLInputElement).value,
+      assunto: (form.elements.namedItem("assunto") as HTMLSelectElement).value,
+      mensagem: (form.elements.namedItem("mensagem") as HTMLTextAreaElement).value,
+      curriculo: formType === "trabalhe-conosco"
+        ? (form.elements.namedItem("curriculo") as HTMLInputElement)?.value
+        : undefined,
+    };
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? "Erro ao enviar.");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao enviar. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = "w-full h-12 px-4 bg-white border border-gray-200 rounded-sm text-gray-900 text-sm placeholder:text-gray-400 focus:outline-none focus:border-brand-purple-600 focus:ring-2 focus:ring-brand-purple-600/15 transition-all";
@@ -41,22 +72,22 @@ export default function ContactForm({ formType = "general" }: ContactFormProps) 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Nome completo <span className="text-red-500">*</span></label>
-          <input type="text" required placeholder="Seu nome" className={inputClass} />
+          <input name="nome" type="text" required placeholder="Seu nome" className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>E-mail <span className="text-red-500">*</span></label>
-          <input type="email" required placeholder="seu@email.com" className={inputClass} />
+          <input name="email" type="email" required placeholder="seu@email.com" className={inputClass} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Telefone</label>
-          <input type="tel" placeholder="(21) 9 9999-9999" className={inputClass} />
+          <input name="telefone" type="tel" placeholder="(21) 9 9999-9999" className={inputClass} />
         </div>
         <div>
           <label className={labelClass}>Assunto <span className="text-red-500">*</span></label>
-          <select required className={cn(inputClass, "cursor-pointer")}>
+          <select name="assunto" required className={cn(inputClass, "cursor-pointer")}>
             <option value="">Selecione...</option>
             {formType === "general" && <>
               <option>Informações sobre cursos</option>
@@ -83,20 +114,28 @@ export default function ContactForm({ formType = "general" }: ContactFormProps) 
 
       {formType === "trabalhe-conosco" && (
         <div>
-          <label className={labelClass}>Currículo / Portfólio (link ou arquivo)</label>
-          <input type="url" placeholder="https://..." className={inputClass} />
+          <label className={labelClass}>Currículo / Portfólio (link)</label>
+          <input name="curriculo" type="url" placeholder="https://..." className={inputClass} />
         </div>
       )}
 
       <div>
         <label className={labelClass}>Mensagem <span className="text-red-500">*</span></label>
         <textarea
+          name="mensagem"
           required
           rows={5}
           placeholder={formType === "ouvidoria" ? "Descreva sua manifestação..." : "Como podemos ajudar?"}
           className={cn(inputClass, "h-auto py-3 resize-y")}
         />
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <AlertCircle size={16} className="shrink-0" />
+          {error}
+        </div>
+      )}
 
       <div className="flex items-start gap-3">
         <input type="checkbox" required id="lgpd" className="mt-1 w-4 h-4 accent-brand-purple-600 cursor-pointer" />

@@ -20,6 +20,7 @@
     "next-sanity": "^11.6.12",
     "react": "^18",
     "react-dom": "^18",
+    "resend": "^6.9.4",
     "sanity": "^4.22.0",
     "styled-components": "^6.3.12",
     "tailwind-merge": "^3.5.0"
