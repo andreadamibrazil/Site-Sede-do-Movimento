@@ -39,6 +39,33 @@ const links = [
     label: "Abrir Vercel",
   },
   {
+    title: "Microsoft Clarity",
+    description: "Heatmaps e gravações de sessão — veja onde os usuários clicam, rolam e abandonam o site.",
+    href: "https://clarity.microsoft.com",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="3" fill="#00A4EF" />
+        <path d="M7 17l4-8 3 5 2-3 1 3" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    color: "#00A4EF",
+    label: "Abrir Clarity",
+  },
+  {
+    title: "Bing Webmaster Tools",
+    description: "Indexação no Bing, performance de IA (Copilot), keywords e scan de SEO técnico.",
+    href: "https://www.bing.com/webmasters",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 3v11.5l2.5 1.5 6-3.5-4-2.5V5L8 3z" fill="#00809D" />
+        <path d="M8 14.5l2.5 1.5v3L8 17.5v-3z" fill="#008272" />
+        <path d="M10.5 16l6-3.5v3L10.5 19v-3z" fill="#00A4EF" />
+      </svg>
+    ),
+    color: "#00809D",
+    label: "Abrir Bing Webmaster",
+  },
+  {
     title: "Ver o Site ao Vivo",
     description: "Abrir o site em produção para revisar conteúdo publicado.",
     href: "https://sededomovimento.art",
