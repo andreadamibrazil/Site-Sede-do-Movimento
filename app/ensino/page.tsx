@@ -6,7 +6,9 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import TeamGrid from "@/components/sections/TeamGrid";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
-import { teamMembers } from "@/lib/constants/mockData";
+import { sanityFetch } from "@/sanity/lib/live";
+import { allProfessorsQuery } from "@/lib/sanity/queries";
+import type { SanityProfessor } from "@/lib/sanity/types";
 
 export const metadata: Metadata = { title: "Ensino", description: "Conheça a metodologia, equipe e modalidades da Sede do Movimento." };
 
@@ -20,7 +22,9 @@ const subLinks = [
   { href: "/ensino/eventos-extras", label: "Eventos" },
 ];
 
-export default function EnsinoPage() {
+export default async function EnsinoPage() {
+  const { data } = await sanityFetch({ query: allProfessorsQuery });
+  const professors = (data as SanityProfessor[]) ?? [];
   return (
     <>
       <PageHero eyebrow="Ensino" title="Formação artística completa" subtitle="Uma equipe de especialistas e uma metodologia única para formar artistas e pessoas completas." breadcrumbs={[{ label: "Ensino" }]} />
@@ -82,7 +86,7 @@ export default function EnsinoPage() {
             <SectionTitle eyebrow="Nossa equipe" title="Especialistas que vivem o que ensinam" align="left" className="mb-0" />
             <Link href="/ensino/equipe" className="hidden md:flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all">Ver equipe completa <ArrowRight size={15} /></Link>
           </div>
-          <TeamGrid members={teamMembers.slice(0, 8)} />
+          <TeamGrid members={professors.slice(0, 8)} />
         </div>
       </section>
 

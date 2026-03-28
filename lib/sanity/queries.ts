@@ -135,3 +135,11 @@ export const activeVideosQuery = groq`
     _id, title, youtubeUrl, description, thumbnail, category, featured
   }
 `;
+
+// ─── Professores ─────────────────────────────────────────────────────────────
+
+export const allProfessorsQuery = groq`
+  *[_type == "professor" && active == true] | order(order asc) {
+    _id, name, role, photo, bio, specialties, isDirector, order
+  }
+`;

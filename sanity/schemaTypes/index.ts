@@ -8,6 +8,7 @@ import { siteSettingsType } from "./siteSettings";
 import { turmaType } from "./turma";
 import { galleryAlbumType } from "./galleryAlbum";
 import { videoEmbedType } from "./videoEmbed";
+import { professorType } from "./professor";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -23,6 +24,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     turmaType,
     galleryAlbumType,
     videoEmbedType,
+    professorType,
 
     // ── Blog ────────────────────────────────────────────────────────────────
     authorType,

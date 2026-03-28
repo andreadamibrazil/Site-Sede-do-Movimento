@@ -127,3 +127,16 @@ export interface SanityVideoEmbed {
   category?: string;
   featured?: boolean;
 }
+
+// ─── Professores ─────────────────────────────────────────────────────────────
+
+export interface SanityProfessor {
+  _id: string;
+  name: string;
+  role: string;
+  photo?: SanityImageSource;
+  bio?: string;
+  specialties?: string[];
+  isDirector?: boolean;
+  order?: number;
+}
