@@ -1,10 +1,16 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Accordion from "@/components/ui/Accordion";
 
-export const metadata: Metadata = { title: "Metodologia", description: "O Método Movimento Integrado da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/metodologia", {
+    title: "Metodologia",
+    description: "O Método Movimento Integrado da Sede do Movimento.",
+  });
+}
 
 const faq = [
   { id: "q1", question: "O que é o Método Movimento Integrado?", answer: "É um sistema formativo único em artes cênicas que integra dança, teatro e música, aliado ao desenvolvimento da inteligência emocional, pensamento criativo e visão de futuro. Um método brasileiro contemporâneo que conecta arte, educação e sustentabilidade." },

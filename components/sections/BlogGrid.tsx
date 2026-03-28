@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, Calendar, Clock, Mail } from "lucide-react";
+import NewsletterForm from "@/components/ui/NewsletterForm";
 import { SanityPost } from "@/lib/sanity/types";
 import BlogPostCard from "@/components/sections/BlogPostCard";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { formatDate } from "@/lib/utils/formatDate";
@@ -31,7 +31,6 @@ interface BlogGridProps {
 
 export default function BlogGrid({ posts }: BlogGridProps) {
   const [activeCategory, setActiveCategory] = useState("Todos");
-  const [email, setEmail] = useState("");
 
   const featuredPost = posts[0] ?? null;
   const remainingPosts = posts.slice(1);
@@ -161,18 +160,7 @@ export default function BlogGrid({ posts }: BlogGridProps) {
               <p className="text-white/60 text-base mb-8 leading-relaxed">
                 Receba artigos, notícias sobre espetáculos e conteúdo exclusivo diretamente no seu e-mail.
               </p>
-              <form onSubmit={(e) => e.preventDefault()} className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Seu melhor e-mail"
-                  className="flex-1 h-12 px-4 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all"
-                />
-                <Button variant="cta" size="md" type="submit">
-                  Inscrever-se
-                </Button>
-              </form>
+              <NewsletterForm theme="dark" className="max-w-sm mx-auto" />
               <p className="text-white/35 text-xs mt-4">Sem spam. Cancele quando quiser.</p>
             </div>
           </ScrollReveal>

@@ -1,9 +1,15 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
-export const metadata: Metadata = { title: "Por que existimos", description: "A missão, visão e valores da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola/apresentacao", {
+    title: "Por que existimos",
+    description: "A missão, visão e valores da Sede do Movimento.",
+  });
+}
 
 export default function ApresentacaoPage() {
   return (

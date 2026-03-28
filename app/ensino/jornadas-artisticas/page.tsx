@@ -1,8 +1,14 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export const metadata: Metadata = { title: "Jornadas Artísticas", description: "As 7 jornadas artísticas da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/jornadas-artisticas", {
+    title: "Jornadas Artísticas",
+    description: "As 7 jornadas artísticas da Sede do Movimento.",
+  });
+}
 
 const jornadas = [
   { name: "Jornada do Ballet", ages: "2 a 18+", emoji: "🩰", desc: "Do ballet bebê ao nível avançado, com formação clássica rigorosa e expressiva. Desenvolvimento técnico progressivo, com apresentações regulares e espetáculo anual." },

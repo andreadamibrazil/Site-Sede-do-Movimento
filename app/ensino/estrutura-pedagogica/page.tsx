@@ -1,9 +1,15 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export const metadata: Metadata = { title: "Estrutura Pedagógica", description: "A estrutura pedagógica da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/estrutura-pedagogica", {
+    title: "Estrutura Pedagógica",
+    description: "A estrutura pedagógica da Sede do Movimento.",
+  });
+}
 
 export default function EstruturaPedagogicaPage() {
   return (

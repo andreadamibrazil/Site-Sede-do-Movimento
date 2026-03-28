@@ -1,9 +1,15 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
-export const metadata: Metadata = { title: "Parcerias", description: "Parceiros institucionais da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola/parcerias", {
+    title: "Parcerias",
+    description: "Parceiros institucionais da Sede do Movimento.",
+  });
+}
 
 export default function ParceriasPage() {
   return (

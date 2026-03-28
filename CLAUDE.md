@@ -73,6 +73,7 @@ AI instruction file. Read before making any changes.
 | Performances | `espetaculo` | `allEspetaculosQuery` |
 | Footer/Contact | `siteSettings` | `siteSettingsQuery` |
 | Global SEO | `siteSettings.seo` | `siteSettingsQuery` |
+| SEO por página | `pageSeo` | `pageSeoQuery` |
 
 ---
 

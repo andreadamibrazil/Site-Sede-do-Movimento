@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ArrowRight, Award, Users, Building, Heart } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -12,10 +13,12 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { stats, timelineEntries, espetaculos } from "@/lib/constants/mockData";
 
-export const metadata: Metadata = {
-  title: "A Escola",
-  description: "Conheça a Sede do Movimento — por que existimos, nossa história, estrutura e resultados.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola", {
+    title: "A Escola",
+    description: "Conheça a Sede do Movimento — por que existimos, nossa história, estrutura e resultados.",
+  });
+}
 
 const subPages = [
   { href: "/a-escola/apresentacao", icon: Heart, label: "Por que existimos", desc: "Nossa missão, visão e valores" },

@@ -1,9 +1,15 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export const metadata: Metadata = { title: "Modalidades", description: "Aulas de dança, teatro e música na Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/modalidades", {
+    title: "Modalidades",
+    description: "Aulas de dança, teatro e música na Sede do Movimento.",
+  });
+}
 
 const modalidades = [
   { name: "Ballet Clássico", area: "Dança", desc: "Formação clássica rigorosa, com foco em postura, técnica e expressão. Turmas do nível infantil ao avançado.", emoji: "🩰", ages: "2 a 18+" },

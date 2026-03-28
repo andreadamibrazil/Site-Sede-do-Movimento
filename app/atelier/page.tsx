@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ExternalLink, Scissors, Star, Palette, ShoppingBag, Mail } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -8,11 +9,12 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
-export const metadata: Metadata = {
-  title: "Ateliê — Ateliê Fontinelle",
-  description:
-    "O Ateliê Fontinelle é o espaço de criação têxtil e figurinismo da Sede do Movimento, responsável pelos figurinos de todos os espetáculos.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("atelier", {
+    title: "Ateliê — Ateliê Fontinelle",
+    description: "O Ateliê Fontinelle é o espaço de criação têxtil e figurinismo da Sede do Movimento, responsável pelos figurinos de todos os espetáculos.",
+  });
+}
 
 const services = [
   {

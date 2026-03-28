@@ -128,6 +128,12 @@ export interface SanityVideoEmbed {
   featured?: boolean;
 }
 
+// ─── SEO por Página ──────────────────────────────────────────────────────────
+
+export interface SanityPageSeo {
+  seo?: SanitySeoFields;
+}
+
 // ─── Professores ─────────────────────────────────────────────────────────────
 
 export interface SanityProfessor {

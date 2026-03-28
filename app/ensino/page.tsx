@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -10,7 +11,12 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { allProfessorsQuery } from "@/lib/sanity/queries";
 import type { SanityProfessor } from "@/lib/sanity/types";
 
-export const metadata: Metadata = { title: "Ensino", description: "Conheça a metodologia, equipe e modalidades da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino", {
+    title: "Ensino",
+    description: "Conheça a metodologia, equipe e modalidades da Sede do Movimento.",
+  });
+}
 
 const subLinks = [
   { href: "/ensino/equipe", label: "Equipe" },

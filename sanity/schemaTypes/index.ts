@@ -9,6 +9,7 @@ import { turmaType } from "./turma";
 import { galleryAlbumType } from "./galleryAlbum";
 import { videoEmbedType } from "./videoEmbed";
 import { professorType } from "./professor";
+import { pageSeoType } from "./pageSeo";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -17,6 +18,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
 
     // ── Documentos globais / singleton ──────────────────────────────────────
     siteSettingsType,
+    pageSeoType,
 
     // ── Conteúdo editorial ──────────────────────────────────────────────────
     heroSlideType,

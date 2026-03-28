@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ExternalLink, Video, Film, Share2 } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -8,11 +9,12 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
-export const metadata: Metadata = {
-  title: "Audiovisual — Sede do Movimento",
-  description:
-    "O departamento audiovisual da Sede do Movimento registra e produz conteúdo cinematográfico das artes cênicas.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("audiovisual", {
+    title: "Audiovisual — Sede do Movimento",
+    description: "O departamento audiovisual da Sede do Movimento registra e produz conteúdo cinematográfico das artes cênicas.",
+  });
+}
 
 const services = [
   {

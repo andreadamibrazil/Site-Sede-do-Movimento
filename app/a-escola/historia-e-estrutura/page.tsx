@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import TimelineSection from "@/components/sections/TimelineSection";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -6,7 +7,12 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { timelineEntries } from "@/lib/constants/mockData";
 
-export const metadata: Metadata = { title: "Nossa História", description: "A trajetória da Sede do Movimento e sua estrutura." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola/historia-e-estrutura", {
+    title: "Nossa História",
+    description: "A trajetória da Sede do Movimento e sua estrutura.",
+  });
+}
 
 export default function HistoriaPage() {
   return (

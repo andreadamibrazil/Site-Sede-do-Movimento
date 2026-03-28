@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ExternalLink, Mic2, Building2, Music, MessageCircle } from "lucide-react";
 import { Theater } from "lucide-react";
@@ -9,11 +10,12 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
-export const metadata: Metadata = {
-  title: "Produtora — Fontinelle Criações",
-  description:
-    "A Fontinelle Criações é a produtora cultural responsável pela concepção e realização dos grandes espetáculos da Sede do Movimento.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("produtora", {
+    title: "Produtora — Fontinelle Criações",
+    description: "A Fontinelle Criações é a produtora cultural responsável pela concepção e realização dos grandes espetáculos da Sede do Movimento.",
+  });
+}
 
 const services = [
   {

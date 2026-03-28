@@ -143,3 +143,18 @@ export const allProfessorsQuery = groq`
     _id, name, role, photo, bio, specialties, isDirector, order
   }
 `;
+
+// ─── SEO por Página ───────────────────────────────────────────────────────────
+
+export const pageSeoQuery = groq`
+  *[_type == "pageSeo" && pageId == $pageId][0] {
+    seo {
+      metaTitle,
+      metaDescription,
+      ogImage,
+      keywords,
+      noIndex,
+      canonicalUrl
+    }
+  }
+`;

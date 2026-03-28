@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { ExternalLink, Theater, MapPin, GraduationCap, MessageCircle } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -8,11 +9,12 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
-export const metadata: Metadata = {
-  title: "Companhia Profissional — Vivá Cia de Dança",
-  description:
-    "A Vivá Cia de Dança é a companhia profissional fundada por Carlos Fontinelle, nascida diretamente da trajetória artística da Sede do Movimento.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("companhia-profissional", {
+    title: "Companhia Profissional — Vivá Cia de Dança",
+    description: "A Vivá Cia de Dança é a companhia profissional fundada por Carlos Fontinelle, nascida diretamente da trajetória artística da Sede do Movimento.",
+  });
+}
 
 const highlights = [
   {

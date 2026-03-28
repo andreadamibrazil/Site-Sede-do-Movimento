@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import TeamGrid from "@/components/sections/TeamGrid";
@@ -6,10 +7,12 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { allProfessorsQuery } from "@/lib/sanity/queries";
 import type { SanityProfessor } from "@/lib/sanity/types";
 
-export const metadata: Metadata = {
-  title: "Equipe",
-  description: "Conheça a equipe de professores e coordenadores da Sede do Movimento.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/equipe", {
+    title: "Equipe",
+    description: "Conheça a equipe de professores e coordenadores da Sede do Movimento.",
+  });
+}
 
 export default async function EquipePage() {
   const { data } = await sanityFetch({ query: allProfessorsQuery });

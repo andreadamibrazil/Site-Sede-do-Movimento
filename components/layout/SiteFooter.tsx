@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, MapPin, ArrowRight } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import NewsletterForm from "@/components/ui/NewsletterForm";
 
 function IconInstagram({ size = 18 }: { size?: number }) {
   return (
@@ -162,15 +163,8 @@ export default function SiteFooter() {
               <h4 className="font-bold text-white text-lg mb-1">Fique por dentro</h4>
               <p className="text-white/55 text-sm">Receba novidades sobre eventos, cursos e espetáculos.</p>
             </div>
-            <div className="flex w-full md:w-auto gap-2">
-              <input
-                type="email"
-                placeholder="Seu melhor e-mail"
-                className="h-11 flex-1 md:w-64 bg-white/10 border border-white/20 rounded-full px-4 text-white text-sm placeholder:text-white/40 focus:outline-none focus:border-white/50 transition-colors"
-              />
-              <button className="h-11 px-5 bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-semibold text-sm rounded-full transition-colors flex items-center gap-1.5">
-                Assinar <ArrowRight size={14} />
-              </button>
+            <div className="w-full md:w-auto md:min-w-80">
+              <NewsletterForm theme="dark" />
             </div>
           </div>
         </div>

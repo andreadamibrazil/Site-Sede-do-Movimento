@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
@@ -6,7 +7,12 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { ExternalLink } from "lucide-react";
 
-export const metadata: Metadata = { title: "Projeto Social — Sede de Aprender", description: "Projeto social da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola/projeto-social", {
+    title: "Projeto Social — Sede de Aprender",
+    description: "Projeto social da Sede do Movimento.",
+  });
+}
 
 export default function ProjetoSocialPage() {
   return (

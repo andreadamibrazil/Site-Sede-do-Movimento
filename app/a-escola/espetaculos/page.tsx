@@ -1,11 +1,17 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { espetaculos } from "@/lib/constants/mockData";
 
-export const metadata: Metadata = { title: "Espetáculos", description: "As produções anuais da Sede do Movimento nos grandes teatros do Rio de Janeiro." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("a-escola/espetaculos", {
+    title: "Espetáculos",
+    description: "As produções anuais da Sede do Movimento nos grandes teatros do Rio de Janeiro.",
+  });
+}
 
 export default function EspetaculosPage() {
   return (

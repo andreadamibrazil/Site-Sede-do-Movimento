@@ -1,5 +1,5 @@
 import type { StructureResolver } from "sanity/structure";
-import { CogIcon, ImagesIcon, PlayIcon, PresentationIcon, DocumentTextIcon, UsersIcon } from "@sanity/icons";
+import { CogIcon, ImagesIcon, PlayIcon, PresentationIcon, DocumentTextIcon, UsersIcon, SearchIcon } from "@sanity/icons";
 
 // ─── Custom Studio Sidebar ────────────────────────────────────────────────────
 // Organizes documents into logical groups for non-technical editors.
@@ -58,6 +58,14 @@ export const structure: StructureResolver = (S) =>
         .title("🎭  Espetáculos")
         .icon(PresentationIcon)
         .child(S.documentTypeList("espetaculo").title("Espetáculos")),
+
+      S.divider(),
+
+      // ── SEO por página ────────────────────────────────────────────────────
+      S.listItem()
+        .title("🔍  SEO por Página")
+        .icon(SearchIcon)
+        .child(S.documentTypeList("pageSeo").title("SEO por Página")),
 
       S.divider(),
 

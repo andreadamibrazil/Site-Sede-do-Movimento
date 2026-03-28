@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("home", {
+    title: "Sede do Movimento — Arte, Movimento e Transformação",
+    description: "Complexo cultural e escola de artes cênicas no Rio de Janeiro. Dança, teatro, música e formação artística completa.",
+  });
+}
 import { ArrowRight, Star, Heart, Users, Quote } from "lucide-react";
 import HeroSliderServer from "@/components/sections/HeroSliderServer";
 import StatsSection from "@/components/sections/StatsSection";

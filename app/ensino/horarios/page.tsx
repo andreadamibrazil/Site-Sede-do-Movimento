@@ -1,10 +1,16 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
-export const metadata: Metadata = { title: "Horários", description: "Grade de horários das aulas da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/horarios", {
+    title: "Horários",
+    description: "Grade de horários das aulas da Sede do Movimento.",
+  });
+}
 
 const horarios = [
   { modalidade: "Ballet Infantil", dia: "Seg e Qua", hora: "09h00 – 10h00", nivel: "Infantil I (4-6 anos)", vagas: "5 vagas" },

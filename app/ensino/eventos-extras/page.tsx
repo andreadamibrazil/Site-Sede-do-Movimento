@@ -1,10 +1,16 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
-export const metadata: Metadata = { title: "Eventos Extras", description: "Eventos e atividades especiais da Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/eventos-extras", {
+    title: "Eventos Extras",
+    description: "Eventos e atividades especiais da Sede do Movimento.",
+  });
+}
 
 const eventos = [
   { name: "FAL – Festival de Artes Local", emoji: "🎪", desc: "Festival interno que reúne todas as turmas em apresentações ao vivo. Um momento de celebração e arte para toda a comunidade." },

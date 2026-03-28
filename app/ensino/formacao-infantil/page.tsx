@@ -1,10 +1,16 @@
 import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 
-export const metadata: Metadata = { title: "Formação Infantil", description: "Formação em artes cênicas para crianças na Sede do Movimento." };
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("ensino/formacao-infantil", {
+    title: "Formação Infantil",
+    description: "Formação em artes cênicas para crianças na Sede do Movimento.",
+  });
+}
 
 export default function FormacaoInfantilPage() {
   return (
