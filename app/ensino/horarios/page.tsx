@@ -3,6 +3,7 @@ import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
+import CourseSchema from "@/components/schema/CourseSchema";
 import { siteConfig } from "@/lib/constants/siteConfig";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,6 +27,7 @@ const horarios = [
 export default function HorariosPage() {
   return (
     <>
+      <CourseSchema courses={horarios} />
       <PageHero eyebrow="Horários" title="Grade de aulas 2026" subtitle="Consulte a disponibilidade e faça sua matrícula. Vagas limitadas por turma." breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Horários" }]} />
       <section className="section-padding bg-white">
         <div className="container-main">
