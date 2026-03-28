@@ -4,6 +4,7 @@ import "./globals.css";
 import SiteShell from "@/components/layout/SiteShell";
 import { SanityLive } from "@/sanity/lib/live";
 import GoogleTagManager from "@/components/analytics/GoogleTagManager";
+import Script from "next/script";
 import { sanityFetch } from "@/sanity/lib/live";
 import { siteSettingsQuery } from "@/lib/sanity/queries";
 import type { SanitySiteSettings } from "@/lib/sanity/types";
@@ -66,6 +67,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className={jakarta.variable}>
       <body className="font-sans antialiased">
         {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
+        <Script
+          id="microsoft-clarity"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+"w2zts1zjgq"+"?ref=bwt";y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","w2zts1zjgq");`,
+          }}
+        />
         <SiteShell>{children}</SiteShell>
         <SanityLive />
       </body>
