@@ -17,6 +17,8 @@ import { urlFor } from "@/sanity/lib/image";
 import { formatDate } from "@/lib/utils/formatDate";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { cn } from "@/lib/utils/cn";
+import BlogPostSchema from "@/components/schema/BlogPostSchema";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -86,6 +88,15 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <>
+      <BlogPostSchema
+        title={post.title}
+        excerpt={post.excerpt}
+        publishedAt={post.publishedAt}
+        authorName={post.author?.name ?? "Redação Sede"}
+        slug={post.slug}
+        coverImageUrl={coverImageUrl ?? undefined}
+      />
+      <BreadcrumbSchema items={[{ label: "Blog", href: "/blog" }, { label: post.title }]} />
       <PageHero
         title={post.title}
         eyebrow={post.category}

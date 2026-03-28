@@ -5,6 +5,8 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { espetaculos } from "@/lib/constants/mockData";
+import EventSchema from "@/components/schema/EventSchema";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/espetaculos", {
@@ -16,6 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function EspetaculosPage() {
   return (
     <>
+      <EventSchema espetaculos={espetaculos} />
+      <BreadcrumbSchema items={[{ label: "A Escola", href: "/a-escola" }, { label: "Espetáculos" }]} />
       <PageHero eyebrow="Espetáculos" title="A arte que vai ao palco" subtitle="Produções anuais nos principais teatros do Rio de Janeiro, com alunos de todas as idades." breadcrumbs={[{ label: "A Escola", href: "/a-escola" }, { label: "Espetáculos" }]} />
       <section className="section-padding bg-white">
         <div className="container-main">
