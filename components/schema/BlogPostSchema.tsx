@@ -2,37 +2,23 @@ import { siteConfig } from "@/lib/constants/siteConfig";
 
 interface Props {
   title: string;
-  excerpt: string;
-  publishedAt: string;
+  excerpt?: string;
+  publishedAt?: string;
   authorName: string;
   slug: string;
   coverImageUrl?: string;
 }
 
-/**
- * Schema markup para posts do blog.
- * Tipo: Article
- * Melhora SEO de conteúdo e aumenta chance de ser citado por IAs
- * em respostas sobre dança, teatro e artes cênicas no Rio de Janeiro.
- *
- * Adicionado em app/blog/[slug]/page.tsx passando dados do Sanity.
- */
-export default function BlogPostSchema({
-  title,
-  excerpt,
-  publishedAt,
-  authorName,
-  slug,
-  coverImageUrl,
-}: Props) {
+export default function BlogPostSchema({ title, excerpt, publishedAt, authorName, slug, coverImageUrl }: Props) {
+  const url = `${siteConfig.url}/blog/${slug}`;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: title,
-    description: excerpt,
-    datePublished: publishedAt,
-    dateModified: publishedAt,
-    url: `${siteConfig.url}/blog/${slug}`,
+    ...(excerpt && { description: excerpt }),
+    ...(publishedAt && { datePublished: publishedAt }),
+    ...(coverImageUrl && { image: { "@type": "ImageObject", url: coverImageUrl, width: 1200, height: 525 } }),
     author: {
       "@type": "Person",
       name: authorName,
@@ -43,21 +29,15 @@ export default function BlogPostSchema({
       url: siteConfig.url,
       logo: {
         "@type": "ImageObject",
-        url: `${siteConfig.url}/og-image.jpg`,
+        url: `${siteConfig.url}/icon.png`,
       },
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${siteConfig.url}/blog/${slug}`,
+      "@id": url,
     },
-    ...(coverImageUrl && {
-      image: {
-        "@type": "ImageObject",
-        url: coverImageUrl,
-        width: 1200,
-        height: 630,
-      },
-    }),
+    url,
+    inLanguage: "pt-BR",
   };
 
   return (
