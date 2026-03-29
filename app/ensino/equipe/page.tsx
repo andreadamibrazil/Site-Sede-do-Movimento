@@ -10,7 +10,7 @@ import type { SanityProfessor } from "@/lib/sanity/types";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/equipe", {
     title: "Equipe",
-    description: "Conheça a equipe de professores e coordenadores da Sede do Movimento.",
+    description: "Professores com DRT e experiência em TV, comerciais e grandes produções. Equipe multidisciplinar em dança, teatro e música no Rio Comprido, RJ.",
   });
 }
 

@@ -10,7 +10,7 @@ import { timelineEntries } from "@/lib/constants/mockData";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/historia-e-estrutura", {
     title: "Nossa História",
-    description: "A trajetória da Sede do Movimento e sua estrutura.",
+    description: "Fundada em 2021 no Rio Comprido, a Sede do Movimento cresceu para um complexo cultural com 3 andares, 6 salas com piso flutuante e múltiplas empresas criativas.",
   });
 }
 

@@ -16,7 +16,7 @@ import { stats, timelineEntries, espetaculos } from "@/lib/constants/mockData";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola", {
     title: "A Escola",
-    description: "Conheça a Sede do Movimento — por que existimos, nossa história, estrutura e resultados.",
+    description: "Complexo cultural no Rio Comprido com escola de artes cênicas, companhia profissional, produtora, audiovisual e ateliê de figurino. Formando artistas desde 2021.",
   });
 }
 

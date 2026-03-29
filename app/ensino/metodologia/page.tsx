@@ -8,7 +8,7 @@ import Accordion from "@/components/ui/Accordion";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/metodologia", {
     title: "Metodologia",
-    description: "O Método Movimento Integrado da Sede do Movimento.",
+    description: "Método Movimento Integrado: formação holística em dança, teatro e música que desenvolve técnica, expressão e prepara alunos para o mercado artístico no RJ.",
   });
 }
 

@@ -9,7 +9,7 @@ import { siteConfig } from "@/lib/constants/siteConfig";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/horarios", {
     title: "Horários",
-    description: "Grade de horários das aulas da Sede do Movimento.",
+    description: "Horários das aulas de ballet, jazz, sapateado, teatro e música no Rio Comprido. Turmas a partir de 2 anos, infantil e adultos. Consulte vagas disponíveis.",
   });
 }
 

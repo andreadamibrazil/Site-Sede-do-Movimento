@@ -14,7 +14,7 @@ import type { SanityProfessor } from "@/lib/sanity/types";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino", {
     title: "Ensino",
-    description: "Conheça a metodologia, equipe e modalidades da Sede do Movimento.",
+    description: "Metodologia holística em dança, teatro e música que prepara alunos para TV, comerciais e grandes produções. Professores com DRT no Rio Comprido, RJ.",
   });
 }
 

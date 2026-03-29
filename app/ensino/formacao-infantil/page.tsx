@@ -8,7 +8,7 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/formacao-infantil", {
     title: "Formação Infantil",
-    description: "Formação em artes cênicas para crianças na Sede do Movimento.",
+    description: "Formação artística para crianças a partir de 2 anos no Rio Comprido. Baby class, ballet infantil, teatro e música com metodologia holística e professores DRT.",
   });
 }
 

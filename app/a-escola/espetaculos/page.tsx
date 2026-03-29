@@ -11,7 +11,7 @@ import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/espetaculos", {
     title: "Espetáculos",
-    description: "As produções anuais da Sede do Movimento nos grandes teatros do Rio de Janeiro.",
+    description: "Espetáculos anuais profissionais nos grandes teatros do Rio de Janeiro. Prática de Montagem aberta a quem quiser experiência de palco em grandes musicais.",
   });
 }
 

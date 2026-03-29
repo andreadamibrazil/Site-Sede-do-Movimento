@@ -10,7 +10,7 @@ import { ExternalLink } from "lucide-react";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/projeto-social", {
     title: "Projeto Social — Sede de Aprender",
-    description: "Projeto social da Sede do Movimento.",
+    description: "Sede de Aprender: bolsas em artes cênicas para pessoas em situação de vulnerabilidade no Rio Comprido. Arte como instrumento de transformação social e acesso à cultura.",
   });
 }
 

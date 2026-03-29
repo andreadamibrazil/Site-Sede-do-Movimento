@@ -7,7 +7,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/modalidades", {
     title: "Modalidades",
-    description: "Aulas de dança, teatro e música na Sede do Movimento.",
+    description: "Ballet, jazz, sapateado, dança charme, contemporânea, baby class, teatro, canto, violão e teclado. Aulas para todas as idades no Rio Comprido, RJ.",
   });
 }
 

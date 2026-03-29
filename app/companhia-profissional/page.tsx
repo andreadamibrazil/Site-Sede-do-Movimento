@@ -12,7 +12,7 @@ import { siteConfig } from "@/lib/constants/siteConfig";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("companhia-profissional", {
     title: "Companhia Profissional — Vivá Cia de Dança",
-    description: "A Vivá Cia de Dança é a companhia profissional fundada por Carlos Fontinelle, nascida diretamente da trajetória artística da Sede do Movimento.",
+    description: "Vivá Cia de Dança: companhia profissional fundada por Carlos Fontinelle no Rio de Janeiro, com atuação em TV, comerciais e grandes produções nacionais.",
   });
 }
 

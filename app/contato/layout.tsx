@@ -4,7 +4,7 @@ import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("contato", {
     title: "Contato",
-    description: "Entre em contato com a Sede do Movimento. Tire dúvidas, solicite informações ou venha nos visitar.",
+    description: "Entre em contato com a Sede do Movimento. Av. Paulo de Frontin, 698, Rio Comprido, RJ. Informações sobre matrículas, horários e Prática de Montagem.",
   });
 }
 
