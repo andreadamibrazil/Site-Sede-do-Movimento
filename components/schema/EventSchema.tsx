@@ -14,7 +14,8 @@ interface Props {
  * migrar para buscar de allEspetaculosQuery e passar como prop.
  */
 export default function EventSchema({ espetaculos }: Props) {
-  const events = espetaculos.map((esp) => ({
+  const schemas = espetaculos.map((esp) => ({
+    "@context": "https://schema.org",
     "@type": "Event",
     name: esp.title,
     description: esp.description ?? `Espetáculo anual da Sede do Movimento — ${esp.title}`,
@@ -22,6 +23,7 @@ export default function EventSchema({ espetaculos }: Props) {
     endDate: `${esp.year}-12-31`,
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    ...(esp.bannerSrc && { image: esp.bannerSrc }),
     location: {
       "@type": "Place",
       name: esp.venue,
@@ -44,24 +46,15 @@ export default function EventSchema({ espetaculos }: Props) {
     url: `${siteConfig.url}/a-escola/espetaculos`,
   }));
 
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: `Espetáculos — ${siteConfig.name}`,
-    description: "Produções anuais da Sede do Movimento nos principais teatros do Rio de Janeiro.",
-    url: `${siteConfig.url}/a-escola/espetaculos`,
-    numberOfItems: events.length,
-    itemListElement: events.map((event, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: event,
-    })),
-  };
-
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-    />
+    <>
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
+    </>
   );
 }
