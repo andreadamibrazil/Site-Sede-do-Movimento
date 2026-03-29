@@ -6,6 +6,8 @@ import { SanityLive } from "@/sanity/lib/live";
 import GoogleTagManager from "@/components/analytics/GoogleTagManager";
 import OrganizationSchema from "@/components/schema/OrganizationSchema";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { sanityFetch } from "@/sanity/lib/live";
 import { siteSettingsQuery } from "@/lib/sanity/queries";
 import type { SanitySiteSettings } from "@/lib/sanity/types";
@@ -78,6 +80,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <OrganizationSchema />
         <SiteShell>{children}</SiteShell>
         <SanityLive />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

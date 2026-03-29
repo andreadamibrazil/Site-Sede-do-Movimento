@@ -13,6 +13,8 @@
     "@sanity/image-url": "^1.2.0",
     "@sanity/vision": "^4.22.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.0.1",
