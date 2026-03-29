@@ -11,7 +11,10 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { stats, timelineEntries, espetaculos } from "@/lib/constants/mockData";
+import { stats, timelineEntries } from "@/lib/constants/mockData";
+import { sanityFetch } from "@/sanity/lib/live";
+import { allEspetaculosQuery } from "@/lib/sanity/queries";
+import type { SanityEspetaculo } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola", {
@@ -29,7 +32,9 @@ const subPages = [
   { href: "/a-escola/projeto-social", icon: Heart, label: "Projeto Social", desc: "Sede de Aprender" },
 ];
 
-export default function AEscolaPage() {
+export default async function AEscolaPage() {
+  const { data } = await sanityFetch({ query: allEspetaculosQuery });
+  const espetaculos = ((data as SanityEspetaculo[]) ?? []).slice(0, 3);
   return (
     <>
       <PageHero

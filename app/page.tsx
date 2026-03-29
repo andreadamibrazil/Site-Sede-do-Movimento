@@ -16,12 +16,14 @@ import Button from "@/components/ui/Button";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import BlogPostCard from "@/components/sections/BlogPostCard";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
+import FAQSection from "@/components/sections/FAQSection";
+import FAQSchema from "@/components/schema/FAQSchema";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { stats, espetaculos } from "@/lib/constants/mockData";
+import { stats } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allPostsQuery } from "@/lib/sanity/queries";
-import type { SanityPost } from "@/lib/sanity/types";
+import { allPostsQuery, allEspetaculosQuery } from "@/lib/sanity/queries";
+import type { SanityPost, SanityEspetaculo } from "@/lib/sanity/types";
 
 const modalidades = [
   { icon: "💃", title: "Dança", description: "Ballet, Jazz, Contemporâneo, Sapateado, Danças Urbanas e mais. Formação técnica completa para todas as idades.", href: "/ensino/modalidades", color: "from-brand-purple-600 to-brand-secondary" },
@@ -45,11 +47,47 @@ const jornadas = [
   { name: "Jornada de Música – Canto", ages: "2 a 18+" },
 ];
 
+const faqItems = [
+  {
+    question: "Quais modalidades de dança a Sede do Movimento oferece?",
+    answer: "A Sede do Movimento oferece ballet, jazz, sapateado, dança contemporânea, danças urbanas (charme, street), teatro, canto, violão e teclado. Também há baby class para crianças a partir de 2 anos e preparação física para bailarinos.",
+  },
+  {
+    question: "A Sede do Movimento tem aulas para crianças pequenas?",
+    answer: "Sim. A escola oferece baby class e iniciação artística a partir dos 2 anos de idade, com metodologia própria adaptada para o desenvolvimento infantil. Há turmas para todas as faixas etárias, do infantil ao adulto.",
+  },
+  {
+    question: "Onde fica a Sede do Movimento?",
+    answer: "A Sede do Movimento fica na Av. Paulo de Frontin, 698, Rio Comprido, Rio de Janeiro — RJ. É um casarão histórico de 650m² com 3 andares, 6 salas com piso flutuante e estrutura completa para formação artística.",
+  },
+  {
+    question: "Como funciona a matrícula na Sede do Movimento?",
+    answer: "A matrícula pode ser feita pelo WhatsApp ou presencialmente na escola. As vagas são limitadas por turma. É possível agendar uma visita para conhecer o espaço e conversar sobre a jornada ideal para você ou seu filho.",
+  },
+  {
+    question: "O que é a Prática de Montagem da Sede do Movimento?",
+    answer: "A Prática de Montagem é um projeto aberto a qualquer pessoa — aluno ou não — que queira vivenciar a experiência de um grande espetáculo musical. Os participantes passam por todo o processo de montagem e sobem ao palco em teatros de grande porte no Rio de Janeiro.",
+  },
+  {
+    question: "Qual é o diferencial da Sede do Movimento em relação a outras escolas de dança?",
+    answer: "A Sede do Movimento é um complexo cultural completo fundado pelo coreógrafo Carlos Fontinelle — diretor de movimento da Copa do Mundo FIFA 2014 e fundador da Vivá Cia de Dança. Além do ensino técnico de alta qualidade, a escola possui companhia profissional própria, estúdio audiovisual, produtora e projeto social.",
+  },
+  {
+    question: "A Sede do Movimento tem projeto social?",
+    answer: "Sim. O projeto 'Sede de Aprender' oferece bolsas e acesso às artes para crianças e jovens em situação de vulnerabilidade social. O projeto visa democratizar o acesso à formação artística de qualidade.",
+  },
+];
+
 export default async function HomePage() {
-  const { data } = await sanityFetch({ query: allPostsQuery });
-  const recentPosts = ((data as SanityPost[]) ?? []).slice(0, 3);
+  const [{ data: postsData }, { data: espetaculosData }] = await Promise.all([
+    sanityFetch({ query: allPostsQuery }),
+    sanityFetch({ query: allEspetaculosQuery }),
+  ]);
+  const recentPosts = ((postsData as SanityPost[]) ?? []).slice(0, 3);
+  const espetaculos = ((espetaculosData as SanityEspetaculo[]) ?? []).slice(0, 3);
   return (
     <>
+      <FAQSchema items={faqItems} />
       {/* ── 1. HERO SLIDER ─────────────────────────────────────────────────── */}
       <HeroSliderServer />
 
@@ -372,7 +410,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 10. BLOG PREVIEW ─────────────────────────────────────────────────── */}
+      {/* ── 10. FAQ / GEO ────────────────────────────────────────────────────── */}
+      <section id="faq" className="section-padding bg-white">
+        <div className="container-main">
+          <SectionTitle
+            eyebrow="Perguntas frequentes"
+            title="Tudo que você precisa saber"
+            subtitle="Respostas rápidas sobre a escola, modalidades, matrículas e muito mais."
+          />
+          <ScrollReveal>
+            <FAQSection items={faqItems} />
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ── 11. BLOG PREVIEW ─────────────────────────────────────────────────── */}
       <section id="blog" className="section-padding bg-gray-50">
         <div className="container-main">
           <div className="flex items-end justify-between mb-7 md:mb-10">
