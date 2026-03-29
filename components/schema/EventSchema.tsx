@@ -1,18 +1,11 @@
 import { siteConfig } from "@/lib/constants/siteConfig";
-import type { Espetaculo } from "@/types";
+import type { SanityEspetaculo } from "@/lib/sanity/types";
+import { urlFor } from "@/sanity/lib/image";
 
 interface Props {
-  espetaculos: Espetaculo[];
+  espetaculos: SanityEspetaculo[];
 }
 
-/**
- * Schema markup para espetáculos da Sede do Movimento.
- * Tipo: ItemList + Event
- * Informa ao Google e IAs datas, locais e descrições dos espetáculos.
- *
- * TODO: quando espetaculos do Sanity estiverem populados,
- * migrar para buscar de allEspetaculosQuery e passar como prop.
- */
 export default function EventSchema({ espetaculos }: Props) {
   const schemas = espetaculos.map((esp) => ({
     "@context": "https://schema.org",
@@ -23,7 +16,7 @@ export default function EventSchema({ espetaculos }: Props) {
     endDate: `${esp.year}-12-31`,
     eventStatus: "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    ...(esp.bannerSrc && { image: esp.bannerSrc }),
+    ...(esp.coverImage && { image: urlFor(esp.coverImage).width(1200).height(630).url() }),
     location: {
       "@type": "Place",
       name: esp.venue,

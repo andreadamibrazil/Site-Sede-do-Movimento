@@ -3,14 +3,16 @@
 import { motion } from "framer-motion";
 import { MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { Espetaculo } from "@/types";
+import Image from "next/image";
+import type { SanityEspetaculo } from "@/lib/sanity/types";
+import { urlFor } from "@/sanity/lib/image";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
 import { trackCTAClick } from "@/lib/analytics";
 
 interface EspetaculoCardProps {
-  espetaculo: Espetaculo;
+  espetaculo: SanityEspetaculo;
   featured?: boolean;
 }
 
@@ -25,7 +27,16 @@ export default function EspetaculoCard({ espetaculo, featured = false }: Espetac
       )}
     >
       <div className="relative aspect-[16/9] overflow-hidden bg-gray-100">
-        <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Banner: ${espetaculo.title}`} />
+        {espetaculo.coverImage ? (
+          <Image
+            src={urlFor(espetaculo.coverImage).width(800).height(450).url()}
+            alt={espetaculo.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Banner: ${espetaculo.title}`} />
+        )}
         {featured && (
           <div className="absolute top-3 left-3">
             <Badge color="primary" variant="solid" size="sm">Em cartaz</Badge>

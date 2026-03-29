@@ -4,7 +4,9 @@ import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { espetaculos } from "@/lib/constants/mockData";
+import { sanityFetch } from "@/sanity/lib/live";
+import { allEspetaculosQuery } from "@/lib/sanity/queries";
+import type { SanityEspetaculo } from "@/lib/sanity/types";
 import EventSchema from "@/components/schema/EventSchema";
 import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 
@@ -15,7 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function EspetaculosPage() {
+export default async function EspetaculosPage() {
+  const { data } = await sanityFetch({ query: allEspetaculosQuery });
+  const espetaculos = (data ?? []) as SanityEspetaculo[];
+
   return (
     <>
       <EventSchema espetaculos={espetaculos} />
