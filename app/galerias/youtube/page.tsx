@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { Tv, Users, ExternalLink, Play } from "lucide-react";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("galerias-youtube", {
+    title: "Canal YouTube",
+    description: "Inscreva-se no canal YouTube da Sede do Movimento. Espetáculos completos, bastidores, aulas gratuitas de dança, teatro e música no Rio de Janeiro.",
+  });
+}
 import PageHero from "@/components/sections/PageHero";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Button from "@/components/ui/Button";

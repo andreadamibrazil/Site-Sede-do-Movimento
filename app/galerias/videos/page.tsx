@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { Play, Tv, ExternalLink } from "lucide-react";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("galerias-videos", {
+    title: "Vídeos",
+    description: "Assista a trechos de espetáculos, making offs e vídeos institucionais da Sede do Movimento — escola de artes cênicas no Rio Comprido, Rio de Janeiro.",
+  });
+}
 import PageHero from "@/components/sections/PageHero";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";

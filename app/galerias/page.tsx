@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import { Camera, Video, Tv, ArrowRight } from "lucide-react";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("galerias", {
+    title: "Galerias",
+    description: "Fotos, vídeos e canal YouTube da Sede do Movimento. Registros de espetáculos, ensaios, eventos e bastidores da escola de artes cênicas no Rio de Janeiro.",
+  });
+}
 import PageHero from "@/components/sections/PageHero";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";

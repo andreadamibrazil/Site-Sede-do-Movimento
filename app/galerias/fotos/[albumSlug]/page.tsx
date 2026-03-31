@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -26,6 +27,19 @@ function formatSlugTitle(slug: string): string {
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { albumSlug } = await params;
+  const title = formatSlugTitle(albumSlug);
+  return {
+    title,
+    description: `Registros fotográficos do álbum "${title}" — Sede do Movimento, escola de artes cênicas no Rio de Janeiro.`,
+    openGraph: {
+      title,
+      description: `Registros fotográficos do álbum "${title}" — Sede do Movimento, escola de artes cênicas no Rio de Janeiro.`,
+    },
+  };
 }
 
 export async function generateStaticParams() {

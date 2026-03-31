@@ -1,29 +1,26 @@
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
-/**
- * Schema markup para a Sede do Movimento.
- * Tipo: EducationalOrganization + LocalBusiness
- * Informa ao Google e IAs (ChatGPT, Copilot, Gemini) o que é a escola,
- * onde fica, como contatar e quais redes sociais tem.
- *
- * TODO: quando siteSettings do Sanity estiver populado com endereço real,
- * migrar os dados de contato daqui para buscar do Sanity dinamicamente.
- */
-export default function OrganizationSchema() {
+export default async function OrganizationSchema() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const s = data as SanitySiteSettings | null;
+
   const schema = {
     "@context": "https://schema.org",
     "@type": ["EducationalOrganization", "LocalBusiness"],
     name: siteConfig.name,
     description: siteConfig.description,
     url: siteConfig.url,
-    telephone: siteConfig.phone,
-    email: siteConfig.email,
+    telephone: s?.phone ?? siteConfig.phone,
+    email: s?.email ?? siteConfig.email,
     address: {
       "@type": "PostalAddress",
+      streetAddress: s?.address ?? siteConfig.address.street,
       addressLocality: siteConfig.address.city,
       addressRegion: siteConfig.address.state,
       postalCode: siteConfig.address.zip,
-      streetAddress: siteConfig.address.street,
       addressCountry: "BR",
     },
     geo: {
@@ -32,12 +29,12 @@ export default function OrganizationSchema() {
       longitude: -43.1930,
     },
     sameAs: [
-      siteConfig.social.instagram,
-      siteConfig.social.youtube,
-      siteConfig.social.facebook,
-      siteConfig.social.tiktok,
-    ],
-    hasMap: siteConfig.social.whatsapp,
+      s?.instagram ?? siteConfig.social.instagram,
+      s?.youtube ?? siteConfig.social.youtube,
+      s?.facebook ?? siteConfig.social.facebook,
+      s?.tiktok ?? siteConfig.social.tiktok,
+    ].filter(Boolean),
+    hasMap: s?.googleMapsLink ?? siteConfig.social.whatsapp,
     priceRange: "$$",
     currenciesAccepted: "BRL",
     paymentAccepted: "Dinheiro, Cartão de crédito, PIX",
