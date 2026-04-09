@@ -105,11 +105,8 @@ export interface SanityTurma {
 
 // ─── Galeria ─────────────────────────────────────────────────────────────────
 
-// Cada foto retornada pela query tem campo "img" normalizado (select GROQ)
 export interface SanityGalleryPhoto extends Record<string, unknown> {
   img: SanityImageSource;
-  alt?: string;
-  caption?: string;
 }
 
 export interface SanityGalleryAlbum {
