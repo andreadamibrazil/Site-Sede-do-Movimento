@@ -71,7 +71,13 @@ export const galleryAlbumType = defineType({
       name: "photos",
       title: "Fotos do álbum",
       type: "array",
-      description: "Adicione todas as fotos deste álbum. Arraste para reordenar.",
+      description:
+        "Arraste várias fotos de uma vez para adicionar em lote. Clique em cada uma depois para preencher a descrição (SEO).",
+      options: {
+        layout: "grid",
+        // @ts-expect-error — editModal é suportado no Sanity Studio v3
+        editModal: "popover",
+      },
       of: [
         defineArrayMember({
           type: "object",
@@ -88,8 +94,10 @@ export const galleryAlbumType = defineType({
               title: "Descrição da foto (SEO)",
               type: "string",
               description:
-                "Descreva o que aparece na foto. Importante para acessibilidade e Google. Ex: Alunos de ballet no palco durante o espetáculo Arcanum.",
-              validation: (r) => r.required().error("A descrição da foto é obrigatória."),
+                "Descreva o que aparece na foto. Ex: Alunos de ballet no palco durante o espetáculo Arcanum.",
+              // Aviso em vez de erro — permite upload rápido em lote
+              validation: (r) =>
+                r.warning("Recomendado para SEO e acessibilidade. Preencha após o upload em lote."),
             }),
             defineField({
               name: "caption",
@@ -110,6 +118,13 @@ export const galleryAlbumType = defineType({
               title: "alt",
               subtitle: "caption",
               media: "image",
+            },
+            prepare({ title, subtitle, media }) {
+              return {
+                title: title ?? "Sem descrição",
+                subtitle,
+                media,
+              };
             },
           },
         }),

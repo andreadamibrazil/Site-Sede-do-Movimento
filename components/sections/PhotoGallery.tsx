@@ -90,9 +90,18 @@ export default function PhotoGallery({ photos, columns = 4, className }: PhotoGa
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative max-w-[90vw] max-h-[85vh] rounded-xl overflow-hidden"
+              className="relative rounded-xl overflow-hidden flex items-center justify-center"
             >
-              <PlaceholderImage className="min-w-[320px] min-h-[240px] max-w-[80vw] max-h-[80vh] rounded-none border-none" label={photos[lightboxIndex]?.alt} />
+              {photos[lightboxIndex]?.src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photos[lightboxIndex].src}
+                  alt={photos[lightboxIndex].alt}
+                  className="max-w-[85vw] max-h-[82vh] w-auto h-auto rounded-xl object-contain"
+                />
+              ) : (
+                <PlaceholderImage className="min-w-[320px] min-h-[240px] rounded-none border-none" label={photos[lightboxIndex]?.alt} />
+              )}
             </motion.div>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm px-4 py-2 rounded-full">
