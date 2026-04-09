@@ -1,16 +1,14 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import { Tv } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
-import PhotoGallery from "@/components/sections/PhotoGallery";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { galleryPhotos } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
-import { cn } from "@/lib/utils/cn";
+import { sanityFetch } from "@/sanity/lib/live";
+import { allGalleryAlbumsQuery } from "@/lib/sanity/queries";
+import type { SanityGalleryAlbum } from "@/lib/sanity/types";
+import FotosPageClient from "./FotosPageClient";
 
 const breadcrumbs = [
   { label: "Início", href: "/" },
@@ -18,13 +16,9 @@ const breadcrumbs = [
   { label: "Fotos" },
 ];
 
-const filterTabs = ["Todos", "Espetáculos", "Bastidores", "Eventos", "Formatura"];
-
-export default function FotosPage() {
-  const [activeFilter, setActiveFilter] = useState("Todos");
-
-  // For demo, all filters show the same galleryPhotos since we don't have categorized data
-  const filteredPhotos = galleryPhotos;
+export default async function FotosPage() {
+  const { data } = await sanityFetch({ query: allGalleryAlbumsQuery });
+  const albums = (data as SanityGalleryAlbum[]) ?? [];
 
   return (
     <>
@@ -37,29 +31,7 @@ export default function FotosPage() {
 
       <section className="section-padding bg-white">
         <div className="container-main">
-
-          {/* Filter tabs */}
-          <div className="flex flex-wrap gap-2 mb-10 justify-center">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveFilter(tab)}
-                className={cn(
-                  "px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 border",
-                  activeFilter === tab
-                    ? "bg-brand-purple-600 text-white border-brand-purple-600 shadow-brand-sm"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-brand-purple-600 hover:text-brand-purple-600"
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Photo Gallery */}
-          <ScrollReveal>
-            <PhotoGallery photos={filteredPhotos} columns={4} />
-          </ScrollReveal>
+          <FotosPageClient albums={albums} />
         </div>
       </section>
 

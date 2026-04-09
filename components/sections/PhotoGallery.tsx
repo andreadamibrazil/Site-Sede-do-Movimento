@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ZoomIn, X, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 import { Photo } from "@/types";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { cn } from "@/lib/utils/cn";
@@ -31,7 +32,11 @@ export default function PhotoGallery({ photos, columns = 4, className }: PhotoGa
             className="group relative aspect-square overflow-hidden rounded-lg cursor-pointer"
             onClick={() => setLightboxIndex(i)}
           >
-            <PlaceholderImage className="w-full h-full rounded-none border-none" label={photo.alt} />
+            {photo.src ? (
+              <Image src={photo.src} alt={photo.alt} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
+            ) : (
+              <PlaceholderImage className="w-full h-full rounded-none border-none" label={photo.alt} />
+            )}
             {/* Overlay */}
             <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/60 transition-all duration-300 flex items-center justify-center">
               <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100" size={28} />

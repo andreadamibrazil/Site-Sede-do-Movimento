@@ -70,6 +70,16 @@ export interface SanitySiteSettings {
   googleMapsLink?: string;
   footerTagline?: string;
   seo?: SanitySeoFields;
+  imagens?: {
+    homeHistoria?: SanityImageSource;
+    homeMissao?: SanityImageSource;
+    homeMetodologia?: SanityImageSource;
+    carlosFontinelle?: SanityImageSource;
+    espacoFotos?: { image: SanityImageSource; alt?: string }[];
+    apresentacaoFotos?: { image: SanityImageSource; alt?: string }[];
+    parcerias?: { logo?: SanityImageSource; nome?: string; url?: string }[];
+    atelierFigurinosFoto?: SanityImageSource;
+  };
 }
 
 // ─── Turmas ──────────────────────────────────────────────────────────────────

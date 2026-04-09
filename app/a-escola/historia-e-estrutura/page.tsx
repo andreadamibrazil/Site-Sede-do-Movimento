@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
@@ -6,6 +7,10 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { timelineEntries } from "@/lib/constants/mockData";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/historia-e-estrutura", {
@@ -14,7 +19,10 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function HistoriaPage() {
+export default async function HistoriaPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero eyebrow="Nossa história" title="De uma visão a um complexo cultural" subtitle="Carlos Fontinelle e a criação de um ecossistema completo de arte no Rio de Janeiro." breadcrumbs={[{ label: "A Escola", href: "/a-escola" }, { label: "Nossa história" }]} />
@@ -29,7 +37,17 @@ export default function HistoriaPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.15}>
               <div className="aspect-[4/5] rounded-2xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label="Carlos Fontinelle" />
+                {imagens?.carlosFontinelle ? (
+                  <Image
+                    src={urlFor(imagens.carlosFontinelle).width(700).height(875).url()}
+                    alt="Carlos Fontinelle"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Carlos Fontinelle" />
+                )}
               </div>
             </ScrollReveal>
           </div>
@@ -41,11 +59,25 @@ export default function HistoriaPage() {
         <div className="container-main">
           <SectionTitle eyebrow="Nossa estrutura" title="650m² de arte e criação" subtitle="Um casarão histórico transformado em complexo cultural no coração do Rio Comprido." />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Espaço ${i + 1}`} />
-              </div>
-            ))}
+            {imagens?.espacoFotos && imagens.espacoFotos.length > 0 ? (
+              imagens.espacoFotos.slice(0, 4).map((item, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden relative">
+                  <Image
+                    src={urlFor(item.image).width(400).height(400).url()}
+                    alt={item.alt ?? `Espaço ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                  />
+                </div>
+              ))
+            ) : (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Espaço ${i + 1}`} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

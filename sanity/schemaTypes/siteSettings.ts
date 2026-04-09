@@ -1,4 +1,4 @@
-import { defineField, defineType } from "sanity";
+import { defineArrayMember, defineField, defineType } from "sanity";
 import { DocumentTextIcon } from "@sanity/icons";
 
 export const siteSettingsType = defineType({
@@ -88,6 +88,111 @@ export const siteSettingsType = defineType({
       type: "seoObject",
       description:
         "Configurações de SEO padrão para todo o site. Páginas individuais podem ter seu próprio SEO que sobrescreve estes valores.",
+    }),
+
+    // ── Imagens das Seções ────────────────────────────────────────────────────
+    defineField({
+      name: "imagens",
+      title: "Imagens das Seções",
+      type: "object",
+      description:
+        "Fotos usadas nas diversas seções do site. Substitua os placeholders cinzas aqui.",
+      fields: [
+        // Homepage
+        defineField({
+          name: "homeHistoria",
+          title: "Homepage — Seção 'Nossa História'",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto ao lado do texto 'Nossa história' na página inicial.",
+        }),
+        defineField({
+          name: "homeMissao",
+          title: "Homepage — Seção 'Por que existimos'",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto ao lado do texto de missão na página inicial.",
+        }),
+        defineField({
+          name: "homeMetodologia",
+          title: "Homepage — Seção 'Metodologia'",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto na seção Metodologia (fundo escuro).",
+        }),
+        // A Escola
+        defineField({
+          name: "carlosFontinelle",
+          title: "Carlos Fontinelle — Foto Retrato",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto usada na página 'Nossa História' ao lado da bio do Carlos.",
+        }),
+        defineField({
+          name: "espacoFotos",
+          title: "Fotos do Espaço (até 4)",
+          type: "array",
+          description:
+            "Fotos das salas e instalações. Exibidas na seção 'Nossa Estrutura' (página Nossa História).",
+          of: [
+            defineArrayMember({
+              type: "object",
+              fields: [
+                defineField({ name: "image", title: "Foto", type: "image", options: { hotspot: true } }),
+                defineField({ name: "alt", title: "Descrição da foto (SEO)", type: "string" }),
+              ],
+              preview: { select: { title: "alt", media: "image" } },
+            }),
+          ],
+        }),
+        defineField({
+          name: "apresentacaoFotos",
+          title: "Fotos de Apresentação (até 4)",
+          type: "array",
+          description: "Grade de fotos no final da página 'Por que existimos'.",
+          of: [
+            defineArrayMember({
+              type: "object",
+              fields: [
+                defineField({ name: "image", title: "Foto", type: "image", options: { hotspot: true } }),
+                defineField({ name: "alt", title: "Descrição da foto (SEO)", type: "string" }),
+              ],
+              preview: { select: { title: "alt", media: "image" } },
+            }),
+          ],
+        }),
+        // Parcerias
+        defineField({
+          name: "parcerias",
+          title: "Parceiros e Apoiadores",
+          type: "array",
+          description: "Logos dos parceiros. Exibidos na página 'Parcerias'.",
+          of: [
+            defineArrayMember({
+              type: "object",
+              fields: [
+                defineField({ name: "logo", title: "Logo", type: "image", options: { hotspot: true } }),
+                defineField({ name: "nome", title: "Nome do parceiro", type: "string" }),
+                defineField({ name: "url", title: "Site (opcional)", type: "url" }),
+              ],
+              preview: {
+                select: { title: "nome", media: "logo" },
+                prepare({ title, media }: { title?: string; media?: unknown }) {
+                  return { title: title ?? "Parceiro", media };
+                },
+              },
+            }),
+          ],
+        }),
+        // Atelier
+        defineField({
+          name: "atelierFigurinosFoto",
+          title: "Atelier — Foto de Figurinos",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto exibida na seção Atelier/Figurinos.",
+        }),
+      ],
     }),
   ],
 

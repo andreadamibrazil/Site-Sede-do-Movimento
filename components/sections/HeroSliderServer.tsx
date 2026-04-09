@@ -22,6 +22,7 @@ export default async function HeroSliderServer() {
   let slides: HeroSlide[];
 
   if (sanitySlides && sanitySlides.length > 0) {
+    // Slides do Sanity — fonte principal
     slides = sanitySlides.map((s) => ({
       id: s._id,
       image: urlFor(s.image).width(1920).height(880).fit("crop").auto("format").url(),
@@ -31,8 +32,9 @@ export default async function HeroSliderServer() {
       enabled: s.active,
     }));
   } else {
-    // Fallback: slides estáticos enquanto o CMS estiver vazio
-    slides = heroSlides.filter((s) => s.enabled).sort((a, b) => a.order - b.order);
+    // Fallback: slides estáticos com imagem real em /public/images/slides/
+    // Filtra apenas slides com imagem definida para não mostrar bolinhas vazias
+    slides = heroSlides.filter((s) => s.enabled && s.image !== "").sort((a, b) => a.order - b.order);
   }
 
   return <HeroSlider slides={slides} />;

@@ -85,7 +85,15 @@ export const siteSettingsQuery = groq`
     phone, whatsapp, email, address,
     instagram, youtube, tiktok, facebook,
     googleMapsLink, footerTagline,
-    seo { metaTitle, metaDescription, ogImage, keywords, noIndex, canonicalUrl }
+    seo { metaTitle, metaDescription, ogImage, keywords, noIndex, canonicalUrl },
+    imagens {
+      homeHistoria, homeMissao, homeMetodologia,
+      carlosFontinelle,
+      espacoFotos[] { image, alt },
+      apresentacaoFotos[] { image, alt },
+      parcerias[] { logo, nome, url },
+      atelierFigurinosFoto
+    }
   }
 `;
 

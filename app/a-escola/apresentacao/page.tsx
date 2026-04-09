@@ -1,8 +1,13 @@
+import Image from "next/image";
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/apresentacao", {
@@ -11,7 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function ApresentacaoPage() {
+export default async function ApresentacaoPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero eyebrow="Por que existimos" title="A razão de ser da Sede do Movimento" breadcrumbs={[{ label: "A Escola", href: "/a-escola" }, { label: "Por que existimos" }]} />
@@ -52,11 +60,25 @@ export default function ApresentacaoPage() {
             </blockquote>
           </ScrollReveal>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-12">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Foto ${i + 1}`} />
-              </div>
-            ))}
+            {imagens?.apresentacaoFotos && imagens.apresentacaoFotos.length > 0 ? (
+              imagens.apresentacaoFotos.slice(0, 4).map((item, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden relative">
+                  <Image
+                    src={urlFor(item.image).width(400).height(400).url()}
+                    alt={item.alt ?? `Foto ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                  />
+                </div>
+              ))
+            ) : (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Foto ${i + 1}`} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

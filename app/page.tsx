@@ -8,6 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: "Complexo cultural e escola de artes cênicas no Rio de Janeiro. Dança, teatro, música e formação artística completa.",
   });
 }
+import Image from "next/image";
 import { ArrowRight, Star, Heart, Users, Quote } from "lucide-react";
 import HeroSliderServer from "@/components/sections/HeroSliderServer";
 import StatsSection from "@/components/sections/StatsSection";
@@ -22,8 +23,9 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { stats } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allPostsQuery, allEspetaculosQuery } from "@/lib/sanity/queries";
-import type { SanityPost, SanityEspetaculo } from "@/lib/sanity/types";
+import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, featuredGalleryPhotosQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
 const modalidades = [
   { icon: "💃", title: "Dança", description: "Ballet, Jazz, Contemporâneo, Sapateado, Danças Urbanas e mais. Formação técnica completa para todas as idades.", href: "/ensino/modalidades", color: "from-brand-purple-600 to-brand-secondary" },
@@ -79,12 +81,16 @@ const faqItems = [
 ];
 
 export default async function HomePage() {
-  const [{ data: postsData }, { data: espetaculosData }] = await Promise.all([
+  const [{ data: postsData }, { data: espetaculosData }, { data: settingsData }, { data: galleryData }] = await Promise.all([
     sanityFetch({ query: allPostsQuery }),
     sanityFetch({ query: allEspetaculosQuery }),
+    sanityFetch({ query: siteSettingsQuery }),
+    sanityFetch({ query: featuredGalleryPhotosQuery }),
   ]);
   const recentPosts = ((postsData as SanityPost[]) ?? []).slice(0, 3);
   const espetaculos = ((espetaculosData as SanityEspetaculo[]) ?? []).slice(0, 3);
+  const imagens = (settingsData as SanitySiteSettings | null)?.imagens;
+  const galleryAlbums = (galleryData as { photos: { image: unknown; alt: string; caption?: string }[] }[] | null) ?? [];
   return (
     <>
       <FAQSchema items={faqItems} />
@@ -103,10 +109,11 @@ export default async function HomePage() {
             <ScrollReveal>
               <div className="relative">
                 <div className="rounded-2xl overflow-hidden aspect-[4/3] shadow-lg">
-                  <PlaceholderImage
-                    className="w-full h-full rounded-none border-none"
-                    label="Crianças em aula de dança"
-                  />
+                  {imagens?.homeHistoria ? (
+                    <Image src={urlFor(imagens.homeHistoria).width(800).height(600).url()} alt="Crianças em aula de dança" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  ) : (
+                    <PlaceholderImage className="w-full h-full rounded-none border-none" label="Crianças em aula de dança" />
+                  )}
                 </div>
                 {/* Floating badge */}
                 <div className="absolute -bottom-4 right-3 sm:-bottom-5 sm:-right-5 bg-white rounded-xl px-4 py-3 sm:px-5 sm:py-4 shadow-brand-md border border-gray-100">
@@ -215,10 +222,11 @@ export default async function HomePage() {
             <ScrollReveal delay={0.2}>
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-brand-md">
-                  <PlaceholderImage
-                    className="w-full h-full rounded-none border-none"
-                    label="Alunos em espetáculo"
-                  />
+                  {imagens?.homeMissao ? (
+                    <Image src={urlFor(imagens.homeMissao).width(800).height(600).url()} alt="Alunos em espetáculo" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  ) : (
+                    <PlaceholderImage className="w-full h-full rounded-none border-none" label="Alunos em espetáculo" />
+                  )}
                 </div>
                 <div className="absolute -bottom-5 -left-5 w-28 h-28 rounded-full bg-brand-purple-50 -z-10" />
                 <div className="absolute -top-5 -right-5 w-16 h-16 rounded-full bg-brand-pink/20 -z-10" />
@@ -290,16 +298,36 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2.5">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ScrollReveal key={i} delay={i * 0.04}>
-                <div className={`group relative overflow-hidden rounded-lg cursor-pointer ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
-                  <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Foto ${i + 1}`} />
-                  <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/50 transition-all duration-300" />
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
+          {(() => {
+            const galleryPhotos = galleryAlbums.flatMap((a) => a.photos ?? []).slice(0, 8);
+            return galleryPhotos.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2.5">
+                {galleryPhotos.map((photo, i) => (
+                  <ScrollReveal key={i} delay={i * 0.04}>
+                    <Link href="/galerias/fotos" className={`group relative overflow-hidden rounded-lg block ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
+                      <Image src={urlFor(photo.image).width(600).height(600).url()} alt={photo.alt} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
+                      <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/50 transition-all duration-300" />
+                      {photo.caption && i === 0 && (
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <p className="text-white text-xs font-medium bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg inline-block">{photo.caption}</p>
+                        </div>
+                      )}
+                    </Link>
+                  </ScrollReveal>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2.5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ScrollReveal key={i} delay={i * 0.04}>
+                    <div className={`group relative overflow-hidden rounded-lg cursor-pointer ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
+                      <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Foto ${i + 1}`} />
+                    </div>
+                  </ScrollReveal>
+                ))}
+              </div>
+            );
+          })()}
 
           <div className="text-center mt-6 md:hidden">
             <Link href="/galerias">
@@ -344,7 +372,11 @@ export default async function HomePage() {
 
             <ScrollReveal delay={0.2}>
               <div className="aspect-[4/5] rounded-2xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none opacity-70" label="Aula de metodologia" />
+                {imagens?.homeMetodologia ? (
+                  <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).url()} alt="Aula de metodologia" fill className="object-cover opacity-70" sizes="(max-width: 1024px) 100vw, 50vw" />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none opacity-70" label="Aula de metodologia" />
+                )}
               </div>
             </ScrollReveal>
           </div>

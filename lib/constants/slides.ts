@@ -30,10 +30,12 @@ export interface HeroSlide {
 // ─────────────────────────────────────────────────────────────────────────────
 //  EDITE AQUI — adicione, remova ou reordene os slides
 // ─────────────────────────────────────────────────────────────────────────────
+// Imagens estáticas de fallback — use "" até colocar o arquivo em /public/images/slides/
+// Quando estiver com o Sanity configurado, estes slides são ignorados automaticamente.
 export const heroSlides: HeroSlide[] = [
   {
     id: "arcanum-2026",
-    image: "/images/slides/arcanum-2026.jpg",
+    image: "", // arquivo não disponível ainda — adicione via Sanity
     link: "/a-escola/espetaculos",
     alt: "Arcanum — Os Segredos da Humanidade · Teatro João Caetano 2026",
     order: 1,
@@ -41,7 +43,7 @@ export const heroSlides: HeroSlide[] = [
   },
   {
     id: "matriculas-abertas",
-    image: "/images/slides/matriculas-2026.jpg",
+    image: "", // arquivo não disponível ainda — adicione via Sanity
     link: "/ensino/jornadas-artisticas",
     alt: "Matrículas Abertas — Jornadas Artísticas 2026 · Dança, Teatro e Música",
     order: 2,
@@ -49,7 +51,7 @@ export const heroSlides: HeroSlide[] = [
   },
   {
     id: "grupo-competicao",
-    image: "/images/slides/grupo-competicao.jpg",
+    image: "", // arquivo não disponível ainda — adicione via Sanity
     link: "/a-escola/resultados",
     alt: "Grupo de Competição Campeão 2025 — 1° lugar em todos os festivais",
     order: 3,
@@ -57,7 +59,7 @@ export const heroSlides: HeroSlide[] = [
   },
   {
     id: "institucional",
-    image: "/images/slides/institucional.jpg",
+    image: "", // arquivo não disponível ainda — adicione via Sanity
     link: "/a-escola/apresentacao",
     alt: "Sede do Movimento — Arte, Movimento e Transformação desde 2021",
     order: 4,
