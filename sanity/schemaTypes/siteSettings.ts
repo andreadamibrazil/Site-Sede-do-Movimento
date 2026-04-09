@@ -177,7 +177,8 @@ export const siteSettingsType = defineType({
               ],
               preview: {
                 select: { title: "nome", media: "logo" },
-                prepare({ title, media }: { title?: string; media?: unknown }) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                prepare({ title, media }: { title?: string; media?: any }) {
                   return { title: title ?? "Parceiro", media };
                 },
               },
