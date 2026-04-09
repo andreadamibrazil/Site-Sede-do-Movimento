@@ -43,7 +43,8 @@ export default async function AlbumPage({ params }: PageProps) {
 
   const photos: Photo[] = (album?.photos ?? []).map((p) => ({
     src: urlFor(p.img).width(1200).height(900).url(),
-    alt: "",
+    alt: p.alt ?? "",
+    caption: p.caption,
   }));
 
   return (

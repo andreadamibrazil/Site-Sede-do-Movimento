@@ -126,13 +126,20 @@ export const allGalleryAlbumsQuery = groq`
 export const galleryAlbumBySlugQuery = groq`
   *[_type == "galleryAlbum" && slug.current == $slug && active == true][0] {
     _id, title, "slug": slug.current, description, category, year,
-    "photos": photos[] { "img": select(_type == "image" => @, image) }
+    photos[] {
+      "img": select(_type == "image" => @, image),
+      "alt": coalesce(alt, ""),
+      "caption": caption
+    }
   }
 `;
 
 export const featuredGalleryPhotosQuery = groq`
   *[_type == "galleryAlbum" && active == true && featured == true] | order(order asc)[0...3] {
-    "photos": photos[0...8] { "img": select(_type == "image" => @, image) }
+    "photos": photos[0...8] {
+      "img": select(_type == "image" => @, image),
+      "alt": coalesce(alt, "")
+    }
   }
 `;
 

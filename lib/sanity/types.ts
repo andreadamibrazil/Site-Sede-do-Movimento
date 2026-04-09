@@ -107,6 +107,8 @@ export interface SanityTurma {
 
 export interface SanityGalleryPhoto extends Record<string, unknown> {
   img: SanityImageSource;
+  alt?: string;
+  caption?: string;
 }
 
 export interface SanityGalleryAlbum {

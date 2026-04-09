@@ -67,20 +67,35 @@ export const galleryAlbumType = defineType({
     }),
 
     // ── Fotos ─────────────────────────────────────────────────────────────────
-    // Sem fields inline = Studio não abre modal por foto = multi-upload funciona.
-    // Para selecionar várias: clique em "Adicionar item" → segure Ctrl/Cmd e
-    // selecione os arquivos no seletor do sistema operacional.
+    // Fluxo recomendado: faça upload em batch pela Media Library (menu lateral),
+    // depois volte aqui e selecione múltiplas fotos de uma vez.
+    // Alt e legenda ficam disponíveis clicando em cada foto individualmente.
     defineField({
       name: "photos",
       title: "Fotos do álbum",
       type: "array",
       description:
-        "Clique em '+ Adicionar item' e selecione várias fotos de uma vez segurando Ctrl (Windows) ou Cmd (Mac) no seletor de arquivos.",
+        "Use a Media Library (menu lateral) para subir fotos em lote. Depois clique em '+ Adicionar item' e selecione várias de uma vez. Clique em cada foto para adicionar alt text e legenda.",
       options: { layout: "grid" },
       of: [
         defineArrayMember({
           type: "image",
           options: { hotspot: true },
+          fields: [
+            defineField({
+              name: "alt",
+              title: "Descrição da foto (SEO / acessibilidade)",
+              type: "string",
+              description: "Ex: Alunos de ballet no palco durante o espetáculo Arcanum 2025.",
+              validation: (r) => r.warning("Recomendado para SEO e acessibilidade."),
+            }),
+            defineField({
+              name: "caption",
+              title: "Legenda",
+              type: "string",
+              description: "Texto opcional exibido sobre a foto na galeria.",
+            }),
+          ],
         }),
       ],
     }),
