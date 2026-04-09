@@ -25,6 +25,7 @@ import { siteConfig } from "@/lib/constants/siteConfig";
 import { sanityFetch } from "@/sanity/lib/live";
 import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, featuredGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
+import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
 const modalidades = [
@@ -90,7 +91,7 @@ export default async function HomePage() {
   const recentPosts = ((postsData as SanityPost[]) ?? []).slice(0, 3);
   const espetaculos = ((espetaculosData as SanityEspetaculo[]) ?? []).slice(0, 3);
   const imagens = (settingsData as SanitySiteSettings | null)?.imagens;
-  const galleryAlbums = (galleryData as { photos: { image: unknown; alt: string; caption?: string }[] }[] | null) ?? [];
+  const galleryAlbums = (galleryData as { photos: { image: SanityImageSource; alt: string; caption?: string }[] }[] | null) ?? [];
   return (
     <>
       <FAQSchema items={faqItems} />
