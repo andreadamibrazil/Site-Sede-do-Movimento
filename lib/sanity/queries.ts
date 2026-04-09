@@ -126,13 +126,13 @@ export const allGalleryAlbumsQuery = groq`
 export const galleryAlbumBySlugQuery = groq`
   *[_type == "galleryAlbum" && slug.current == $slug && active == true][0] {
     _id, title, "slug": slug.current, description, category, year,
-    photos[] { image, alt, caption, title }
+    photos[] { ..., alt, caption }
   }
 `;
 
 export const featuredGalleryPhotosQuery = groq`
   *[_type == "galleryAlbum" && active == true && featured == true] | order(order asc)[0...3] {
-    "photos": photos[0...8] { image, alt, caption }
+    "photos": photos[0...8] { ..., alt, caption }
   }
 `;
 

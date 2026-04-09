@@ -306,7 +306,7 @@ export default async function HomePage() {
                 {galleryPhotos.map((photo, i) => (
                   <ScrollReveal key={i} delay={i * 0.04}>
                     <Link href="/galerias/fotos" className={`group relative overflow-hidden rounded-lg block ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
-                      <Image src={urlFor(photo.image).width(600).height(600).url()} alt={photo.alt} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
+                      <Image src={urlFor(photo).width(600).height(600).url()} alt={photo.alt ?? ""} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
                       <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/50 transition-all duration-300" />
                       {photo.caption && i === 0 && (
                         <div className="absolute bottom-3 left-3 right-3">

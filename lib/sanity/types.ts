@@ -105,11 +105,13 @@ export interface SanityTurma {
 
 // ─── Galeria ─────────────────────────────────────────────────────────────────
 
-export interface SanityGalleryPhoto {
-  image: SanityImageSource;
-  alt: string;
+// Cada foto É uma SanityImageSource (não contém uma) + campos extras embutidos
+export interface SanityGalleryPhoto extends Record<string, unknown> {
+  asset: { _ref: string; _type: string };
+  hotspot?: { x: number; y: number; width: number; height: number };
+  crop?: { top: number; bottom: number; left: number; right: number };
+  alt?: string;
   caption?: string;
-  title?: string;
 }
 
 export interface SanityGalleryAlbum {

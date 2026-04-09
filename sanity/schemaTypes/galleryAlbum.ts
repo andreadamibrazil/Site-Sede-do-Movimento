@@ -67,66 +67,36 @@ export const galleryAlbumType = defineType({
     }),
 
     // ── Fotos ─────────────────────────────────────────────────────────────────
+    // Estrutura: array de image (não objeto) — permite selecionar MÚLTIPLAS
+    // fotos de uma vez no Studio. Alt e legenda ficam embutidos na própria image.
     defineField({
       name: "photos",
       title: "Fotos do álbum",
       type: "array",
       description:
-        "Arraste várias fotos de uma vez para adicionar em lote. Clique em cada uma depois para preencher a descrição (SEO).",
-      options: {
-        layout: "grid",
-        // @ts-expect-error — editModal é suportado no Sanity Studio v3
-        editModal: "popover",
-      },
+        "Clique em '+ Adicionar item' e selecione várias fotos de uma vez (Ctrl/Cmd+clique no seletor de arquivos). Preencha alt e legenda depois clicando em cada foto.",
+      options: { layout: "grid" },
       of: [
         defineArrayMember({
-          type: "object",
+          type: "image",
+          options: { hotspot: true },
           fields: [
-            defineField({
-              name: "image",
-              title: "Imagem",
-              type: "image",
-              options: { hotspot: true },
-              validation: (r) => r.required().error("Adicione a imagem."),
-            }),
             defineField({
               name: "alt",
               title: "Descrição da foto (SEO)",
               type: "string",
               description:
                 "Descreva o que aparece na foto. Ex: Alunos de ballet no palco durante o espetáculo Arcanum.",
-              // Aviso em vez de erro — permite upload rápido em lote
               validation: (r) =>
-                r.warning("Recomendado para SEO e acessibilidade. Preencha após o upload em lote."),
+                r.warning("Recomendado para SEO e acessibilidade."),
             }),
             defineField({
               name: "caption",
-              title: "Legenda visível na galeria",
-              type: "text",
-              rows: 2,
-              description: "Texto exibido abaixo da foto na galeria. Opcional.",
-            }),
-            defineField({
-              name: "title",
-              title: "Título da foto",
+              title: "Legenda",
               type: "string",
-              description: "Título interno para identificar a foto. Opcional.",
+              description: "Texto exibido sobre a foto na galeria. Opcional.",
             }),
           ],
-          preview: {
-            select: {
-              title: "alt",
-              subtitle: "caption",
-              media: "image",
-            },
-            prepare({ title, subtitle, media }) {
-              return {
-                title: title ?? "Sem descrição",
-                subtitle,
-                media,
-              };
-            },
-          },
         }),
       ],
     }),
