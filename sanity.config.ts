@@ -4,6 +4,7 @@ import { visionTool } from '@sanity/vision'
 import { defineConfig } from 'sanity'
 import { structureTool } from 'sanity/structure'
 import { BarChartIcon } from '@sanity/icons'
+import { media } from 'sanity-plugin-media'
 
 import { apiVersion, dataset, projectId } from './sanity/env'
 import { schema } from './sanity/schemaTypes'
@@ -18,6 +19,7 @@ export default defineConfig({
   plugins: [
     structureTool({ structure }),
     visionTool({ defaultApiVersion: apiVersion }),
+    media(),
   ],
   tools: [
     {
