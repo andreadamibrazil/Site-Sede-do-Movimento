@@ -50,6 +50,7 @@ export const postBySlugQuery = groq`
     "slug": slug.current,
     excerpt,
     coverImage,
+    heroImage,
     "author": author->{ name, photo },
     publishedAt,
     category,
@@ -159,12 +160,23 @@ export const allProfessorsQuery = groq`
   }
 `;
 
-// ─── Modalidades (imagens por modalidade via turmas) ─────────────────────────
+// ─── Modalidades (fotos gerenciadas diretamente no Studio) ───────────────────
 
 export const modalidadeImagesQuery = groq`
-  *[_type == "turma" && active == true && defined(image)] | order(order asc) {
-    modality,
-    image
+  *[_type == "modalidadeFoto"] {
+    "modality": modalidade,
+    "image": coverImage,
+    "alt": alt
+  }
+`;
+
+// ─── Vídeo Institucional ──────────────────────────────────────────────────────
+
+export const videoInstitucionalQuery = groq`
+  *[_type == "videoEmbed" && category == "Institucional" && active == true] | order(order asc)[0] {
+    title,
+    youtubeUrl,
+    description
   }
 `;
 

@@ -50,10 +50,35 @@ export const postType = defineType({
     }),
     defineField({
       name: "coverImage",
-      title: "Imagem de capa",
+      title: "Imagem de capa (listagem e redes sociais)",
       type: "image",
       options: { hotspot: true },
+      description:
+        "Exibida nos cards da listagem do blog e no compartilhamento em redes sociais. " +
+        "Tamanho exato recomendado: 1200 × 630 px (proporção 1.91:1). " +
+        "Resolução mínima: 800 px de largura. " +
+        "Formato: JPG ou PNG. Peso máximo: 500 KB.",
       validation: (r) => r.required(),
+    }),
+    defineField({
+      name: "heroImage",
+      title: "Imagem de destaque (topo da postagem)",
+      type: "image",
+      options: { hotspot: true },
+      description:
+        "Imagem exibida no topo da página da postagem, em largura total. " +
+        "Tamanho exato recomendado: 1600 × 900 px (proporção 16:9). " +
+        "Resolução mínima: 1200 px de largura. " +
+        "Formato: JPG ou PNG. Peso máximo: 1 MB. " +
+        "Se não preenchida, será usada a imagem de capa.",
+      fields: [
+        {
+          name: "alt",
+          type: "string",
+          title: "Descrição da imagem (acessibilidade)",
+          description: "Ex: Alunos apresentando o espetáculo Arcanum 2025 no teatro.",
+        },
+      ],
     }),
     defineField({
       name: "excerpt",

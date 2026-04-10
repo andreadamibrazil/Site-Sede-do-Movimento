@@ -10,6 +10,7 @@ import { galleryAlbumType } from "./galleryAlbum";
 import { videoEmbedType } from "./videoEmbed";
 import { professorType } from "./professor";
 import { pageSeoType } from "./pageSeo";
+import { modalidadeFotoType } from "./modalidadeFoto";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -24,6 +25,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     heroSlideType,
     espetaculoType,
     turmaType,
+    modalidadeFotoType,
     galleryAlbumType,
     videoEmbedType,
     professorType,

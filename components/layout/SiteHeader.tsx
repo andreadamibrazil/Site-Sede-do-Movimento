@@ -20,7 +20,7 @@ export default function SiteHeader() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -41,10 +41,10 @@ export default function SiteHeader() {
     <>
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-[100] transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 backdrop-blur-md",
           scrolled
-            ? "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
-            : "bg-transparent"
+            ? "bg-white/90 border-b border-gray-100 shadow-sm"
+            : "bg-white/0"
         )}
         initial={{ y: -80 }}
         animate={{ y: 0 }}

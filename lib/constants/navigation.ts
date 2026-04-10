@@ -11,6 +11,7 @@ export const navigationItems: NavItem[] = [
       { label: "Parcerias", href: "/a-escola/parcerias" },
       { label: "Espetáculos", href: "/a-escola/espetaculos" },
       { label: "Projeto Social", href: "/a-escola/projeto-social" },
+      { label: "Vídeo Institucional", href: "/a-escola/video-institucional" },
       { label: "Equipe", href: "/ensino/equipe" },
     ],
   },
