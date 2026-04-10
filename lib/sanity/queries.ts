@@ -159,6 +159,15 @@ export const allProfessorsQuery = groq`
   }
 `;
 
+// ─── Modalidades (imagens por modalidade via turmas) ─────────────────────────
+
+export const modalidadeImagesQuery = groq`
+  *[_type == "turma" && active == true && defined(image)] | order(order asc) {
+    modality,
+    image
+  }
+`;
+
 // ─── SEO por Página ───────────────────────────────────────────────────────────
 
 export const pageSeoQuery = groq`

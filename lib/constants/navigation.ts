@@ -11,19 +11,31 @@ export const navigationItems: NavItem[] = [
       { label: "Parcerias", href: "/a-escola/parcerias" },
       { label: "Espetáculos", href: "/a-escola/espetaculos" },
       { label: "Projeto Social", href: "/a-escola/projeto-social" },
+      { label: "Equipe", href: "/ensino/equipe" },
     ],
   },
   {
     label: "Ensino",
     href: "/ensino",
     children: [
-      { label: "Equipe", href: "/ensino/equipe" },
-      { label: "Modalidades", href: "/ensino/modalidades" },
       { label: "Metodologia", href: "/ensino/metodologia" },
       { label: "Jornadas Artísticas", href: "/ensino/jornadas-artisticas" },
       { label: "Formação Infantil", href: "/ensino/formacao-infantil" },
-      { label: "Horários", href: "/ensino/horarios" },
       { label: "Eventos Extras", href: "/ensino/eventos-extras" },
+    ],
+  },
+  {
+    label: "Modalidades",
+    href: "/ensino/modalidades",
+  },
+  {
+    label: "Projetos",
+    href: "/companhia-profissional",
+    children: [
+      { label: "A Companhia", href: "/companhia-profissional" },
+      { label: "A Produtora", href: "/produtora" },
+      { label: "Audiovisual", href: "/audiovisual" },
+      { label: "O Ateliê", href: "/atelier" },
     ],
   },
   {
@@ -35,10 +47,6 @@ export const navigationItems: NavItem[] = [
       { label: "Canal YouTube", href: "/galerias/youtube" },
     ],
   },
-  { label: "A Companhia", href: "/companhia-profissional" },
-  { label: "A Produtora", href: "/produtora" },
-  { label: "Audiovisual", href: "/audiovisual" },
-  { label: "O Ateliê", href: "/atelier" },
-  { label: "Contato", href: "/contato" },
   { label: "Blog", href: "/blog" },
+  { label: "Contato", href: "/contato" },
 ];

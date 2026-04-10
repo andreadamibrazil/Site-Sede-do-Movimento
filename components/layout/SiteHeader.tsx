@@ -66,7 +66,7 @@ export default function SiteHeader() {
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-1">
-              {navigationItems.slice(0, 7).map((item) => (
+              {navigationItems.slice(0, 5).map((item) => (
                 <div
                   key={item.href}
                   className="relative"
