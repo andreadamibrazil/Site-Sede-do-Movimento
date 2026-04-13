@@ -2,46 +2,153 @@ import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/jornadas-artisticas", {
     title: "Jornadas Artísticas",
-    description: "As 7 jornadas artísticas da Sede do Movimento.",
+    description: "Entenda como funciona a formação artística da Sede do Movimento — do primeiro contato com a arte até o nível avançado, em cada fase da vida do seu filho.",
   });
 }
 
-const jornadas = [
-  { name: "Jornada do Ballet", ages: "2 a 18+", emoji: "🩰", desc: "Do ballet bebê ao nível avançado, com formação clássica rigorosa e expressiva. Desenvolvimento técnico progressivo, com apresentações regulares e espetáculo anual." },
-  { name: "Jornada do Jazz", ages: "5 a 17+", emoji: "🎷", desc: "Jazz americano com trabalho de ritmo, musicalidade e expressão cênica. Formação completa do iniciante ao nível pré-profissional." },
-  { name: "Jornada do Sapateado", ages: "5 a 18+", emoji: "👞", desc: "Tap dance com foco em percussão corporal, ritmo e musicalidade. Uma das modalidades mais completas para o desenvolvimento musical através do corpo." },
-  { name: "Jornada das Danças Urbanas", ages: "5 a 18+", emoji: "🎤", desc: "Hip hop, street dance, breaking e afins. Cultura urbana, expressão autoral e técnica sólida em um ambiente inclusivo e energético." },
-  { name: "Jornada da Dança Contemporânea", ages: "11 a 18+", emoji: "💫", desc: "Pesquisa de movimento, improvisação e criação autoral. Para alunos que querem explorar as fronteiras da expressão artística." },
-  { name: "Jornada do Teatro", ages: "4 a 18+", emoji: "🎭", desc: "Presença cênica, interpretação, improvisação, dramaturgia e criação coletiva. Do teatro infantil à formação pré-profissional." },
-  { name: "Jornada de Música – Canto", ages: "2 a 18+", emoji: "🎵", desc: "Técnica vocal, musicalização infantil, teoria musical e performance integrada às artes cênicas. Do canto bebê ao nível avançado." },
+const etapas = [
+  {
+    num: "01",
+    emoji: "🌱",
+    title: "Descoberta do Movimento",
+    ages: "3 a 6 anos",
+    desc: "Os primeiros passos no universo artístico. A criança explora o próprio corpo, desenvolve coordenação e ritmo em um ambiente completamente lúdico. Não existe pressão técnica — só descoberta, alegria e afeto.",
+    modalidades: ["Baby Class", "Musicalização Infantil", "Teatro Infantil"],
+  },
+  {
+    num: "02",
+    emoji: "✨",
+    title: "Iniciação Artística",
+    ages: "6 a 9 anos",
+    desc: "A criança começa a ter contato com os primeiros fundamentos técnicos de forma suave e progressiva. Foco em atenção, disciplina leve e construção de referências artísticas.",
+    modalidades: ["Ballet Infantil", "Jazz Kids", "Sapateado Iniciante", "Teatro"],
+  },
+  {
+    num: "03",
+    emoji: "🎨",
+    title: "Formação Básica",
+    ages: "9 a 12 anos",
+    desc: "Desenvolvimento técnico consistente e crescente. O aluno constrói consciência corporal, expressão artística própria e repertório. Fase de consolidação e primeiros desafios cênicos.",
+    modalidades: ["Ballet", "Jazz", "Teatro", "Sapateado", "Danças Urbanas"],
+  },
+  {
+    num: "04",
+    emoji: "💫",
+    title: "Desenvolvimento Artístico",
+    ages: "12 a 15 anos",
+    desc: "Autonomia, identidade e presença em cena. O aluno já tem vocabulário técnico e começa a explorar sua voz artística. Participação em espetáculos e projetos mais complexos.",
+    modalidades: ["Ballet", "Contemporânea", "Jazz", "Teatro", "Canto"],
+  },
+  {
+    num: "05",
+    emoji: "🌟",
+    title: "Aperfeiçoamento e Avançado",
+    ages: "15 anos em diante",
+    desc: "Refinamento técnico, performance e preparação para o palco. Para quem quer levar a arte a sério — seja como caminho profissional ou como formação artística completa.",
+    modalidades: ["Ballet Avançado", "Contemporânea", "Canto Avançado", "Teatro Pré-profissional"],
+  },
 ];
 
 export default function JornadasPage() {
   return (
     <>
-      <PageHero eyebrow="Jornadas artísticas" title="7 caminhos de formação" subtitle="Cada aluno é acompanhado ao longo do seu processo artístico, de acordo com seus interesses e objetivos." breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Jornadas Artísticas" }]} />
+      <PageHero
+        eyebrow="Formação artística"
+        title="Como seu filho evolui na Sede"
+        subtitle="Uma jornada progressiva do primeiro contato com a arte até o nível avançado — organizada por fases, idades e objetivos."
+        breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Jornadas Artísticas" }]}
+      />
+
       <section className="section-padding bg-white">
-        <div className="container-main">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {jornadas.map((j, i) => (
-              <ScrollReveal key={j.name} delay={i * 0.07}>
-                <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-brand-light flex items-center justify-center text-2xl shrink-0">{j.emoji}</div>
-                    <div>
-                      <h3 className="font-bold text-gray-900 mb-1">{j.name}</h3>
-                      <p className="text-brand-purple-600 text-xs font-semibold mb-3">Idades: {j.ages}</p>
-                      <p className="text-gray-500 text-sm leading-relaxed">{j.desc}</p>
+        <div className="container-main max-w-container-sm">
+
+          {/* Intro */}
+          <ScrollReveal>
+            <div className="bg-brand-light rounded-2xl p-6 md:p-8 mb-14 text-center">
+              <p className="text-gray-700 leading-relaxed">
+                Na Sede do Movimento, cada aluno percorre um caminho de desenvolvimento artístico organizado por fases. Independente da modalidade escolhida — dança, teatro ou música — a evolução segue uma progressão clara, respeitando a idade e os objetivos de cada pessoa.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* Timeline */}
+          <div className="relative">
+            {/* Vertical connecting line */}
+            <div
+              className="absolute left-5 md:left-7 top-5 bottom-5 w-px bg-gradient-to-b from-brand-purple-600 via-brand-purple-400 to-brand-purple-100"
+              aria-hidden
+            />
+
+            <div className="space-y-8 md:space-y-10">
+              {etapas.map((etapa, i) => (
+                <ScrollReveal key={etapa.title} delay={i * 0.08}>
+                  <div className="relative pl-16 md:pl-22">
+                    {/* Step circle */}
+                    <div className="absolute left-0 top-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-white border-2 border-brand-purple-600 flex flex-col items-center justify-center shadow-brand-md z-10">
+                      <span className="text-base md:text-xl leading-none">{etapa.emoji}</span>
+                      <span className="text-[8px] md:text-[9px] font-bold text-brand-purple-600 leading-none mt-0.5">{etapa.num}</span>
+                    </div>
+
+                    {/* Content card */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-brand-md transition-shadow duration-300 p-6 md:p-8">
+                      <div className="flex flex-wrap items-start gap-3 mb-3">
+                        <h3 className="font-extrabold text-gray-900 text-xl md:text-2xl leading-tight">{etapa.title}</h3>
+                        <span className="shrink-0 text-xs font-bold text-brand-purple-600 bg-brand-purple-600/10 px-3 py-1.5 rounded-full mt-0.5">
+                          {etapa.ages}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-sm md:text-base leading-relaxed mb-5">{etapa.desc}</p>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Modalidades relacionadas</p>
+                        <div className="flex flex-wrap gap-2">
+                          {etapa.modalidades.map((m) => (
+                            <span
+                              key={m}
+                              className="text-xs text-gray-600 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full"
+                            >
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </ScrollReveal>
-            ))}
+                </ScrollReveal>
+              ))}
+            </div>
           </div>
+
+          {/* Bottom CTA */}
+          <ScrollReveal>
+            <div className="mt-16 rounded-2xl bg-gradient-dark text-white p-8 md:p-10 text-center">
+              <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-3">Próximo passo</p>
+              <h3 className="font-extrabold text-2xl md:text-3xl mb-3">Pronto para começar a jornada?</h3>
+              <p className="text-white/65 mb-8 max-w-md mx-auto leading-relaxed text-sm">
+                Veja as modalidades disponíveis, confira os horários e fale com a gente para encontrar a turma certa para o seu filho.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/ensino/modalidades"
+                  className="inline-flex items-center justify-center gap-2 bg-white text-brand-purple-600 font-bold px-6 py-3 rounded-xl hover:bg-brand-light transition-colors text-sm"
+                >
+                  Ver modalidades <ArrowRight size={15} />
+                </Link>
+                <Link
+                  href="/ensino/horarios"
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/20 transition-colors text-sm"
+                >
+                  Ver horários
+                </Link>
+              </div>
+            </div>
+          </ScrollReveal>
+
         </div>
       </section>
     </>

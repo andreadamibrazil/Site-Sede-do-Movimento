@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 import Image from "next/image";
-import { ArrowRight, Star, Heart, Users, Quote, Activity, Mic, Music } from "lucide-react";
+import { ArrowRight, Star, Heart, Users, Quote } from "lucide-react";
 import HeroSliderServer from "@/components/sections/HeroSliderServer";
 import StatsSection from "@/components/sections/StatsSection";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -29,24 +29,9 @@ import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
 const categorias = [
-  {
-    icon: Activity,
-    title: "Dança",
-    tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.",
-    description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação técnica completa para todas as idades, do iniciante ao avançado.",
-  },
-  {
-    icon: Mic,
-    title: "Teatro",
-    tagline: "Criatividade, comunicação e presença para a vida.",
-    description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas para todas as idades.",
-  },
-  {
-    icon: Music,
-    title: "Música",
-    tagline: "Escuta, sensibilidade e construção artística completa.",
-    description: "Canto, musicalização e educação musical integrada à formação em artes cênicas.",
-  },
+  { emoji: "💃", color: "from-brand-purple-600 to-brand-secondary", title: "Dança", tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.", description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação técnica completa para todas as idades, do iniciante ao avançado." },
+  { emoji: "🎭", color: "from-brand-pink-600 to-brand-pink", title: "Teatro", tagline: "Criatividade, comunicação e presença para a vida.", description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas para todas as idades." },
+  { emoji: "🎵", color: "from-brand-secondary to-brand-purple-400", title: "Música", tagline: "Escuta, sensibilidade e construção artística completa.", description: "Canto, musicalização e educação musical integrada à formação em artes cênicas." },
 ];
 
 const pilares = [
@@ -253,15 +238,15 @@ export default async function HomePage() {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mb-10 md:mb-14">
-            {categorias.map(({ icon: Icon, title, tagline, description }) => (
+            {categorias.map(({ emoji, color, title, tagline, description }) => (
               <div
                 key={title}
                 className="group bg-white rounded-2xl border border-gray-100 shadow-brand-md hover:shadow-brand-glow transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden"
               >
                 <div className="h-1 bg-gradient-brand" />
                 <div className="p-7 sm:p-8 flex flex-col flex-1">
-                  <div className="w-14 h-14 rounded-2xl bg-brand-purple-600/10 flex items-center justify-center mb-5 group-hover:bg-brand-purple-600/15 transition-colors">
-                    <Icon size={26} className="text-brand-purple-600" strokeWidth={1.5} />
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-2xl mb-5 shadow-sm`}>
+                    {emoji}
                   </div>
                   <h3 className="font-extrabold text-gray-900 text-2xl mb-1.5">{title}</h3>
                   <p className="text-brand-purple-600 font-semibold text-sm mb-4 leading-snug">{tagline}</p>
