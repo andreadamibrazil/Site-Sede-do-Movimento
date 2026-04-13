@@ -59,8 +59,7 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <section
-      className="relative w-full overflow-hidden bg-gray-900"
-      style={{ height: "clamp(520px, 85vh, 880px)" }}
+      className="relative w-full overflow-hidden bg-gray-900 min-h-[360px] h-[58vh] sm:h-[72vh] lg:h-[85vh] lg:max-h-[880px]"
       onMouseEnter={() => setIsPlaying(false)}
       onMouseLeave={() => setIsPlaying(true)}
       onTouchStart={handleTouchStart}
@@ -173,8 +172,8 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
       ) : (
         <PlaceholderImage label={slide.alt} className="absolute inset-0 w-full h-full" />
       )}
-      {/* Subtle overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
+      {/* Overlay: stronger at top (logo legibility) and bottom (dots/arrows) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/40 pointer-events-none" />
     </div>
   );
 

@@ -172,15 +172,18 @@ export const turmaType = defineType({
   preview: {
     select: {
       title: "title",
+      modality: "modality",
+      dayOfWeek: "dayOfWeek",
+      schedule: "schedule",
       teacher: "teacher",
-      status: "status",
       media: "image",
     },
-    prepare({ title, teacher, status, media }) {
-      const statusLabel = STATUS_LABELS[status as string] ?? "";
+    prepare({ title, modality, dayOfWeek, schedule, teacher, media }) {
+      const days = (dayOfWeek as string[] | undefined)?.join(", ") ?? "";
+      const timeInfo = [days, schedule].filter(Boolean).join(" · ");
       return {
         title,
-        subtitle: [teacher, statusLabel].filter(Boolean).join(" · "),
+        subtitle: [modality, timeInfo, teacher ? `Prof. ${teacher}` : ""].filter(Boolean).join("  —  "),
         media,
       };
     },
