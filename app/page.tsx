@@ -358,7 +358,7 @@ export default async function HomePage() {
             </ScrollReveal>
 
             <ScrollReveal delay={0.2}>
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden">
+              <div className="relative aspect-[4/5] rounded-2xl overflow-hidden">
                 {imagens?.homeMetodologia ? (
                   <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).url()} alt="Aula de metodologia" fill className="object-cover opacity-70" sizes="(max-width: 1024px) 100vw, 50vw" />
                 ) : (
