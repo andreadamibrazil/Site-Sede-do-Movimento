@@ -138,3 +138,18 @@ Shadow:    shadow-brand-md / shadow-brand-glow
 ```
 
 See full design system: `design-system.md` (inside `sede-do-movimento/`).
+
+---
+
+## Tamanho padrão de badges e tags (OBRIGATÓRIO)
+
+Todo novo design deve usar estes tamanhos. Nunca usar `text-xs` ou padding menor que os abaixo para badges/tags visíveis ao usuário.
+
+| Tipo | Classes obrigatórias |
+|---|---|
+| Badge de status (Disponível / Lotado / Vagas) | `text-sm font-semibold px-3 py-1.5 rounded-full` |
+| Tag de informação (faixa etária, dia, modalidade) | `text-sm font-semibold px-4 py-1.5 rounded-full border` |
+| Contador/meta (ex: "13 aulas") | `text-sm font-semibold px-4 py-1.5 rounded-full border border-gray-200` |
+| Badge de destaque em card (ex: faixa etária em jornadas) | `text-sm font-bold px-4 py-2 rounded-full` |
+
+**Por que:** tamanhos menores foram aprovados apenas em contextos tipográficos puros. Elementos interativos e informativos devem ser facilmente legíveis no mobile sem zoom.
