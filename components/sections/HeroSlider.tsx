@@ -188,8 +188,8 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
       ) : (
         <PlaceholderImage label={slide.alt} className="absolute inset-0 w-full h-full" />
       )}
-      {/* Overlay: stronger at top (logo legibility) and bottom (dots/arrows) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/40 pointer-events-none" />
+      {/* Overlay: light vignette for logo legibility, image stays vivid */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/20 pointer-events-none" />
     </div>
   );
 
