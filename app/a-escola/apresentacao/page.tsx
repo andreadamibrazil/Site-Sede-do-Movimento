@@ -8,6 +8,7 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { siteSettingsQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanitySiteSettings } from "@/lib/sanity/types";
+import { Heart, Users, GraduationCap } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola/apresentacao", {
@@ -40,15 +41,23 @@ export default async function ApresentacaoPage() {
             <p className="text-gray-600 leading-relaxed mb-6">
               Por isso, integramos à formação artística: desenvolvimento da inteligência emocional, estímulo à autonomia e ao pensamento criativo, introdução à economia criativa e ao mercado artístico, e consciência social, cultural e ambiental.
             </p>
-            <div className="bg-brand-light rounded-2xl p-8 mb-8">
-              <h3 className="font-bold text-gray-900 text-xl mb-4">Nossos três pilares</h3>
-              <div className="grid grid-cols-3 gap-6 text-center">
-                {["Saúde", "Família", "Educação"].map((pilar) => (
-                  <div key={pilar}>
-                    <div className="w-14 h-14 rounded-full bg-white shadow-md flex items-center justify-center mx-auto mb-3">
-                      <span className="text-2xl">✨</span>
+            <div className="mb-8">
+              <h3 className="font-bold text-gray-900 text-xl mb-6">Nossos três pilares</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {[
+                  { label: "Saúde", icon: Heart },
+                  { label: "Família", icon: Users },
+                  { label: "Educação", icon: GraduationCap },
+                ].map(({ label, icon: Icon }) => (
+                  <div
+                    key={label}
+                    className="relative bg-white rounded-2xl border border-gray-100 shadow-brand-md p-8 flex flex-col items-center text-center overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand rounded-t-2xl" />
+                    <div className="w-20 h-20 rounded-2xl bg-brand-purple-600/10 flex items-center justify-center mb-5">
+                      <Icon size={36} className="text-brand-purple-600" strokeWidth={1.5} />
                     </div>
-                    <p className="font-bold text-gray-900">{pilar}</p>
+                    <p className="font-extrabold text-gray-900 text-2xl">{label}</p>
                   </div>
                 ))}
               </div>

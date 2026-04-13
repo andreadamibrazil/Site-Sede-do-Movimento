@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import NewsletterForm from "@/components/ui/NewsletterForm";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 function IconInstagram({ size = 18 }: { size?: number }) {
   return (
@@ -76,7 +77,18 @@ const footerColumns = [
   },
 ];
 
-export default function SiteFooter() {
+export default function SiteFooter({ settings }: { settings?: SanitySiteSettings | null }) {
+  const phone = settings?.phone ?? siteConfig.phone;
+  const email = settings?.email ?? siteConfig.email;
+  const address = settings?.address ?? siteConfig.address.full;
+  const tagline = settings?.footerTagline ?? "Complexo cultural e escola de artes cênicas. Formando artistas e transformando vidas desde 2021.";
+  const social = {
+    instagram: settings?.instagram ?? siteConfig.social.instagram,
+    youtube: settings?.youtube ?? siteConfig.social.youtube,
+    tiktok: settings?.tiktok ?? siteConfig.social.tiktok,
+    facebook: settings?.facebook ?? siteConfig.social.facebook,
+  };
+
   return (
     <footer className="bg-gradient-dark text-white">
       {/* Main footer */}
@@ -94,16 +106,16 @@ export default function SiteFooter() {
               />
             </Link>
             <p className="text-white/60 text-sm leading-relaxed max-w-[240px] mb-6">
-              Complexo cultural e escola de artes cênicas. Formando artistas e transformando vidas desde 2021.
+              {tagline}
             </p>
 
             {/* Social icons */}
             <div className="flex gap-3">
               {[
-                { icon: IconInstagram, href: siteConfig.social.instagram, label: "Instagram" },
-                { icon: IconYoutube, href: siteConfig.social.youtube, label: "YouTube" },
-                { icon: IconTiktok, href: siteConfig.social.tiktok, label: "TikTok" },
-                { icon: IconFacebook, href: siteConfig.social.facebook, label: "Facebook" },
+                { icon: IconInstagram, href: social.instagram, label: "Instagram" },
+                { icon: IconYoutube, href: social.youtube, label: "YouTube" },
+                { icon: IconTiktok, href: social.tiktok, label: "TikTok" },
+                { icon: IconFacebook, href: social.facebook, label: "Facebook" },
               ].map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
@@ -120,17 +132,17 @@ export default function SiteFooter() {
 
             {/* Contact info */}
             <div className="mt-6 space-y-2.5">
-              <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-2 text-white/65 hover:text-white text-sm transition-colors">
+              <a href={`tel:${phone}`} className="flex items-center gap-2 text-white/65 hover:text-white text-sm transition-colors">
                 <Phone size={14} className="text-white/40" aria-hidden="true" />
-                {siteConfig.phone}
+                {phone}
               </a>
-              <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-2 text-white/65 hover:text-white text-sm transition-colors">
+              <a href={`mailto:${email}`} className="flex items-center gap-2 text-white/65 hover:text-white text-sm transition-colors">
                 <Mail size={14} className="text-white/40" aria-hidden="true" />
-                {siteConfig.email}
+                {email}
               </a>
               <div className="flex items-center gap-2 text-white/65 text-sm">
                 <MapPin size={14} className="text-white/40 shrink-0" aria-hidden="true" />
-                {siteConfig.address.full}
+                {address}
               </div>
             </div>
           </div>

@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 import Image from "next/image";
-import { ArrowRight, Star, Heart, Users, Quote } from "lucide-react";
+import { ArrowRight, Star, Heart, Users, Quote, Activity, Mic, Music } from "lucide-react";
 import HeroSliderServer from "@/components/sections/HeroSliderServer";
 import StatsSection from "@/components/sections/StatsSection";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -28,10 +28,38 @@ import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
-const modalidades = [
-  { icon: "💃", title: "Dança", description: "Ballet, Jazz, Contemporâneo, Sapateado, Danças Urbanas e mais. Formação técnica completa para todas as idades.", href: "/ensino/modalidades", color: "from-brand-purple-600 to-brand-secondary" },
-  { icon: "🎭", title: "Teatro", description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas.", href: "/ensino/modalidades", color: "from-brand-pink-600 to-brand-pink" },
-  { icon: "🎵", title: "Música", description: "Canto, musicalização e educação musical integrada à formação em artes cênicas.", href: "/ensino/modalidades", color: "from-brand-secondary to-brand-purple-400" },
+const categorias = [
+  {
+    icon: Activity,
+    title: "Dança",
+    tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.",
+    description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação técnica completa para todas as idades, do iniciante ao avançado.",
+    jornadas: [
+      { name: "Ballet", ages: "2 a 18+" },
+      { name: "Jazz", ages: "5 a 17+" },
+      { name: "Sapateado", ages: "5 a 18+" },
+      { name: "Danças Urbanas", ages: "5 a 18+" },
+      { name: "Contemporânea", ages: "11 a 18+" },
+    ],
+  },
+  {
+    icon: Mic,
+    title: "Teatro",
+    tagline: "Criatividade, comunicação e presença para a vida.",
+    description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas para todas as idades.",
+    jornadas: [
+      { name: "Teatro", ages: "4 a 18+" },
+    ],
+  },
+  {
+    icon: Music,
+    title: "Música",
+    tagline: "Escuta, sensibilidade e construção artística completa.",
+    description: "Canto, musicalização e educação musical integrada à formação em artes cênicas.",
+    jornadas: [
+      { name: "Canto", ages: "2 a 18+" },
+    ],
+  },
 ];
 
 const pilares = [
@@ -40,15 +68,6 @@ const pilares = [
   { icon: Star, label: "Educação", description: "Formação pedagógica sólida, revisada e com propósito." },
 ];
 
-const jornadas = [
-  { name: "Jornada do Ballet", ages: "2 a 18+" },
-  { name: "Jornada do Jazz", ages: "5 a 17+" },
-  { name: "Jornada do Sapateado", ages: "5 a 18+" },
-  { name: "Jornada das Danças Urbanas", ages: "5 a 18+" },
-  { name: "Jornada da Dança Contemporânea", ages: "11 a 18+" },
-  { name: "Jornada do Teatro", ages: "4 a 18+" },
-  { name: "Jornada de Música – Canto", ages: "2 a 18+" },
-];
 
 const faqItems = [
   {
@@ -242,41 +261,58 @@ export default async function HomePage() {
         <div className="container-main">
           <SectionTitle
             eyebrow="Nosso ensino"
-            title="7 Jornadas Artísticas"
-            subtitle="Uma formação completa em dança, teatro e música, para todas as idades e níveis."
+            title="Três caminhos para começar na arte"
+            subtitle="Dança, teatro e música organizados por fases, idades e objetivos."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
-            {modalidades.map((mod) => (
-              <Link key={mod.title} href={mod.href} className="group block">
-                <div className="bg-white rounded-xl p-5 sm:p-7 md:p-8 shadow-sm hover:shadow-brand-sm border border-gray-100 transition-all duration-300 hover:-translate-y-1.5 text-center">
-                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${mod.color} flex items-center justify-center text-2xl mx-auto mb-4 shadow-md`}>
-                    {mod.icon}
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-xl mb-3">{mod.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{mod.description}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <p className="text-gray-400 text-center text-sm mb-10 md:mb-12 -mt-4">
+            Cada linguagem oferece diferentes caminhos para o desenvolvimento artístico.
+          </p>
 
-          <div className="flex flex-wrap gap-2 justify-center mb-8">
-            {jornadas.map((j) => (
-              <Link
-                key={j.name}
-                href="/ensino/jornadas-artisticas"
-                className="bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-700 hover:border-brand-purple-600 hover:text-brand-purple-600 hover:bg-brand-light transition-all"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mb-10 md:mb-14">
+            {categorias.map(({ icon: Icon, title, tagline, description, jornadas }) => (
+              <div
+                key={title}
+                className="group bg-white rounded-2xl border border-gray-100 shadow-brand-md hover:shadow-brand-glow transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden"
               >
-                {j.name}
-                <span className="ml-2 text-xs text-gray-400">{j.ages}</span>
-              </Link>
+                <div className="h-1 bg-gradient-brand" />
+                <div className="p-7 sm:p-8 flex flex-col flex-1">
+                  <div className="w-14 h-14 rounded-2xl bg-brand-purple-600/10 flex items-center justify-center mb-5 group-hover:bg-brand-purple-600/15 transition-colors">
+                    <Icon size={26} className="text-brand-purple-600" strokeWidth={1.5} />
+                  </div>
+                  <h3 className="font-extrabold text-gray-900 text-2xl mb-1.5">{title}</h3>
+                  <p className="text-brand-purple-600 font-semibold text-sm mb-4 leading-snug">{tagline}</p>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-6">{description}</p>
+
+                  <div className="border-t border-gray-100 pt-5 mb-6">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Você encontra aqui</p>
+                    <ul className="space-y-2.5">
+                      {jornadas.map((j) => (
+                        <li key={j.name} className="flex items-center justify-between gap-3">
+                          <span className="text-gray-700 text-sm font-medium">{j.name}</span>
+                          <span className="shrink-0 text-[11px] text-gray-400 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-full">{j.ages}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-auto">
+                    <Link
+                      href="/ensino/modalidades"
+                      className="inline-flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all duration-200"
+                    >
+                      Ver modalidades <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 
           <div className="text-center">
-            <Link href="/ensino">
+            <Link href="/ensino/modalidades">
               <Button variant="primary" size="lg" rightIcon={<ArrowRight size={16} />}>
-                Ver todos os cursos e horários
+                Ver todas as modalidades
               </Button>
             </Link>
           </div>

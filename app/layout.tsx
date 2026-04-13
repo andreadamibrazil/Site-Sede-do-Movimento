@@ -65,7 +65,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const { data: settings } = await sanityFetch({ query: siteSettingsQuery });
+  const siteSettings = settings as SanitySiteSettings | null;
+
   return (
     <html lang="pt-BR" className={jakarta.variable}>
       <body className="font-sans antialiased">
@@ -78,7 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <OrganizationSchema />
-        <SiteShell>{children}</SiteShell>
+        <SiteShell settings={siteSettings}>{children}</SiteShell>
         <SanityLive />
         <Analytics />
         <SpeedInsights />
