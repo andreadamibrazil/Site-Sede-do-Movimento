@@ -34,31 +34,18 @@ const categorias = [
     title: "Dança",
     tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.",
     description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação técnica completa para todas as idades, do iniciante ao avançado.",
-    jornadas: [
-      { name: "Ballet", ages: "2 a 18+" },
-      { name: "Jazz", ages: "5 a 17+" },
-      { name: "Sapateado", ages: "5 a 18+" },
-      { name: "Danças Urbanas", ages: "5 a 18+" },
-      { name: "Contemporânea", ages: "11 a 18+" },
-    ],
   },
   {
     icon: Mic,
     title: "Teatro",
     tagline: "Criatividade, comunicação e presença para a vida.",
     description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas para todas as idades.",
-    jornadas: [
-      { name: "Teatro", ages: "4 a 18+" },
-    ],
   },
   {
     icon: Music,
     title: "Música",
     tagline: "Escuta, sensibilidade e construção artística completa.",
     description: "Canto, musicalização e educação musical integrada à formação em artes cênicas.",
-    jornadas: [
-      { name: "Canto", ages: "2 a 18+" },
-    ],
   },
 ];
 
@@ -265,12 +252,8 @@ export default async function HomePage() {
             subtitle="Dança, teatro e música organizados por fases, idades e objetivos."
           />
 
-          <p className="text-gray-400 text-center text-sm mb-10 md:mb-12 -mt-4">
-            Cada linguagem oferece diferentes caminhos para o desenvolvimento artístico.
-          </p>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 mb-10 md:mb-14">
-            {categorias.map(({ icon: Icon, title, tagline, description, jornadas }) => (
+            {categorias.map(({ icon: Icon, title, tagline, description }) => (
               <div
                 key={title}
                 className="group bg-white rounded-2xl border border-gray-100 shadow-brand-md hover:shadow-brand-glow transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden"
@@ -282,20 +265,7 @@ export default async function HomePage() {
                   </div>
                   <h3 className="font-extrabold text-gray-900 text-2xl mb-1.5">{title}</h3>
                   <p className="text-brand-purple-600 font-semibold text-sm mb-4 leading-snug">{tagline}</p>
-                  <p className="text-gray-500 text-sm leading-relaxed mb-6">{description}</p>
-
-                  <div className="border-t border-gray-100 pt-5 mb-6">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Você encontra aqui</p>
-                    <ul className="space-y-2.5">
-                      {jornadas.map((j) => (
-                        <li key={j.name} className="flex items-center justify-between gap-3">
-                          <span className="text-gray-700 text-sm font-medium">{j.name}</span>
-                          <span className="shrink-0 text-[11px] text-gray-400 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-full">{j.ages}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
+                  <p className="text-gray-500 text-sm leading-relaxed mb-8">{description}</p>
                   <div className="mt-auto">
                     <Link
                       href="/ensino/modalidades"
