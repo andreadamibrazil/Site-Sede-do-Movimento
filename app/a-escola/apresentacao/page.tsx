@@ -30,34 +30,35 @@ export default async function ApresentacaoPage() {
             <p className="text-xl text-gray-500 leading-relaxed mb-8">
               Quando uma criança entra no universo das artes, ela não aprende apenas dança, teatro ou música. Ela aprende a se expressar, a se reconhecer e a ocupar o mundo com mais coragem.
             </p>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Um espaço que forma além da técnica</h2>
-            <p className="text-gray-600 leading-relaxed mb-6">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-5">Um espaço que forma além da técnica</h2>
+            <p className="text-gray-600 leading-relaxed mb-10">
               Somos um complexo cultural e incubadora de ações artísticas, onde diferentes linguagens — dança, música, teatro e circo — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo. Ele atravessa o pensamento, a criatividade e a forma de existir no mundo.
             </p>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Arte, educação, sustentabilidade e futuro</h2>
-            <p className="text-gray-600 leading-relaxed mb-4">
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-5">Arte, educação, sustentabilidade e futuro</h2>
+            <p className="text-gray-600 leading-relaxed mb-5">
               Acreditamos que a arte não é apenas expressão — é também caminho e responsabilidade com o mundo que habitamos. A Sede do Movimento incorpora em suas práticas os princípios dos Objetivos de Desenvolvimento Sustentável (ODS), conectando arte, educação e consciência socioambiental no cotidiano dos alunos.
             </p>
-            <p className="text-gray-600 leading-relaxed mb-6">
+            <p className="text-gray-600 leading-relaxed mb-10">
               Por isso, integramos à formação artística: desenvolvimento da inteligência emocional, estímulo à autonomia e ao pensamento criativo, introdução à economia criativa e ao mercado artístico, e consciência social, cultural e ambiental.
             </p>
             <div className="mb-8">
-              <h3 className="font-bold text-gray-900 text-xl mb-6">Nossos três pilares</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <h3 className="font-bold text-gray-900 text-base uppercase tracking-wide text-brand-purple-600 mb-4">Nossos três pilares</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { label: "Saúde", icon: Heart },
-                  { label: "Família", icon: Users },
-                  { label: "Educação", icon: GraduationCap },
-                ].map(({ label, icon: Icon }) => (
+                  { label: "Saúde", icon: Heart, desc: "Bem-estar físico e emocional como base do crescimento artístico." },
+                  { label: "Família", icon: Users, desc: "Comunidade acolhedora onde famílias fazem parte do processo." },
+                  { label: "Educação", icon: GraduationCap, desc: "Formação pedagógica sólida, revisada e com propósito." },
+                ].map(({ label, icon: Icon, desc }) => (
                   <div
                     key={label}
-                    className="relative bg-white rounded-2xl border border-gray-100 shadow-brand-md p-8 flex flex-col items-center text-center overflow-hidden"
+                    className="relative bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col items-center text-center overflow-hidden"
                   >
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand rounded-t-2xl" />
-                    <div className="w-20 h-20 rounded-2xl bg-brand-purple-600/10 flex items-center justify-center mb-5">
-                      <Icon size={36} className="text-brand-purple-600" strokeWidth={1.5} />
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-brand rounded-t-xl" />
+                    <div className="w-11 h-11 rounded-xl bg-brand-purple-50 flex items-center justify-center mb-3">
+                      <Icon size={20} className="text-brand-purple-600" strokeWidth={1.5} />
                     </div>
-                    <p className="font-extrabold text-gray-900 text-2xl">{label}</p>
+                    <p className="font-bold text-gray-900 text-base mb-1">{label}</p>
+                    <p className="text-gray-400 text-sm leading-relaxed">{desc}</p>
                   </div>
                 ))}
               </div>

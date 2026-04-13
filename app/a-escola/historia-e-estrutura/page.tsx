@@ -36,7 +36,7 @@ export default async function HistoriaPage() {
               <p className="text-gray-500 leading-relaxed">É fundador da Cia Vivá, companhia premiada que, desde 2012, circula por diversos palcos do Brasil com uma identidade artística própria, e dirige o MoviRio Festival, reconhecido como um dos maiores festivais de dança da América Latina.</p>
             </ScrollReveal>
             <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden">
+              <div className="relative aspect-[4/5] rounded-2xl overflow-hidden">
                 {imagens?.carlosFontinelle ? (
                   <Image
                     src={urlFor(imagens.carlosFontinelle).width(700).height(875).url()}

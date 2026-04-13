@@ -360,7 +360,7 @@ export default async function HomePage() {
             <ScrollReveal delay={0.2}>
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden">
                 {imagens?.homeMetodologia ? (
-                  <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).url()} alt="Aula de metodologia" fill className="object-cover opacity-70" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).url()} alt="Aula de metodologia" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                 ) : (
                   <PlaceholderImage className="w-full h-full rounded-none border-none opacity-70" label="Aula de metodologia" />
                 )}

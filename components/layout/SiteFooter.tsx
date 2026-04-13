@@ -47,7 +47,7 @@ const footerColumns = [
       { label: "Por que existimos", href: "/a-escola/apresentacao" },
       { label: "Nossa história", href: "/a-escola/historia-e-estrutura" },
       { label: "Resultados", href: "/a-escola/resultados" },
-      { label: "Parcerias", href: "/a-escola/parcerias" },
+      // { label: "Parcerias", href: "/a-escola/parcerias" }, // hidden temporariamente
       { label: "Espetáculos", href: "/a-escola/espetaculos" },
       { label: "Projeto Social", href: "/a-escola/projeto-social" },
       { label: "Equipe", href: "/ensino/equipe" },

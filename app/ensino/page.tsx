@@ -49,13 +49,13 @@ export default async function EnsinoPage() {
       </section>
 
       {/* Metodologia preview */}
-      <section className="section-padding bg-gradient-dark text-white">
+      <section className="section-padding bg-gray-50">
         <div className="container-main">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <ScrollReveal>
-              <p className="text-brand-pink font-bold text-xs uppercase tracking-widest mb-3">Metodologia</p>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-6">Método Movimento Integrado</h2>
-              <p className="text-white/65 leading-relaxed mb-8">Corpo • Emoção • Criação • Mundo. Um sistema formativo em artes cênicas que integra dança, teatro e música, aliado ao desenvolvimento da inteligência emocional, pensamento criativo e visão de futuro.</p>
+              <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">Metodologia</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6">Método Movimento Integrado</h2>
+              <p className="text-gray-500 leading-relaxed mb-8">Corpo • Emoção • Criação • Mundo. Um sistema formativo em artes cênicas que integra dança, teatro e música, aliado ao desenvolvimento da inteligência emocional, pensamento criativo e visão de futuro.</p>
               <div className="grid grid-cols-2 gap-3 mb-8">
                 {[
                   { num: "1", title: "Corpo", desc: "Técnica, consciência corporal, prevenção de lesões" },
@@ -63,20 +63,20 @@ export default async function EnsinoPage() {
                   { num: "3", title: "Consciência", desc: "Inteligência emocional, identidade artística" },
                   { num: "4", title: "Projeção", desc: "Economia criativa, autonomia profissional" },
                 ].map((p) => (
-                  <div key={p.num} className="bg-white/10 rounded-xl p-4 border border-white/10">
-                    <div className="w-7 h-7 rounded-full bg-brand-pink/30 text-brand-pink font-bold text-sm flex items-center justify-center mb-2">{p.num}</div>
-                    <p className="font-bold text-white text-sm">{p.title}</p>
-                    <p className="text-white/55 text-xs mt-1">{p.desc}</p>
+                  <div key={p.num} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                    <div className="w-7 h-7 rounded-full bg-brand-light text-brand-purple-600 font-bold text-sm flex items-center justify-center mb-2">{p.num}</div>
+                    <p className="font-bold text-gray-900 text-sm">{p.title}</p>
+                    <p className="text-gray-400 text-xs mt-1">{p.desc}</p>
                   </div>
                 ))}
               </div>
-              <Link href="/ensino/metodologia"><Button variant="outline" size="lg" rightIcon={<ArrowRight size={16} />}>Ver metodologia completa</Button></Link>
+              <Link href="/ensino/metodologia"><Button variant="primary" size="lg" rightIcon={<ArrowRight size={16} />}>Ver metodologia completa</Button></Link>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <div className="grid grid-cols-2 gap-3">
                 {["Infantil (3-6)", "Iniciação (7-10)", "Desenvolvimento (11-14)", "Avançado (15+)"].map((nivel) => (
-                  <div key={nivel} className="bg-white/10 rounded-xl p-5 border border-white/10 text-center">
-                    <p className="font-bold text-white text-sm">{nivel}</p>
+                  <div key={nivel} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm text-center">
+                    <p className="font-bold text-gray-700 text-sm">{nivel}</p>
                   </div>
                 ))}
               </div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { Menu, X, ChevronDown, Phone } from "lucide-react";
+import { Menu, X, ChevronDown, Phone, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { navigationItems } from "@/lib/constants/navigation";
 import { siteConfig } from "@/lib/constants/siteConfig";
@@ -97,8 +97,16 @@ export default function SiteHeader() {
                           initial="closed"
                           animate="open"
                           exit="closed"
-                          className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-xl border border-gray-100 p-2 z-[150]"
+                          className="absolute top-full left-0 mt-1 w-60 bg-white rounded-lg shadow-xl border border-gray-100 p-2 z-[150]"
                         >
+                          {/* Parent page link — makes it clear the section itself is navigable */}
+                          <Link
+                            href={item.href}
+                            className="flex items-center justify-between px-3 py-2.5 rounded-sm text-sm font-semibold text-brand-purple-600 hover:bg-brand-light transition-colors duration-150 border-b border-gray-100 mb-1"
+                          >
+                            <span>Ver tudo em {item.label}</span>
+                            <ArrowRight size={13} />
+                          </Link>
                           {item.children.map((child) => (
                             <Link
                               key={child.href}

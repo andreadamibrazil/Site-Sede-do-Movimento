@@ -27,7 +27,7 @@ const subPages = [
   { href: "/a-escola/apresentacao", icon: Heart, label: "Por que existimos", desc: "Nossa missão, visão e valores" },
   { href: "/a-escola/historia-e-estrutura", icon: Building, label: "História e Estrutura", desc: "De onde viemos e onde estamos" },
   { href: "/a-escola/resultados", icon: Award, label: "Resultados", desc: "Conquistas e premiações" },
-  { href: "/a-escola/parcerias", icon: Users, label: "Parcerias", desc: "Quem acredita em nós" },
+  // { href: "/a-escola/parcerias", icon: Users, label: "Parcerias", desc: "Quem acredita em nós" }, // hidden temporariamente
   { href: "/a-escola/espetaculos", icon: ArrowRight, label: "Espetáculos", desc: "Produções anuais nos grandes palcos" },
   { href: "/a-escola/projeto-social", icon: Heart, label: "Projeto Social", desc: "Sede de Aprender" },
 ];
@@ -45,16 +45,20 @@ export default async function AEscolaPage() {
       />
 
       {/* Sub-navigation */}
-      <section className="bg-white border-b border-gray-100 py-8">
+      <section className="bg-white border-b border-gray-100 py-10">
         <div className="container-main">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {subPages.map(({ href, icon: Icon, label, desc }) => (
-              <Link key={href} href={href} className="group flex flex-col items-center text-center p-4 rounded-xl hover:bg-brand-light transition-colors border border-gray-100 hover:border-brand-purple-200">
-                <div className="w-10 h-10 rounded-full bg-brand-light group-hover:bg-brand-purple-600 flex items-center justify-center mb-2 transition-colors">
-                  <Icon size={18} className="text-brand-purple-600 group-hover:text-white transition-colors" />
+              <Link
+                key={href}
+                href={href}
+                className="group flex flex-col items-center text-center p-6 rounded-2xl hover:bg-brand-light transition-all duration-200 border border-gray-100 hover:border-brand-purple-200 hover:shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-xl bg-brand-light group-hover:bg-brand-purple-600 flex items-center justify-center mb-3 transition-colors duration-200">
+                  <Icon size={22} className="text-brand-purple-600 group-hover:text-white transition-colors duration-200" />
                 </div>
-                <p className="font-semibold text-gray-900 text-xs leading-tight">{label}</p>
-                <p className="text-gray-400 text-[10px] mt-0.5 hidden sm:block leading-snug">{desc}</p>
+                <p className="font-bold text-gray-900 text-sm leading-tight mb-1">{label}</p>
+                <p className="text-gray-400 text-xs leading-snug">{desc}</p>
               </Link>
             ))}
           </div>
