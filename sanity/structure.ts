@@ -47,6 +47,12 @@ export const structure: StructureResolver = (S) =>
         .icon(UsersIcon)
         .child(S.documentTypeList("turma").title("Turmas e Cursos")),
 
+      // ── Modalidades ───────────────────────────────────────────────────────
+      S.listItem()
+        .title("🎨  Fotos das Modalidades")
+        .icon(ImagesIcon)
+        .child(S.documentTypeList("modalidadeFoto").title("Fotos das Modalidades")),
+
       // ── Professores ───────────────────────────────────────────────────────
       S.listItem()
         .title("👩‍🏫  Professores")
