@@ -6,6 +6,7 @@ export interface SanityHeroSlide {
   _id: string;
   title: string;
   image: SanityImageSource;
+  imageMobile?: SanityImageSource;
   alt: string;
   linkType: "none" | "page" | "section" | "external";
   internalPage?: string;

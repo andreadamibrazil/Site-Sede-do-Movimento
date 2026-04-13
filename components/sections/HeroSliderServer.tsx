@@ -25,7 +25,10 @@ export default async function HeroSliderServer() {
     // Slides do Sanity — fonte principal
     slides = sanitySlides.map((s) => ({
       id: s._id,
-      image: urlFor(s.image).width(1920).height(880).fit("crop").auto("format").url(),
+      image: urlFor(s.image).width(1920).height(880).fit("crop").auto("format").quality(85).url(),
+      imageMobile: s.imageMobile
+        ? urlFor(s.imageMobile).width(900).height(1200).fit("crop").auto("format").quality(85).url()
+        : undefined,
       link: resolveLink(s),
       alt: s.alt,
       order: s.order,

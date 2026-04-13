@@ -156,19 +156,35 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
 
   const inner = (
     <div className={`relative w-full h-full group ${hasLink ? "cursor-pointer" : "cursor-default"}`}>
-      {/* Image */}
       {slide.image ? (
-        <Image
-          src={slide.image}
-          alt={slide.alt}
-          fill
-          priority={priority}
-          sizes="100vw"
-          className={`object-cover object-center ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
-          quality={85}
-          placeholder="blur"
-          blurDataURL={BLUR_DATA_URL}
-        />
+        <>
+          {/* Mobile image (portrait) — shown below sm, hidden above */}
+          {slide.imageMobile && (
+            <Image
+              src={slide.imageMobile}
+              alt={slide.alt}
+              fill
+              priority={priority}
+              sizes="100vw"
+              className={`object-cover object-center block sm:hidden ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
+              quality={85}
+              placeholder="blur"
+              blurDataURL={BLUR_DATA_URL}
+            />
+          )}
+          {/* Desktop image (landscape) — always shown; hidden on mobile when mobile image exists */}
+          <Image
+            src={slide.image}
+            alt={slide.alt}
+            fill
+            priority={priority}
+            sizes="(max-width: 639px) 0vw, 100vw"
+            className={`object-cover object-center ${slide.imageMobile ? "hidden sm:block" : "block"} ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
+            quality={85}
+            placeholder="blur"
+            blurDataURL={BLUR_DATA_URL}
+          />
+        </>
       ) : (
         <PlaceholderImage label={slide.alt} className="absolute inset-0 w-full h-full" />
       )}

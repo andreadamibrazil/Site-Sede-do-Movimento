@@ -16,6 +16,7 @@ export const heroSlidesQuery = groq`
     _id,
     title,
     image,
+    imageMobile,
     alt,
     linkType,
     internalPage,

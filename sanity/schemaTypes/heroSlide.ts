@@ -56,11 +56,18 @@ export const heroSlideType = defineType({
     // ── Imagem ────────────────────────────────────────────────────────────
     defineField({
       name: "image",
-      title: "Imagem do Slide",
+      title: "Imagem desktop (paisagem)",
       type: "image",
       options: { hotspot: true },
-      description: "Tamanho ideal: 1920 × 880 px. O texto pode vir embutido na própria imagem.",
+      description: "Tamanho exato: 1920 × 880 px · proporção 16:5 · JPG/WebP · máx 500 KB. Aparece em telas a partir de 640px.",
       validation: (r) => r.required(),
+    }),
+    defineField({
+      name: "imageMobile",
+      title: "Imagem mobile (retrato) — opcional",
+      type: "image",
+      options: { hotspot: true },
+      description: "Tamanho exato: 900 × 1200 px · proporção 3:4 · JPG/WebP · máx 300 KB. Se não preenchida, usa a imagem desktop no celular.",
     }),
     defineField({
       name: "alt",

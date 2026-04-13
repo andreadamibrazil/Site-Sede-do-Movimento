@@ -13,11 +13,11 @@
 
 export interface HeroSlide {
   id: string;
-  /** Caminho da imagem em /public — ex: "/images/slides/slide-1.jpg"
-   *  Deixe "" para exibir o placeholder cinza enquanto a foto não está pronta. */
+  /** URL da imagem desktop (landscape). Ex: gerado via urlFor() ou /public */
   image: string;
-  /** Onde o slide leva ao ser clicado.
-   *  String vazia ou undefined = slide não é clicável. */
+  /** URL da imagem mobile (portrait) — art direction. Opcional: se ausente usa `image` */
+  imageMobile?: string;
+  /** Onde o slide leva ao ser clicado. Undefined = não clicável. */
   link?: string;
   /** Texto alternativo para acessibilidade e SEO */
   alt: string;
