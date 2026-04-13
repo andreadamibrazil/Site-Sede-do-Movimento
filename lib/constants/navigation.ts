@@ -19,6 +19,7 @@ export const navigationItems: NavItem[] = [
     label: "Ensino",
     href: "/ensino",
     children: [
+      { label: "Horários e Vagas", href: "/ensino/horarios" },
       { label: "Metodologia", href: "/ensino/metodologia" },
       { label: "Jornadas Artísticas", href: "/ensino/jornadas-artisticas" },
       { label: "Formação Infantil", href: "/ensino/formacao-infantil" },

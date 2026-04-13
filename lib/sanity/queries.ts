@@ -102,7 +102,7 @@ export const siteSettingsQuery = groq`
 
 export const activeTurmasQuery = groq`
   *[_type == "turma" && active == true && status != "inactive"] | order(order asc) {
-    _id, title, teacher, modality, ageGroup, schedule, duration,
+    _id, title, teacher, modality, ageGroup, dayOfWeek, schedule, duration,
     description, image, availableSpots, totalSpots, status, featured, order
   }
 `;

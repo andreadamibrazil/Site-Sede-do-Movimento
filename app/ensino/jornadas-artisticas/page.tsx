@@ -88,7 +88,7 @@ export default function JornadasPage() {
             <div className="space-y-8 md:space-y-10">
               {etapas.map((etapa, i) => (
                 <ScrollReveal key={etapa.title} delay={i * 0.08}>
-                  <div className="relative pl-16 md:pl-22">
+                  <div className="relative pl-16 md:pl-20">
                     {/* Step circle */}
                     <div className="absolute left-0 top-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-white border-2 border-brand-purple-600 flex flex-col items-center justify-center shadow-brand-md z-10">
                       <span className="text-base md:text-xl leading-none">{etapa.emoji}</span>
@@ -99,18 +99,18 @@ export default function JornadasPage() {
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-brand-md transition-shadow duration-300 p-6 md:p-8">
                       <div className="flex flex-wrap items-start gap-3 mb-3">
                         <h3 className="font-extrabold text-gray-900 text-xl md:text-2xl leading-tight">{etapa.title}</h3>
-                        <span className="shrink-0 text-xs font-bold text-brand-purple-600 bg-brand-purple-600/10 px-3 py-1.5 rounded-full mt-0.5">
+                        <span className="shrink-0 text-sm font-bold text-brand-purple-600 bg-brand-purple-600/10 px-4 py-2 rounded-full mt-0.5">
                           {etapa.ages}
                         </span>
                       </div>
                       <p className="text-gray-500 text-sm md:text-base leading-relaxed mb-5">{etapa.desc}</p>
                       <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">Modalidades relacionadas</p>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Modalidades relacionadas</p>
                         <div className="flex flex-wrap gap-2">
                           {etapa.modalidades.map((m) => (
                             <span
                               key={m}
-                              className="text-xs text-gray-600 bg-gray-50 border border-gray-100 px-3 py-1 rounded-full"
+                              className="text-sm text-gray-600 bg-gray-50 border border-gray-200 px-4 py-1.5 rounded-full"
                             >
                               {m}
                             </span>
@@ -128,7 +128,7 @@ export default function JornadasPage() {
           <ScrollReveal>
             <div className="mt-16 rounded-2xl bg-gradient-dark text-white p-8 md:p-10 text-center">
               <p className="text-white/60 text-sm font-semibold uppercase tracking-widest mb-3">Próximo passo</p>
-              <h3 className="font-extrabold text-2xl md:text-3xl mb-3">Pronto para começar a jornada?</h3>
+              <h3 className="font-extrabold text-white text-2xl md:text-3xl mb-3">Pronto para começar a jornada?</h3>
               <p className="text-white/65 mb-8 max-w-md mx-auto leading-relaxed text-sm">
                 Veja as modalidades disponíveis, confira os horários e fale com a gente para encontrar a turma certa para o seu filho.
               </p>

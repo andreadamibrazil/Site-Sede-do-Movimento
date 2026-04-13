@@ -76,10 +76,27 @@ export const turmaType = defineType({
 
     // ── Horário ───────────────────────────────────────────────────────────────
     defineField({
+      name: "dayOfWeek",
+      title: "Dia(s) da semana",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        list: [
+          { title: "Segunda-feira", value: "Segunda" },
+          { title: "Terça-feira", value: "Terça" },
+          { title: "Quarta-feira", value: "Quarta" },
+          { title: "Quinta-feira", value: "Quinta" },
+          { title: "Sexta-feira", value: "Sexta" },
+          { title: "Sábado", value: "Sábado" },
+        ],
+      },
+      description: "Selecione todos os dias em que esta turma ocorre.",
+    }),
+    defineField({
       name: "schedule",
-      title: "Horário",
+      title: "Horário (ex: 16h – 17h)",
       type: "string",
-      description: "Dias e horários das aulas. Ex: Terças e Quintas, 17h–18h30",
+      description: "Apenas o horário de início e fim. Ex: 16h – 17h30",
     }),
     defineField({
       name: "duration",

@@ -430,7 +430,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── 10. FAQ / GEO ────────────────────────────────────────────────────── */}
-      <section id="faq" className="section-padding bg-white">
+      <section id="faq" className="section-padding bg-gray-50">
         <div className="container-main">
           <SectionTitle
             eyebrow="Perguntas frequentes"
@@ -438,7 +438,9 @@ export default async function HomePage() {
             subtitle="Respostas rápidas sobre a escola, modalidades, matrículas e muito mais."
           />
           <ScrollReveal>
-            <FAQSection items={faqItems} />
+            <div className="bg-white rounded-2xl shadow-sm px-5 py-2 sm:px-8 md:px-10">
+              <FAQSection items={faqItems} />
+            </div>
           </ScrollReveal>
         </div>
       </section>

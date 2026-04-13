@@ -92,6 +92,7 @@ export interface SanityTurma {
   teacher?: string;
   modality?: string;
   ageGroup?: string;
+  dayOfWeek?: string[];
   schedule?: string;
   duration?: string;
   description?: string;
