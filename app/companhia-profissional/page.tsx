@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, Theater, MapPin, GraduationCap, MessageCircle } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -8,11 +9,15 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("companhia-profissional", {
     title: "Companhia Profissional — Vivá Cia de Dança",
-    description: "Vivá Cia de Dança: companhia profissional fundada por Carlos Fontinelle no Rio de Janeiro, com atuação em TV, comerciais e grandes produções nacionais.",
+    description: "Fundada em 2012 por Carlos Fontinelle, a VIVÁ Cia de Dança é uma das potências da cena artística brasileira, com mais de 14 anos de atuação e mais de 300 mil espectadores impactados.",
   });
 }
 
@@ -37,7 +42,10 @@ const highlights = [
   },
 ];
 
-export default function CompanhiaProfissionalPage() {
+export default async function CompanhiaProfissionalPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero
@@ -63,16 +71,33 @@ export default function CompanhiaProfissionalPage() {
               </h2>
               <div className="space-y-4 text-gray-500 leading-relaxed mb-8">
                 <p>
-                  A Vivá Cia de Dança é a companhia profissional fundada por Carlos Fontinelle,
-                  nascida diretamente da trajetória artística da Sede do Movimento.
+                  Fundada em 2012 pelo coreógrafo e diretor de movimento Carlos Fontinelle, a
+                  VIVÁ Cia de Dança nasce como um gesto de ruptura e afirmação: um corpo coletivo
+                  que investiga novas possibilidades estéticas e ressignifica o papel da dança na
+                  sociedade contemporânea. Desde sua estreia com o espetáculo FLORES, reconhecido
+                  no edital Novos Coreógrafos da Cidade do Rio de Janeiro, a companhia constrói
+                  uma trajetória consistente, marcada pela pesquisa, inovação e impacto cultural.
                 </p>
                 <p>
-                  Formada por bailarinos e artistas cênicos de alto nível, a companhia realiza
-                  espetáculos, residências artísticas e projetos culturais em todo o Brasil.
+                  Com mais de 14 anos de atuação, a VIVÁ consolidou-se como uma das potências da
+                  cena artística brasileira, reunindo um repertório diverso que atravessa o palco,
+                  o espaço urbano e o audiovisual. Seus trabalhos já alcançaram centenas de
+                  apresentações e impactaram mais de 300 mil espectadores, evidenciando uma
+                  linguagem que equilibra rigor técnico, sensibilidade poética e diálogo com
+                  questões contemporâneas.
                 </p>
                 <p>
-                  A Vivá representa o mais alto nível da produção artística da Sede, sendo o
-                  destino natural dos alunos que escolhem a carreira profissional nas artes cênicas.
+                  A companhia atua de forma expandida, transitando entre espetáculos cênicos,
+                  intervenções urbanas, projetos educativos e produções audiovisuais. Essa
+                  multiplicidade revela uma compreensão da arte como prática viva — que ocupa
+                  territórios, forma públicos e ativa reflexões.
+                </p>
+                <p>
+                  Ao longo de sua trajetória, a VIVÁ acumula importantes premiações e
+                  reconhecimentos, como o Prêmio FUNARJ de Dança, seleções em editais do SESC
+                  Pulsar, circulação pelo SESI-SP, participação no Mercado Internacional de
+                  Economia Criativa (MICA – Argentina) e indicações em festivais como o Rio Web
+                  Fest.
                 </p>
               </div>
               <Link href={siteConfig.externalLinks.vivaCompanhia} target="_blank" rel="noopener noreferrer">
@@ -87,11 +112,18 @@ export default function CompanhiaProfissionalPage() {
             </ScrollReveal>
 
             <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <PlaceholderImage
-                  className="w-full h-full rounded-none border-none"
-                  label="Vivá Cia de Dança em cena"
-                />
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+                {imagens?.vivaCiaFoto ? (
+                  <Image
+                    src={urlFor(imagens.vivaCiaFoto).width(800).height(600).url()}
+                    alt="Vivá Cia de Dança em cena"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Vivá Cia de Dança em cena" />
+                )}
               </div>
             </ScrollReveal>
           </div>

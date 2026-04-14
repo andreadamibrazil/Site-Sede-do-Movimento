@@ -188,10 +188,39 @@ export const siteSettingsType = defineType({
         // Atelier
         defineField({
           name: "atelierFigurinosFoto",
-          title: "Atelier — Foto de Figurinos",
+          title: "Ateliê Carlos Fontinelle — Foto Principal",
           type: "image",
           options: { hotspot: true },
-          description: "Foto exibida na seção Atelier/Figurinos.",
+          description: "Foto exibida na página do Ateliê de Moda Sustentável.",
+        }),
+        // Projetos e Parcerias
+        defineField({
+          name: "vivaCiaFoto",
+          title: "Vivá Cia de Dança — Foto Principal",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto exibida na página da Vivá Cia de Dança.",
+        }),
+        defineField({
+          name: "produtoraFoto",
+          title: "Fontinelle Criações — Foto Principal",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto exibida na página da produtora Fontinelle Criações.",
+        }),
+        defineField({
+          name: "projetoSocialFoto",
+          title: "Sede de Aprender — Foto Principal",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto exibida na página do Projeto Social.",
+        }),
+        defineField({
+          name: "formacaoInfantilFoto",
+          title: "Formação Infantil (Jornadas) — Foto Principal",
+          type: "image",
+          options: { hotspot: true },
+          description: "Foto exibida na página de Jornadas Artísticas / Formação Infantil.",
         }),
       ],
     }),

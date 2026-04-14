@@ -1,9 +1,14 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import { sanityFetch } from "@/sanity/lib/live";
+import { gallerySectionPhotosQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanityGalleryPhoto } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/eventos-extras", {
@@ -23,7 +28,15 @@ const eventos = [
   { name: "Espetáculo Janelas", emoji: "🌟", desc: "Apresentação de trabalhos intermediários ao longo do ano. Um espaço de experiência e aprendizado em formato de espetáculo." },
 ];
 
-export default function EventosExtrasPage() {
+export default async function EventosExtrasPage() {
+  const { data: galleryData } = await sanityFetch({
+    query: gallerySectionPhotosQuery,
+    params: { section: "eventos-extras" },
+  });
+  const photos = ((galleryData as { photos: SanityGalleryPhoto[] }[] | null) ?? [])
+    .flatMap((a) => a.photos ?? [])
+    .slice(0, 8);
+
   return (
     <>
       <PageHero eyebrow="Eventos extras" title="Muito além das aulas" subtitle="Atividades especiais que enriquecem a experiência artística e fortalecem a comunidade da Sede." breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Eventos Extras" }]} />
@@ -41,13 +54,29 @@ export default function EventosExtrasPage() {
               </ScrollReveal>
             ))}
           </div>
-          <div className="mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Evento ${i + 1}`} />
-              </div>
-            ))}
-          </div>
+          {photos.length > 0 ? (
+            <div className="mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {photos.map((photo, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden relative">
+                  <Image
+                    src={urlFor(photo.img).width(400).height(400).url()}
+                    alt={photo.alt ?? `Evento ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Evento ${i + 1}`} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </>

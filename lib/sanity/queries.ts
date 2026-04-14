@@ -94,7 +94,11 @@ export const siteSettingsQuery = groq`
       espacoFotos[] { image, alt },
       apresentacaoFotos[] { image, alt },
       parcerias[] { logo, nome, url },
-      atelierFigurinosFoto
+      atelierFigurinosFoto,
+      vivaCiaFoto,
+      produtoraFoto,
+      projetoSocialFoto,
+      formacaoInfantilFoto
     }
   }
 `;
@@ -168,6 +172,19 @@ export const modalidadeImagesQuery = groq`
     "modality": modalidade,
     "image": coverImage,
     "alt": alt
+  }
+`;
+
+// ─── Galeria por Seção ────────────────────────────────────────────────────────
+// Uso: sanityFetch({ query: gallerySectionPhotosQuery, params: { section: "resultados" } })
+// Seções disponíveis: "resultados" | "eventos-extras" | "projeto-social" | "formacao-infantil"
+
+export const gallerySectionPhotosQuery = groq`
+  *[_type == "galleryAlbum" && active == true && $section in sections] | order(order asc) {
+    "photos": photos[] {
+      "img": select(_type == "image" => @, image),
+      "alt": coalesce(alt, "")
+    }
   }
 `;
 

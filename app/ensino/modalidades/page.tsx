@@ -69,7 +69,7 @@ const modalidades = [
     id: "dancas-urbanas",
     name: "Danças Urbanas",
     area: "Dança",
-    tagline: "Expressão, identidade e cultura urbana com técnica.",
+    tagline: "Expressão, identidade e cultura urbana.",
     description:
       "Um espaço para desenvolver criatividade, ritmo e autoconfiança através da cultura do movimento urbano.",
     ages: "5 a 18+",
@@ -77,7 +77,7 @@ const modalidades = [
   },
   {
     id: "contemporaneo",
-    name: "Contemporâneo",
+    name: "Dança Contemporânea",
     area: "Dança",
     tagline: "Movimento, pesquisa e expressão sem fronteiras.",
     description:
@@ -119,9 +119,9 @@ const modalidades = [
     id: "teclado",
     name: "Teclado",
     area: "Música",
-    tagline: "Coordenação, percepção musical e criação desde o início.",
+    tagline: "Coordenação bimanual, harmonia e leitura musical com o instrumento em mãos.",
     description:
-      "Uma experiência formativa que aproxima o aluno da música de maneira prática e inspiradora.",
+      "Aulas que desenvolvem técnica, percepção melódica e a autonomia de criar e interpretar música ao teclado.",
     ages: "A confirmar",
     sanityKey: "Teclado",
   },
@@ -129,9 +129,9 @@ const modalidades = [
     id: "preparacao",
     name: "Preparação para o Movimento",
     area: "Iniciação",
-    tagline: "Um começo sensível, lúdico e completo para os pequenos.",
+    tagline: "Um começo sensível e completo para os pequenos — de forma lúdica.",
     description:
-      "Ideal para crianças em fase de descoberta, com estímulos que integram movimento, musicalidade, expressão e desenvolvimento motor.",
+      "Ideal para crianças em fase de descoberta, o desenvolvimento se dá de forma lúdica, com estímulos que integram movimento, musicalidade, expressão e desenvolvimento motor.",
     ages: "A confirmar",
     sanityKey: "Preparação",
   },

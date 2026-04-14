@@ -100,6 +100,25 @@ export const galleryAlbumType = defineType({
       ],
     }),
 
+    // ── Seções do site ────────────────────────────────────────────────────────
+    defineField({
+      name: "sections",
+      title: "Usar fotos deste álbum nas seções",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        list: [
+          { title: "Resultados / Conquistas", value: "resultados" },
+          { title: "Eventos Extras", value: "eventos-extras" },
+          { title: "Projeto Social", value: "projeto-social" },
+          { title: "Formação Infantil / Jornadas", value: "formacao-infantil" },
+        ],
+        layout: "grid",
+      },
+      description:
+        "As fotos deste álbum aparecerão automaticamente nas seções marcadas. Você pode marcar um mesmo álbum para várias seções.",
+    }),
+
     // ── Exibição ──────────────────────────────────────────────────────────────
     defineField({
       name: "active",

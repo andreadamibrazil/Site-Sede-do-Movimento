@@ -18,7 +18,7 @@ export const teamMembers: TeamMember[] = [
 export const stats: Stat[] = [
   { value: "650", label: "metros² de espaço", suffix: "m²" },
   { value: "5", label: "anos de história", suffix: "+" },
-  { value: "300", label: "alunos ativos", suffix: "+" },
+  { value: "300", label: "alunos", suffix: "+" },
   { value: "1°", label: "lugar em festivais", suffix: "" },
 ];
 

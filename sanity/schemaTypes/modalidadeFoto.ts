@@ -6,13 +6,12 @@ const MODALIDADE_OPTIONS = [
   { title: "Jazz", value: "Jazz" },
   { title: "Sapateado", value: "Sapateado" },
   { title: "Danças Urbanas", value: "Danças Urbanas" },
-  { title: "Contemporâneo", value: "Dança Contemporânea" },
+  { title: "Dança Contemporânea", value: "Dança Contemporânea" },
   { title: "Teatro", value: "Teatro" },
   { title: "Canto", value: "Música/Canto" },
   { title: "Violão", value: "Violão" },
   { title: "Teclado", value: "Teclado" },
   { title: "Preparação para o Movimento", value: "Preparação" },
-  { title: "Circo", value: "Circo" },
 ];
 
 export const modalidadeFotoType = defineType({

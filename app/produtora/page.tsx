@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, Mic2, Building2, Music, MessageCircle } from "lucide-react";
 import { Theater } from "lucide-react";
@@ -9,11 +10,15 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("produtora", {
-    title: "Produtora — Fontinelle Criações",
-    description: "A Fontinelle Criações é a produtora cultural responsável pela concepção e realização dos grandes espetáculos da Sede do Movimento.",
+    title: "Produtora — Fontinelle Criações Artísticas",
+    description: "Fontinelle Criações Artísticas é uma produtora de alto impacto, idealizadora e produtora do MoviRio Festival de Dança, com mais de 300 apresentações e projetos que já impactaram mais de 1 milhão de pessoas.",
   });
 }
 
@@ -44,7 +49,10 @@ const services = [
   },
 ];
 
-export default function ProdutoraPage() {
+export default async function ProdutoraPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero
@@ -62,34 +70,45 @@ export default function ProdutoraPage() {
         <div className="container-main">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <ScrollReveal>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <PlaceholderImage
-                  className="w-full h-full rounded-none border-none"
-                  label="Fontinelle Criações em produção"
-                />
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+                {imagens?.produtoraFoto ? (
+                  <Image
+                    src={urlFor(imagens.produtoraFoto).width(800).height(600).url()}
+                    alt="Fontinelle Criações em produção"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Fontinelle Criações em produção" />
+                )}
               </div>
             </ScrollReveal>
 
             <ScrollReveal delay={0.15}>
               <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">
-                Fontinelle Criações
+                Fontinelle Criações Artísticas
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-6">
-                Fontinelle Criações
+                Fontinelle Criações Artísticas
               </h2>
               <div className="space-y-4 text-gray-500 leading-relaxed mb-8">
                 <p>
-                  A Fontinelle Criações é a produtora cultural responsável pela concepção e
-                  realização dos grandes espetáculos da Sede do Movimento.
+                  Fontinelle Criações Artísticas é uma produtora de alto impacto, especializada
+                  na criação e realização de grandes projetos de cultura e entretenimento. Com um
+                  portfólio sólido, soma mais de 300 apresentações com a Vivá Cia de Dança e mais
+                  de 30 projetos concebidos e coproduções que conectam arte, público e mercado.
                 </p>
                 <p>
-                  Com experiência em produções de grande porte — incluindo eventos corporativos,
-                  espetáculos teatrais e festivais — a produtora oferece serviços completos de
-                  produção artística.
+                  À frente de iniciativas de grande relevância, é idealizadora e produtora do
+                  MoviRio Festival de Dança — um dos maiores eventos do setor, que já impactou
+                  mais de 1 milhão de pessoas. Sua atuação também se estende a produções de
+                  grande escala, como o encerramento da Copa do Mundo FIFA 2014 e projetos
+                  premiados no Carnaval carioca.
                 </p>
                 <p>
-                  Do conceito à execução, cuidamos de cada detalhe para que cada produção seja
-                  uma experiência memorável.
+                  Mais do que produzir eventos, a Fontinelle Criações transforma ideias em
+                  experiências marcantes, unindo excelência artística, estratégia e alcance.
                 </p>
               </div>
               <Link href={siteConfig.externalLinks.produtora} target="_blank" rel="noopener noreferrer">

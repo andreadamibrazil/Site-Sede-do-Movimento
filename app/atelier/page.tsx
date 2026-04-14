@@ -1,18 +1,23 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Scissors, Star, Palette, ShoppingBag, Mail } from "lucide-react";
+import { ExternalLink, Scissors, Palette, ShoppingBag, Mail } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("atelier", {
-    title: "Ateliê — Ateliê Fontinelle",
-    description: "O Ateliê Fontinelle é o espaço de criação têxtil e figurinismo da Sede do Movimento, responsável pelos figurinos de todos os espetáculos.",
+    title: "Ateliê de Moda Sustentável — Carlos Fontinelle",
+    description: "O Ateliê Carlos Fontinelle nasce da interseção entre corpo, arte e consciência ambiental, propondo uma moda que ultrapassa tendências para afirmar identidade, liberdade e responsabilidade.",
   });
 }
 
@@ -22,12 +27,6 @@ const services = [
     title: "Figurinos para Espetáculos",
     description:
       "Concepção e confecção de figurinos completos para espetáculos de dança, teatro e ópera, com atenção aos detalhes técnicos e à estética cênica.",
-  },
-  {
-    icon: Star,
-    title: "Fantasias e Adereços",
-    description:
-      "Criação de fantasias temáticas e adereços cênicos exclusivos para apresentações, eventos e produções especiais de qualquer porte.",
   },
   {
     icon: Palette,
@@ -43,13 +42,16 @@ const services = [
   },
 ];
 
-export default function AtelierPage() {
+export default async function AtelierPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero
-        eyebrow="Ateliê Fontinelle"
-        title="Ateliê"
-        subtitle="Figurinos e criação têxtil para as artes cênicas"
+        eyebrow="Ateliê Carlos Fontinelle"
+        title="Ateliê de Moda Sustentável"
+        subtitle="Moda que ultrapassa tendências para afirmar identidade, liberdade e responsabilidade."
         breadcrumbs={[
           { label: "Início", href: "/" },
           { label: "Ateliê" },
@@ -63,24 +65,36 @@ export default function AtelierPage() {
             {/* Left: text */}
             <ScrollReveal>
               <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">
-                Ateliê Fontinelle
+                Ateliê Carlos Fontinelle
               </p>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-6">
-                Ateliê Fontinelle
+                Ateliê de Moda Sustentável
               </h2>
               <div className="space-y-4 text-gray-500 leading-relaxed mb-8">
                 <p>
-                  O Ateliê Fontinelle é o espaço de criação têxtil e figurinismo da Sede do
-                  Movimento, responsável pela concepção e confecção dos figurinos de todos os
-                  nossos espetáculos.
+                  O Ateliê Carlos Fontinelle nasce da interseção entre corpo, arte e consciência
+                  ambiental, propondo uma moda que ultrapassa tendências para afirmar identidade,
+                  liberdade e responsabilidade. Com uma trajetória construída a partir da dança e
+                  das artes cênicas, o ateliê desenvolve criações que entendem o vestir como
+                  extensão do movimento e da expressão individual.
                 </p>
                 <p>
-                  Com um olhar artístico apurado e técnica refinada, o ateliê transforma conceitos
-                  cênicos em peças únicas que contribuem para a narrativa visual de cada produção.
+                  Com foco em práticas sustentáveis, seus projetos priorizam processos de criação
+                  que reduzem ou eliminam a geração de resíduos, explorando reaproveitamento de
+                  materiais, versatilidade das peças e soluções inteligentes de design. Muitas das
+                  criações são pensadas para assumir múltiplas formas e usos, ampliando seu ciclo
+                  de vida e estimulando uma relação mais consciente com o consumo.
                 </p>
                 <p>
-                  Atendemos também artistas, companhias de dança e teatro que buscam figurinos
-                  exclusivos para suas produções.
+                  A estética do ateliê valoriza a diversidade e a singularidade, com propostas
+                  muitas vezes sem gênero, que rompem padrões e abrem espaço para novas narrativas
+                  visuais. Figurinos para teatro, carnaval, audiovisual e coleções autorais
+                  convivem com uma linguagem contemporânea que conecta arte, sociedade e cotidiano.
+                </p>
+                <p>
+                  Mais do que moda, o Ateliê Carlos Fontinelle propõe uma experiência: vestir-se
+                  como ato de criação, consciência e pertencimento — onde cada peça carrega não
+                  apenas forma, mas significado.
                 </p>
               </div>
               <Link href={siteConfig.externalLinks.atelier} target="_blank" rel="noopener noreferrer">
@@ -96,11 +110,18 @@ export default function AtelierPage() {
 
             {/* Right: image */}
             <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <PlaceholderImage
-                  className="w-full h-full rounded-none border-none"
-                  label="Figurinos do Ateliê"
-                />
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+                {imagens?.atelierFigurinosFoto ? (
+                  <Image
+                    src={urlFor(imagens.atelierFigurinosFoto).width(800).height(600).url()}
+                    alt="Ateliê Carlos Fontinelle"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Ateliê Carlos Fontinelle" />
+                )}
               </div>
             </ScrollReveal>
           </div>

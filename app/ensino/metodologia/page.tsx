@@ -28,8 +28,8 @@ export default function MetodologiaPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20">
             <ScrollReveal>
               <h2 className="text-3xl font-extrabold text-gray-900 mb-6">Um método único</h2>
-              <p className="text-gray-500 leading-relaxed mb-4">Desenvolvemos um sistema formativo que vai além da técnica. Nosso método integra quatro dimensões do desenvolvimento humano, formando não apenas bailarinos e atores, mas cidadãos conscientes, criativos e preparados para o mundo.</p>
-              <p className="text-gray-500 leading-relaxed">Baseado nos princípios dos Objetivos de Desenvolvimento Sustentável (ODS), nossa metodologia conecta arte, educação e responsabilidade socioambiental.</p>
+              <p className="text-gray-500 leading-relaxed mb-4">Desenvolvemos um sistema formativo que vai além da técnica. Nosso método integra quatro dimensões do desenvolvimento humano, formando não apenas bailarinos e atores, mas indivíduos conscientes, criativos e preparados para o mundo.</p>
+              <p className="text-gray-500 leading-relaxed">Alinhada aos princípios dos Objetivos de Desenvolvimento Sustentável (ODS), nossa metodologia conecta arte, educação e responsabilidade socioambiental.</p>
             </ScrollReveal>
             <ScrollReveal delay={0.1}>
               <div className="grid grid-cols-2 gap-4">

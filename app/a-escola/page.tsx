@@ -76,7 +76,7 @@ export default async function AEscolaPage() {
                 <span className="text-gradient">se expressar, se reconhecer</span> e a ocupar o mundo com mais coragem.
               </h2>
               <p className="text-gray-500 leading-relaxed mb-4">
-                A Sede do Movimento nasce desse encontro: entre corpo, emoção e identidade. Um espaço que forma além da técnica, onde diferentes linguagens — dança, música, teatro e circo — se conectam para construir uma formação ampla, sensível e contemporânea.
+                A Sede do Movimento nasce desse encontro: entre corpo, emoção e identidade. Um espaço que forma além da técnica, onde diferentes linguagens — dança, música e teatro — se conectam para construir uma formação ampla, sensível e contemporânea.
               </p>
               <p className="text-gray-500 leading-relaxed mb-6">
                 Acreditamos que a arte não é apenas expressão — é também caminho e responsabilidade com o mundo que habitamos. Por isso, integramos os princípios dos Objetivos de Desenvolvimento Sustentável (ODS) em nossas práticas cotidianas.
@@ -170,8 +170,8 @@ export default async function AEscolaPage() {
               { badge: "2025", title: "Melhor Grupo — Festival de Caxias", desc: "Reconhecimento como Melhor Grupo no Festival de Dança de Caxias 2025." },
               { badge: "2024", title: "Menção Honrosa — Niterói em Cena", desc: "Reconhecimento no Festival de Teatro Niterói em Cena pelo alto nível artístico." },
             ].map((item, i) => (
-              <ScrollReveal key={i} delay={i * 0.1}>
-                <div className="bg-white/10 border border-white/15 rounded-xl p-6">
+              <ScrollReveal key={i} delay={i * 0.1} className="h-full flex flex-col">
+                <div className="bg-white/10 border border-white/15 rounded-xl p-6 h-full flex flex-col">
                   <Badge color="accent" variant="subtle" size="sm" className="mb-3">{item.badge}</Badge>
                   <h3 className="font-bold text-white text-lg mb-2">{item.title}</h3>
                   <p className="text-white/65 text-sm leading-relaxed">{item.desc}</p>

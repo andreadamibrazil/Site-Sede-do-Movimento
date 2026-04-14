@@ -29,7 +29,7 @@ import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
 const categorias = [
-  { emoji: "💃", color: "from-brand-purple-600 to-brand-secondary", title: "Dança", tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.", description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação técnica completa para todas as idades, do iniciante ao avançado." },
+  { emoji: "💃", color: "from-brand-purple-600 to-brand-secondary", title: "Dança", tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.", description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação conjunta para todas as idades, do iniciante ao avançado." },
   { emoji: "🎭", color: "from-brand-pink-600 to-brand-pink", title: "Teatro", tagline: "Criatividade, comunicação e presença para a vida.", description: "Presença cênica, interpretação, improvisação e criação autoral. Formação completa em artes dramáticas para todas as idades." },
   { emoji: "🎵", color: "from-brand-secondary to-brand-purple-400", title: "Música", tagline: "Escuta, sensibilidade e construção artística completa.", description: "Canto, musicalização e educação musical integrada à formação em artes cênicas." },
 ];
@@ -63,8 +63,8 @@ const faqItems = [
     answer: "A Prática de Montagem é um projeto aberto a qualquer pessoa — aluno ou não — que queira vivenciar a experiência de um grande espetáculo musical. Os participantes passam por todo o processo de montagem e sobem ao palco em teatros de grande porte no Rio de Janeiro.",
   },
   {
-    question: "Qual é o diferencial da Sede do Movimento em relação a outras escolas de dança?",
-    answer: "A Sede do Movimento é um complexo cultural completo fundado pelo coreógrafo Carlos Fontinelle — diretor de movimento da Copa do Mundo FIFA 2014 e fundador da Vivá Cia de Dança. Além do ensino técnico de alta qualidade, a escola possui companhia profissional própria, estúdio audiovisual, produtora e projeto social.",
+    question: "Qual é o diferencial da Sede do Movimento em relação a outras escolas de artes?",
+    answer: "A Sede do Movimento é um complexo cultural completo, cujo grande diferencial está em um direcionamento holístico de formação, que integra técnica, expressão artística e desenvolvimento humano. Para além do ensino de excelência, a escola conecta formação e mercado por meio de uma companhia profissional própria, estúdio audiovisual, produtora e projetos sociais, preparando artistas completos, conscientes e preparados para atuar no mundo. É dirigida por Carlos Fontinelle, profissional experiente em produção cultural nacional e internacional, e conta com uma equipe de professores qualificados que vivem, na prática, as artes cênicas.",
   },
   {
     question: "A Sede do Movimento tem projeto social?",
@@ -184,7 +184,7 @@ export default async function HomePage() {
                 <span className="text-gradient">muito mais</span> que técnica.
               </h2>
               <p className="text-gray-500 text-[1.05rem] leading-[1.85] mb-5">
-                Somos um complexo cultural onde diferentes linguagens — dança, música, teatro e circo — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo.
+                Somos um complexo cultural onde diferentes linguagens — dança, música e teatro — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo.
               </p>
               <p className="text-gray-400 text-[1rem] leading-[1.85] mb-10">
                 Ele atravessa o pensamento, a criatividade e a forma de existir no mundo. E integramos a isso: desenvolvimento da inteligência emocional, autonomia, consciência social e introdução à economia criativa.

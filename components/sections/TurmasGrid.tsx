@@ -141,7 +141,7 @@ export default function TurmasGrid({ turmas }: Props) {
                   return (
                     <div
                       key={t._id}
-                      className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow duration-200"
+                      className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow duration-200 h-full flex flex-col"
                     >
                       {/* Title + status badge */}
                       <div className="flex items-start justify-between gap-3 mb-3">
@@ -198,7 +198,7 @@ export default function TurmasGrid({ turmas }: Props) {
                 {semDia.map((t) => {
                   const badge = vagasBadge(t.status, t.availableSpots);
                   return (
-                    <div key={t._id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                    <div key={t._id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm h-full flex flex-col">
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <h3 className="font-bold text-gray-900 text-base leading-snug">{t.title}</h3>
                         <span className={`shrink-0 text-sm font-semibold px-3 py-1.5 rounded-full ${badge.className}`}>

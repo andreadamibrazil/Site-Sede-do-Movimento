@@ -80,6 +80,10 @@ export interface SanitySiteSettings {
     apresentacaoFotos?: { image: SanityImageSource; alt?: string }[];
     parcerias?: { logo?: SanityImageSource; nome?: string; url?: string }[];
     atelierFigurinosFoto?: SanityImageSource;
+    vivaCiaFoto?: SanityImageSource;
+    produtoraFoto?: SanityImageSource;
+    projetoSocialFoto?: SanityImageSource;
+    formacaoInfantilFoto?: SanityImageSource;
   };
 }
 

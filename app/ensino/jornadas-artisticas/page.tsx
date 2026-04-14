@@ -1,9 +1,15 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/jornadas-artisticas", {
@@ -55,7 +61,10 @@ const etapas = [
   },
 ];
 
-export default function JornadasPage() {
+export default async function JornadasPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const imagens = (data as SanitySiteSettings | null)?.imagens;
+
   return (
     <>
       <PageHero
@@ -123,6 +132,19 @@ export default function JornadasPage() {
               ))}
             </div>
           </div>
+
+          {/* Foto da seção */}
+          {imagens?.formacaoInfantilFoto && (
+            <div className="mt-12 rounded-2xl overflow-hidden aspect-[16/7] relative">
+              <Image
+                src={urlFor(imagens.formacaoInfantilFoto).width(1200).height(525).url()}
+                alt="Formação Infantil — Sede do Movimento"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 80vw"
+              />
+            </div>
+          )}
 
           {/* Bottom CTA */}
           <ScrollReveal>

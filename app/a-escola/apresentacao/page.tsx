@@ -32,7 +32,7 @@ export default async function ApresentacaoPage() {
             </p>
             <h2 className="text-2xl font-extrabold text-gray-900 mb-5">Um espaço que forma além da técnica</h2>
             <p className="text-gray-600 leading-relaxed mb-10">
-              Somos um complexo cultural e incubadora de ações artísticas, onde diferentes linguagens — dança, música, teatro e circo — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo. Ele atravessa o pensamento, a criatividade e a forma de existir no mundo.
+              Somos um complexo cultural e incubadora de ações artísticas, onde diferentes linguagens — dança, música e teatro — se conectam para construir uma formação ampla, sensível e contemporânea. Aqui, o movimento vai além do corpo. Ele atravessa o pensamento, a criatividade e a forma de existir no mundo.
             </p>
             <h2 className="text-2xl font-extrabold text-gray-900 mb-5">Arte, educação, sustentabilidade e futuro</h2>
             <p className="text-gray-600 leading-relaxed mb-5">

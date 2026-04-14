@@ -9,7 +9,9 @@ const MODALITY_OPTIONS = [
   { title: "Dança Contemporânea", value: "Dança Contemporânea" },
   { title: "Teatro", value: "Teatro" },
   { title: "Música/Canto", value: "Música/Canto" },
-  { title: "Circo", value: "Circo" },
+  { title: "Violão", value: "Violão" },
+  { title: "Teclado", value: "Teclado" },
+  { title: "Preparação para o Movimento", value: "Preparação" },
 ];
 
 const AGE_GROUP_OPTIONS = [
