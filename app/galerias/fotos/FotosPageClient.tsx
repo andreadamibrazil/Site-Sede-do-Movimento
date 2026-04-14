@@ -70,11 +70,11 @@ export default function FotosPageClient({ albums }: Props) {
             href={`/galerias/fotos/${album.slug}`}
             className="group rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
           >
-            {/* Cover image — 16:9 matches 1920×1080 source photos */}
-            <div className="relative aspect-video overflow-hidden bg-gray-100">
+            {/* Cover image — square, matching homepage preview grid style */}
+            <div className="relative aspect-square overflow-hidden bg-gray-100">
               {album.coverImage ? (
                 <Image
-                  src={urlFor(album.coverImage).width(720).height(405).fit("crop").crop("focalpoint").auto("format").url()}
+                  src={urlFor(album.coverImage).width(600).height(600).fit("crop").crop("focalpoint").auto("format").url()}
                   alt={album.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"

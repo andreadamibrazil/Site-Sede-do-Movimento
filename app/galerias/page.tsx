@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Link from "next/link";
 import Image from "next/image";
-import { Camera, Video, Tv, ArrowRight } from "lucide-react";
+import { Camera, Video, ArrowRight } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allGalleryAlbumsQuery, recentGalleryPhotosQuery, siteSettingsQuery, activeVideosQuery } from "@/lib/sanity/queries";
+import { allGalleryAlbumsQuery, recentGalleryPhotosQuery, activeVideosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
-import type { SanityGalleryAlbum, SanitySiteSettings } from "@/lib/sanity/types";
+import type { SanityGalleryAlbum } from "@/lib/sanity/types";
 import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 
 function extractYouTubeVideoId(url: string): string | null {
@@ -39,22 +39,19 @@ const breadcrumbs = [
 ];
 
 export default async function GaleriasPage() {
-  const [{ data: albumsData }, { data: photosData }, { data: settingsData }, { data: videosData }] = await Promise.all([
+  const [{ data: albumsData }, { data: photosData }, { data: videosData }] = await Promise.all([
     sanityFetch({ query: allGalleryAlbumsQuery }),
     sanityFetch({ query: recentGalleryPhotosQuery }),
-    sanityFetch({ query: siteSettingsQuery }),
     sanityFetch({ query: activeVideosQuery }),
   ]);
 
   const albums = (albumsData as SanityGalleryAlbum[] | null) ?? [];
   const galleryAlbums = (photosData as { photos: { img: SanityImageSource; alt?: string }[] }[] | null) ?? [];
   const previewPhotos = galleryAlbums.flatMap((a) => a.photos ?? []).slice(0, 6);
-  const settings = settingsData as SanitySiteSettings | null;
   const videos = (videosData as { youtubeUrl: string }[] | null) ?? [];
 
-  // Hub card backgrounds — Fotos uses first album cover, Vídeos uses YT thumbnail, YouTube uses uploaded cover
+  // Hub card backgrounds — Fotos uses first album cover, Vídeos uses YT thumbnail
   const fotosBg = albums[0]?.coverImage;
-  const ytChannelCover = settings?.imagens?.youtubeChannelCover;
   const firstVideoId = videos[0]?.youtubeUrl ? extractYouTubeVideoId(videos[0].youtubeUrl) : null;
   const videosThumbnailUrl = firstVideoId
     ? `https://img.youtube.com/vi/${firstVideoId}/maxresdefault.jpg`
@@ -79,26 +76,26 @@ export default async function GaleriasPage() {
             align="center"
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
             {/* ── Galeria de Fotos ─── */}
             <ScrollReveal delay={0}>
               <Link
                 href="/galerias/fotos"
-                className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
+                className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[440px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
               >
                 <div className="absolute inset-0">
                   {fotosBg ? (
                     <Image
-                      src={urlFor(fotosBg).width(600).height(760).fit("crop").crop("focalpoint").auto("format").url()}
+                      src={urlFor(fotosBg).width(800).height(880).fit("crop").crop("focalpoint").auto("format").url()}
                       alt="Galeria de Fotos"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-brand" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10 group-hover:from-black/90 transition-all duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent group-hover:from-black/60 transition-all duration-300" />
                 </div>
                 <div className="relative z-10 flex flex-col justify-between h-full p-6">
                   <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-brand-purple-600 transition-colors duration-300">
@@ -125,7 +122,7 @@ export default async function GaleriasPage() {
             <ScrollReveal delay={0.08}>
               <Link
                 href="/galerias/videos"
-                className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
+                className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[440px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
               >
                 <div className="absolute inset-0">
                   {videosThumbnailUrl ? (
@@ -134,12 +131,12 @@ export default async function GaleriasPage() {
                       alt="Vídeos"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-dark" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20 group-hover:from-black/95 transition-all duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/15 to-transparent group-hover:from-black/60 transition-all duration-300" />
                 </div>
                 <div className="relative z-10 flex flex-col justify-between h-full p-6">
                   <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-brand-purple-600 transition-colors duration-300">
@@ -160,44 +157,6 @@ export default async function GaleriasPage() {
               </Link>
             </ScrollReveal>
 
-            {/* ── Canal YouTube ─── */}
-            <ScrollReveal delay={0.16}>
-              <Link
-                href="/galerias/youtube"
-                className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
-              >
-                <div className="absolute inset-0">
-                  {ytChannelCover ? (
-                    <Image
-                      src={urlFor(ytChannelCover).width(600).height(760).fit("crop").crop("focalpoint").auto("format").url()}
-                      alt="Canal YouTube"
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-dark" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-red-950/90 via-black/50 to-black/20 group-hover:from-red-950/95 transition-all duration-300" />
-                </div>
-                <div className="relative z-10 flex flex-col justify-between h-full p-6">
-                  <div className="w-11 h-11 rounded-xl bg-red-600/40 backdrop-blur-sm border border-red-500/30 flex items-center justify-center group-hover:bg-red-600 transition-colors duration-300">
-                    <Tv size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-red-400 text-xs font-semibold uppercase tracking-widest mb-1">YouTube</p>
-                    <h3 className="text-2xl font-extrabold text-white mb-2 leading-tight">Canal YouTube</h3>
-                    <p className="text-white/65 text-sm leading-relaxed mb-4">
-                      Vídeos completos dos espetáculos, aulas gratuitas e bastidores exclusivos
-                    </p>
-                    <div className="flex items-center gap-1.5 text-red-400 text-sm font-semibold">
-                      <span>Acessar canal</span>
-                      <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-200" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </ScrollReveal>
           </div>
         </div>
       </section>

@@ -46,7 +46,6 @@ export const navigationItems: NavItem[] = [
     children: [
       { label: "Fotos", href: "/galerias/fotos" },
       { label: "Vídeos", href: "/galerias/videos" },
-      { label: "Canal YouTube", href: "/galerias/youtube" },
     ],
   },
   { label: "Blog", href: "/blog" },

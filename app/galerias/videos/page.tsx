@@ -38,6 +38,36 @@ export default async function VideosPage() {
         breadcrumbs={breadcrumbs}
       />
 
+      {/* CTA — Canal YouTube (topo, destaque) */}
+      <section className="section-padding bg-gradient-dark">
+        <div className="container-main">
+          <ScrollReveal>
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 max-w-4xl mx-auto">
+              <div className="text-center lg:text-left">
+                <div className="flex items-center gap-2 justify-center lg:justify-start mb-3">
+                  <Tv size={24} className="text-red-400" />
+                  <span className="text-red-400 font-bold text-sm uppercase tracking-widest">YouTube</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">
+                  Conheça nosso Canal no YouTube
+                </h2>
+                <p className="text-white/65 text-base leading-relaxed max-w-lg">
+                  Espetáculos completos, aulas gratuitas e bastidores exclusivos da Sede do Movimento. Inscreva-se e fique por dentro de tudo.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <Link href={siteConfig.social.youtube} target="_blank" rel="noopener noreferrer">
+                  <Button variant="cta" size="lg" rightIcon={<ExternalLink size={16} />}>
+                    Acessar Canal
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Grade de vídeos */}
       <section className="section-padding bg-white">
         <div className="container-main">
           <SectionTitle
@@ -58,35 +88,6 @@ export default async function VideosPage() {
               </p>
             </div>
           )}
-        </div>
-      </section>
-
-      {/* CTA — YouTube */}
-      <section className="section-padding bg-gradient-dark">
-        <div className="container-main">
-          <ScrollReveal>
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 max-w-4xl mx-auto">
-              <div className="text-center lg:text-left">
-                <div className="flex items-center gap-2 justify-center lg:justify-start mb-3">
-                  <Tv size={24} className="text-red-400" />
-                  <span className="text-red-400 font-bold text-sm uppercase tracking-widest">YouTube</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">
-                  Quer assistir mais conteúdo?
-                </h2>
-                <p className="text-white/65 text-base leading-relaxed max-w-lg">
-                  Acesse nosso canal no YouTube para vídeos completos dos espetáculos, aulas gratuitas e bastidores exclusivos.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <Link href={siteConfig.social.youtube} target="_blank" rel="noopener noreferrer">
-                  <Button variant="cta" size="lg" rightIcon={<ExternalLink size={16} />}>
-                    Acessar Canal
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </ScrollReveal>
         </div>
       </section>
     </>

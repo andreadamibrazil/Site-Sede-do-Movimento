@@ -41,9 +41,11 @@ export default async function AlbumPage({ params }: PageProps) {
     { label: album?.title ?? albumSlug },
   ];
 
-  // 16:9 thumbnails in grid; lightbox shows full image via <img object-contain>
   const photos: Photo[] = (album?.photos ?? []).map((p) => ({
-    src: urlFor(p.img).width(1200).height(675).fit("crop").crop("focalpoint").auto("format").url(),
+    // Lightbox: full resolution, original aspect ratio (no height = preserves ratio)
+    src: urlFor(p.img).width(1920).auto("format").quality(88).url(),
+    // Grid thumbnail: square crop centred on hotspot
+    thumbnailSrc: urlFor(p.img).width(600).height(600).fit("crop").crop("focalpoint").auto("format").url(),
     alt: p.alt ?? "",
     caption: p.caption,
   }));

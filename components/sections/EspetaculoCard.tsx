@@ -1,15 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MapPin, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { MapPin } from "lucide-react";
 import Image from "next/image";
 import type { SanityEspetaculo } from "@/lib/sanity/types";
 import { urlFor } from "@/sanity/lib/image";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Badge from "@/components/ui/Badge";
 import { cn } from "@/lib/utils/cn";
-import { trackCTAClick } from "@/lib/analytics";
 
 interface EspetaculoCardProps {
   espetaculo: SanityEspetaculo;
@@ -55,15 +53,8 @@ export default function EspetaculoCard({ espetaculo, featured = false }: Espetac
           <span>{espetaculo.venue}</span>
         </div>
         {espetaculo.description && (
-          <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">{espetaculo.description}</p>
+          <p className="text-gray-500 text-sm leading-relaxed line-clamp-3">{espetaculo.description}</p>
         )}
-        <Link
-          href={`/a-escola/espetaculos#${espetaculo.slug}`}
-          className="inline-flex items-center gap-1.5 text-brand-purple-600 text-sm font-semibold hover:gap-2.5 transition-all"
-          onClick={() => trackCTAClick('Saiba mais', 'espetaculo-card', 'espetaculos')}
-        >
-          Saiba mais <ArrowRight size={14} />
-        </Link>
       </div>
     </motion.div>
   );

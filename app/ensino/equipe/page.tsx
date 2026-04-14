@@ -27,7 +27,7 @@ export default async function EquipePage() {
         eyebrow="Equipe"
         title="Especialistas que vivem o que ensinam"
         subtitle="Nossa equipe é formada por artistas atuantes e educadores com formação superior em suas áreas."
-        breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Equipe" }]}
+        breadcrumbs={[{ label: "A Escola", href: "/a-escola" }, { label: "Equipe" }]}
       />
       <section className="section-padding bg-white">
         <div className="container-main">

@@ -59,7 +59,8 @@ export interface TimelineEntry {
 }
 
 export interface Photo {
-  src: string;
+  src: string;         // full-size URL used in lightbox (preserves original aspect ratio)
+  thumbnailSrc?: string; // square-cropped URL used in the grid thumbnail
   alt: string;
   caption?: string;
   width?: number;

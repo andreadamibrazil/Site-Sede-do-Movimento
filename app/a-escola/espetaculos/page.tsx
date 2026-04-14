@@ -32,7 +32,7 @@ export default async function EspetaculosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {espetaculos.map((esp, i) => (
               <ScrollReveal key={esp.slug} delay={i * 0.07}>
-                <EspetaculoCard espetaculo={esp} featured={i === 0} />
+                <EspetaculoCard espetaculo={esp} featured={!!esp.featured} />
               </ScrollReveal>
             ))}
           </div>

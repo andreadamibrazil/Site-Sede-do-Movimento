@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils/cn";
 interface PhotoGalleryProps {
   photos: Photo[];
   columns?: 2 | 3 | 4 | 5;
-  /** Thumbnail aspect ratio in the grid. Defaults to "video" (16:9) to match 1920×1080 source photos. */
+  /** Thumbnail aspect ratio in the grid. Defaults to "square". */
   aspect?: "square" | "video";
   className?: string;
 }
 
-export default function PhotoGallery({ photos, columns = 4, aspect = "video", className }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, columns = 4, aspect = "square", className }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const colClass = { 2: "grid-cols-2", 3: "grid-cols-2 sm:grid-cols-3", 4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", 5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" }[columns];
@@ -35,8 +35,8 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "video", cl
             className={cn("group relative overflow-hidden rounded-lg cursor-pointer", aspectClass)}
             onClick={() => setLightboxIndex(i)}
           >
-            {photo.src ? (
-              <Image src={photo.src} alt={photo.alt} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
+            {photo.thumbnailSrc ?? photo.src ? (
+              <Image src={photo.thumbnailSrc ?? photo.src} alt={photo.alt} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
             ) : (
               <PlaceholderImage className="w-full h-full rounded-none border-none" label={photo.alt} />
             )}
