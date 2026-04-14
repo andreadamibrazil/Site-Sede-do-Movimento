@@ -133,7 +133,7 @@ export const galleryAlbumBySlugQuery = groq`
   *[_type == "galleryAlbum" && slug.current == $slug && active == true][0] {
     _id, title, "slug": slug.current, description, category, year,
     photos[] {
-      "img": select(_type == "image" => @, image),
+      "img": @,
       "alt": coalesce(alt, ""),
       "caption": caption
     }
@@ -143,7 +143,18 @@ export const galleryAlbumBySlugQuery = groq`
 export const featuredGalleryPhotosQuery = groq`
   *[_type == "galleryAlbum" && active == true && featured == true] | order(order asc)[0...3] {
     "photos": photos[0...8] {
-      "img": select(_type == "image" => @, image),
+      "img": @,
+      "alt": coalesce(alt, "")
+    }
+  }
+`;
+
+// Fotos de qualquer álbum ativo (sem exigir featured == true)
+// Usado na homepage e na prévia de /galerias
+export const recentGalleryPhotosQuery = groq`
+  *[_type == "galleryAlbum" && active == true] | order(order asc)[0...6] {
+    "photos": photos[0...4] {
+      "img": @,
       "alt": coalesce(alt, "")
     }
   }
@@ -182,7 +193,7 @@ export const modalidadeImagesQuery = groq`
 export const gallerySectionPhotosQuery = groq`
   *[_type == "galleryAlbum" && active == true && $section in sections] | order(order asc) {
     "photos": photos[] {
-      "img": select(_type == "image" => @, image),
+      "img": @,
       "alt": coalesce(alt, "")
     }
   }

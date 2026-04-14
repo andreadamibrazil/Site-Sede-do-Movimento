@@ -23,7 +23,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import { stats } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, featuredGalleryPhotosQuery } from "@/lib/sanity/queries";
+import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
 import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
@@ -77,7 +77,7 @@ export default async function HomePage() {
     sanityFetch({ query: allPostsQuery }),
     sanityFetch({ query: allEspetaculosQuery }),
     sanityFetch({ query: siteSettingsQuery }),
-    sanityFetch({ query: featuredGalleryPhotosQuery }),
+    sanityFetch({ query: recentGalleryPhotosQuery }),
   ]);
   const recentPosts = ((postsData as SanityPost[]) ?? []).slice(0, 3);
   const espetaculos = ((espetaculosData as SanityEspetaculo[]) ?? []).slice(0, 3);
