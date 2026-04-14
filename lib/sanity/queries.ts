@@ -98,7 +98,8 @@ export const siteSettingsQuery = groq`
       vivaCiaFoto,
       produtoraFoto,
       projetoSocialFoto,
-      formacaoInfantilFoto
+      formacaoInfantilFoto,
+      youtubeChannelCover
     }
   }
 `;

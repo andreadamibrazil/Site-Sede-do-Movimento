@@ -7,10 +7,24 @@ import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allGalleryAlbumsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
+import { allGalleryAlbumsQuery, recentGalleryPhotosQuery, siteSettingsQuery, activeVideosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
-import type { SanityGalleryAlbum } from "@/lib/sanity/types";
+import type { SanityGalleryAlbum, SanitySiteSettings } from "@/lib/sanity/types";
 import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
+
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /youtube\.com\/watch\?v=([^&]+)/,
+    /youtube\.com\/embed\/([^?]+)/,
+    /youtu\.be\/([^?]+)/,
+    /youtube\.com\/shorts\/([^?]+)/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("galerias", {
@@ -25,17 +39,26 @@ const breadcrumbs = [
 ];
 
 export default async function GaleriasPage() {
-  const [{ data: albumsData }, { data: photosData }] = await Promise.all([
+  const [{ data: albumsData }, { data: photosData }, { data: settingsData }, { data: videosData }] = await Promise.all([
     sanityFetch({ query: allGalleryAlbumsQuery }),
     sanityFetch({ query: recentGalleryPhotosQuery }),
+    sanityFetch({ query: siteSettingsQuery }),
+    sanityFetch({ query: activeVideosQuery }),
   ]);
 
   const albums = (albumsData as SanityGalleryAlbum[] | null) ?? [];
   const galleryAlbums = (photosData as { photos: { img: SanityImageSource; alt?: string }[] }[] | null) ?? [];
   const previewPhotos = galleryAlbums.flatMap((a) => a.photos ?? []).slice(0, 6);
+  const settings = settingsData as SanitySiteSettings | null;
+  const videos = (videosData as { youtubeUrl: string }[] | null) ?? [];
 
-  // Distribute album covers across hub cards
-  const albumCovers = albums.slice(0, 3).map((a) => a.coverImage);
+  // Hub card backgrounds — Fotos uses first album cover, Vídeos uses YT thumbnail, YouTube uses uploaded cover
+  const fotosBg = albums[0]?.coverImage;
+  const ytChannelCover = settings?.imagens?.youtubeChannelCover;
+  const firstVideoId = videos[0]?.youtubeUrl ? extractYouTubeVideoId(videos[0].youtubeUrl) : null;
+  const videosThumbnailUrl = firstVideoId
+    ? `https://img.youtube.com/vi/${firstVideoId}/maxresdefault.jpg`
+    : null;
 
   return (
     <>
@@ -64,9 +87,9 @@ export default async function GaleriasPage() {
                 className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
               >
                 <div className="absolute inset-0">
-                  {albumCovers[0] ? (
+                  {fotosBg ? (
                     <Image
-                      src={urlFor(albumCovers[0]).width(600).height(760).fit("crop").auto("format").url()}
+                      src={urlFor(fotosBg).width(600).height(760).fit("crop").crop("focalpoint").auto("format").url()}
                       alt="Galeria de Fotos"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -105,9 +128,9 @@ export default async function GaleriasPage() {
                 className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
               >
                 <div className="absolute inset-0">
-                  {albumCovers[1] ? (
+                  {videosThumbnailUrl ? (
                     <Image
-                      src={urlFor(albumCovers[1]).width(600).height(760).fit("crop").auto("format").url()}
+                      src={videosThumbnailUrl}
                       alt="Vídeos"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -144,9 +167,9 @@ export default async function GaleriasPage() {
                 className="group relative flex flex-col overflow-hidden rounded-2xl bg-gray-900 h-[380px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600 focus-visible:ring-offset-2"
               >
                 <div className="absolute inset-0">
-                  {albumCovers[2] ? (
+                  {ytChannelCover ? (
                     <Image
-                      src={urlFor(albumCovers[2]).width(600).height(760).fit("crop").auto("format").url()}
+                      src={urlFor(ytChannelCover).width(600).height(760).fit("crop").crop("focalpoint").auto("format").url()}
                       alt="Canal YouTube"
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"

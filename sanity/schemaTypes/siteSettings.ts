@@ -222,6 +222,13 @@ export const siteSettingsType = defineType({
           options: { hotspot: true },
           description: "Foto exibida na página de Jornadas Artísticas / Formação Infantil.",
         }),
+        defineField({
+          name: "youtubeChannelCover",
+          title: "Canal YouTube — Capa / Logo",
+          type: "image",
+          options: { hotspot: true },
+          description: "Imagem exibida no card do Canal YouTube na página de Galerias. Ideal: logo ou banner do canal (ex: 1280×720 px).",
+        }),
       ],
     }),
   ],

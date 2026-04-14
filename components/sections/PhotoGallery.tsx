@@ -11,13 +11,16 @@ import { cn } from "@/lib/utils/cn";
 interface PhotoGalleryProps {
   photos: Photo[];
   columns?: 2 | 3 | 4 | 5;
+  /** Thumbnail aspect ratio in the grid. Defaults to "video" (16:9) to match 1920×1080 source photos. */
+  aspect?: "square" | "video";
   className?: string;
 }
 
-export default function PhotoGallery({ photos, columns = 4, className }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, columns = 4, aspect = "video", className }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const colClass = { 2: "grid-cols-2", 3: "grid-cols-2 sm:grid-cols-3", 4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", 5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" }[columns];
+  const aspectClass = aspect === "video" ? "aspect-video" : "aspect-square";
 
   const prev = () => setLightboxIndex((i) => (i !== null ? (i - 1 + photos.length) % photos.length : 0));
   const next = () => setLightboxIndex((i) => (i !== null ? (i + 1) % photos.length : 0));
@@ -29,7 +32,7 @@ export default function PhotoGallery({ photos, columns = 4, className }: PhotoGa
           <motion.div
             key={i}
             whileHover="hover"
-            className="group relative aspect-square overflow-hidden rounded-lg cursor-pointer"
+            className={cn("group relative overflow-hidden rounded-lg cursor-pointer", aspectClass)}
             onClick={() => setLightboxIndex(i)}
           >
             {photo.src ? (

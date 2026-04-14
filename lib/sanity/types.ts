@@ -84,6 +84,7 @@ export interface SanitySiteSettings {
     produtoraFoto?: SanityImageSource;
     projetoSocialFoto?: SanityImageSource;
     formacaoInfantilFoto?: SanityImageSource;
+    youtubeChannelCover?: SanityImageSource;
   };
 }
 
