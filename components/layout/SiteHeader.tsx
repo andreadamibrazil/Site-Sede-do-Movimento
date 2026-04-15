@@ -13,11 +13,18 @@ import { dropdownVariants } from "@/lib/animations";
 import Button from "@/components/ui/Button";
 import { trackWhatsAppClick } from "@/lib/analytics";
 
-export default function SiteHeader() {
+interface SiteHeaderProps {
+  whatsapp?: string;
+  phone?: string;
+}
+
+export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
+  const whatsappUrl = whatsapp ?? siteConfig.social.whatsapp;
+  const phoneDisplay = phone ?? siteConfig.phone;
+
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -29,12 +36,11 @@ export default function SiteHeader() {
   useEffect(() => {
     setDrawerOpen(false);
     setActiveDropdown(null);
-    setExpandedNav(null);
   }, [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = drawerOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overflowY = drawerOpen ? "hidden" : "";
+    return () => { document.body.style.overflowY = ""; };
   }, [drawerOpen]);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
@@ -145,7 +151,7 @@ export default function SiteHeader() {
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => { trackWhatsAppClick('header', 'global'); window.open(siteConfig.social.whatsapp, "_blank"); }}
+                onClick={() => { trackWhatsAppClick('header', 'global'); window.open(whatsappUrl, "_blank"); }}
                 leftIcon={<Phone size={14} />}
               >
                 Fale conosco
@@ -208,90 +214,46 @@ export default function SiteHeader() {
           </button>
         </div>
 
-        {/* Drawer links — accordion for items with children */}
+        {/* Drawer links — parent items always expanded */}
         <nav className="py-2">
-          {navigationItems.map((item) => {
-            const hasChildren = !!item.children?.length;
-            const isExpanded = expandedNav === item.href;
-            const active = isActive(item.href);
+          {navigationItems.map((item) => (
+            <div key={item.href}>
+              <Link
+                href={item.href}
+                onClick={() => setDrawerOpen(false)}
+                className={cn(
+                  "flex items-center px-5 py-4 text-[15px] font-medium transition-colors",
+                  isActive(item.href)
+                    ? "text-brand-purple-600 font-semibold bg-brand-light"
+                    : "text-gray-800 active:bg-gray-50"
+                )}
+              >
+                {item.label}
+              </Link>
 
-            return (
-              <div key={item.href}>
-                {hasChildren ? (
-                  /* Accordion toggle for parent items */
-                  <button
-                    onClick={() => setExpandedNav(isExpanded ? null : item.href)}
-                    className={cn(
-                      "w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors",
-                      active
-                        ? "text-brand-purple-600 font-semibold bg-brand-light"
-                        : "text-gray-800 active:bg-gray-50"
-                    )}
-                  >
-                    {item.label}
-                    <ChevronDown
-                      size={16}
+              {item.children && (
+                <div className="bg-gray-50 pb-1">
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={() => setDrawerOpen(false)}
                       className={cn(
-                        "text-gray-400 transition-transform duration-200",
-                        isExpanded && "rotate-180"
+                        "flex items-center px-6 py-2.5 text-sm transition-colors",
+                        isActive(child.href)
+                          ? "text-brand-purple-600 font-semibold"
+                          : "text-gray-500 active:bg-gray-100"
                       )}
-                    />
-                  </button>
-                ) : (
-                  <Link
-                    href={item.href}
-                    onClick={() => setDrawerOpen(false)}
-                    className={cn(
-                      "flex items-center px-5 py-4 text-[15px] font-medium transition-colors",
-                      active
-                        ? "text-brand-purple-600 font-semibold bg-brand-light"
-                        : "text-gray-800 active:bg-gray-50"
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                )}
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
-                {/* Sub-items — smooth height transition */}
-                {hasChildren && (
-                  <div
-                    className={cn(
-                      "overflow-hidden transition-all duration-200",
-                      isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-                    )}
-                  >
-                    <div className="bg-gray-50 py-1">
-                      <Link
-                        href={item.href}
-                        onClick={() => setDrawerOpen(false)}
-                        className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-brand-purple-600 active:bg-gray-100 transition-colors"
-                      >
-                        Ver tudo em {item.label}
-                        <ArrowRight size={13} />
-                      </Link>
-                      {item.children!.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          onClick={() => setDrawerOpen(false)}
-                          className={cn(
-                            "flex items-center px-5 py-3 text-sm transition-colors",
-                            isActive(child.href)
-                              ? "text-brand-purple-600 font-semibold bg-brand-light/60"
-                              : "text-gray-600 active:bg-gray-100"
-                          )}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mx-5 border-b border-gray-100" />
-              </div>
-            );
-          })}
+              <div className="mx-5 border-b border-gray-100" />
+            </div>
+          ))}
         </nav>
 
         {/* Drawer footer */}
@@ -302,14 +264,16 @@ export default function SiteHeader() {
             fullWidth
             onClick={() => {
               trackWhatsAppClick("header", "global");
-              window.open(siteConfig.social.whatsapp, "_blank");
+              window.open(whatsappUrl, "_blank");
               setDrawerOpen(false);
             }}
             leftIcon={<Phone size={18} />}
           >
             Fale conosco pelo WhatsApp
           </Button>
-          <p className="text-center text-sm text-gray-400 mt-3">{siteConfig.phone}</p>
+          {phoneDisplay && (
+            <p className="text-center text-sm text-gray-400 mt-3">{phoneDisplay}</p>
+          )}
         </div>
       </div>
     </>

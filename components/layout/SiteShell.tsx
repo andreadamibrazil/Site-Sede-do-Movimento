@@ -15,7 +15,7 @@ export default function SiteShell({ children, settings }: { children: React.Reac
 
   return (
     <>
-      <SiteHeader />
+      <SiteHeader whatsapp={settings?.whatsapp} phone={settings?.phone} />
       <main>{children}</main>
       <SiteFooter settings={settings} />
     </>
