@@ -212,12 +212,12 @@ function TurmaCard({ turma: t }: { turma: SanityTurma }) {
             aria-hidden="true"
           />
           {t.schedule ? (
-            <span className="text-[26px] font-black leading-none tracking-tight text-gray-900">
+            <span className="text-xl font-black leading-none tracking-tight text-gray-900 whitespace-nowrap">
               {t.schedule}
             </span>
           ) : (
-            <span className="text-base font-semibold text-gray-300 leading-none">
-              Horário a confirmar
+            <span className="text-sm font-semibold text-gray-300 leading-none whitespace-nowrap">
+              A confirmar
             </span>
           )}
         </div>
@@ -232,11 +232,11 @@ function TurmaCard({ turma: t }: { turma: SanityTurma }) {
       {/* ── Modality label + class name ────────────────────────────────── */}
       <div className="flex flex-col gap-0.5">
         {t.modality && (
-          <p className="text-[10px] font-black text-brand-purple-500 uppercase tracking-widest leading-none">
+          <p className="text-base font-bold text-brand-purple-600 leading-snug">
             {t.modality}
           </p>
         )}
-        <h3 className="font-bold text-gray-800 text-sm leading-snug">{t.title}</h3>
+        <h3 className="text-sm font-medium text-gray-500 leading-snug">{t.title}</h3>
       </div>
 
       {/* ── Footer: days · age group ───────────────────────────────────── */}
