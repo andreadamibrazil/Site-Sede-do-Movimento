@@ -74,7 +74,7 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.9, ease: "easeInOut" }}
+          transition={{ duration: 0.6, ease: "easeInOut" }}
         >
           <SlideContent slide={slide} priority={current === 0} />
         </motion.div>

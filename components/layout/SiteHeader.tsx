@@ -52,15 +52,12 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
 
   return (
     <>
-      <motion.header
+      <header
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 backdrop-blur-md",
           "bg-white/90 border-b border-gray-100",
           scrolled ? "shadow-sm" : "shadow-none"
         )}
-        initial={{ y: -80 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5, ease: [0, 0, 0.2, 1] }}
       >
         <div className="container-main">
           <div className="flex items-center justify-between h-[72px]">
@@ -167,7 +164,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
             </button>
           </div>
         </div>
-      </motion.header>
+      </header>
 
       {/* Mobile Drawer — CSS-driven, always mounted for instant response */}
       {/* Backdrop */}
