@@ -25,8 +25,7 @@ const ContentSecurityPolicy = [
   ].join(" "),
   [
     "connect-src 'self'",
-    "https://cdn.sanity.io",
-    "https://api.sanity.io",
+    "https://*.sanity.io",
     "wss://*.sanity.io",
     "https://www.google-analytics.com",
     "https://region1.google-analytics.com",

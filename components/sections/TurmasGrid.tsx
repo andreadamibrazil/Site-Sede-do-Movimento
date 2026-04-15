@@ -212,7 +212,7 @@ function TurmaCard({ turma: t }: { turma: SanityTurma }) {
             aria-hidden="true"
           />
           {t.schedule ? (
-            <span className="text-xl font-black leading-none tracking-tight text-gray-900 whitespace-nowrap">
+            <span className="text-base font-black leading-none tracking-tight text-gray-900 whitespace-nowrap">
               {t.schedule}
             </span>
           ) : (
