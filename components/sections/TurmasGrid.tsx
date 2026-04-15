@@ -17,6 +17,14 @@ const DIA_LABEL: Record<string, string> = {
   Sábado: "Sáb",
 };
 
+/** Parse "16h30 – 17h" → 990 (minutes since midnight) for sorting. */
+function parseStartMinutes(schedule?: string | null): number {
+  if (!schedule) return Infinity; // no schedule → end of list
+  const match = schedule.match(/^(\d{1,2})h(\d{2})?/);
+  if (!match) return Infinity;
+  return parseInt(match[1], 10) * 60 + parseInt(match[2] ?? "0", 10);
+}
+
 function statusConfig(status: TurmaStatus, availableSpots?: number) {
   switch (status) {
     case "full":
@@ -59,17 +67,23 @@ export default function TurmasGrid({ turmas }: Props) {
     });
   }, [turmas, diaAtivo, modalidadeAtiva]);
 
+  // Sort by start time within every group
+  const sorted = useMemo(
+    () => [...filtered].sort((a, b) => parseStartMinutes(a.schedule) - parseStartMinutes(b.schedule)),
+    [filtered]
+  );
+
   const grouped = useMemo(() => {
-    if (diaAtivo !== "Todos") return [{ dia: diaAtivo, turmas: filtered }];
+    if (diaAtivo !== "Todos") return [{ dia: diaAtivo, turmas: sorted }];
     return DIAS.map((dia) => ({
       dia,
-      turmas: filtered.filter((t) => t.dayOfWeek?.includes(dia)),
+      turmas: sorted.filter((t) => t.dayOfWeek?.includes(dia)),
     })).filter((g) => g.turmas.length > 0);
-  }, [filtered, diaAtivo]);
+  }, [sorted, diaAtivo]);
 
   const semDia = useMemo(
-    () => filtered.filter((t) => !t.dayOfWeek || t.dayOfWeek.length === 0),
-    [filtered]
+    () => sorted.filter((t) => !t.dayOfWeek || t.dayOfWeek.length === 0),
+    [sorted]
   );
 
   const totalVisible = filtered.length;
