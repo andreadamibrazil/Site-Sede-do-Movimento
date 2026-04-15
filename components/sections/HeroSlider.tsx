@@ -59,7 +59,7 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <section
-      className="relative w-full overflow-hidden bg-gray-900 min-h-[360px] h-[58vh] sm:h-[72vh] lg:h-[85vh] lg:max-h-[880px]"
+      className="relative w-full overflow-hidden bg-gray-900 mt-[72px] min-h-[360px] h-[calc(58vh-72px)] sm:h-[calc(72vh-72px)] lg:h-[calc(85vh-72px)] lg:max-h-[808px]"
       onMouseEnter={() => setIsPlaying(false)}
       onMouseLeave={() => setIsPlaying(true)}
       onTouchStart={handleTouchStart}

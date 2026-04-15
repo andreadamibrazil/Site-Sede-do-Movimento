@@ -50,9 +50,8 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-[100] transition-all duration-300 backdrop-blur-md",
-          scrolled
-            ? "bg-white/90 border-b border-gray-100 shadow-sm"
-            : "bg-white/0"
+          "bg-white/90 border-b border-gray-100",
+          scrolled ? "shadow-sm" : "shadow-none"
         )}
         initial={{ y: -80 }}
         animate={{ y: 0 }}
@@ -63,7 +62,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
             {/* Logo — branco no topo, preto ao rolar */}
             <Link href="/" className="shrink-0">
               <Image
-                src={scrolled ? "/images/LogoPreto.png" : "/images/LogoBranco.png"}
+                src="/images/LogoPreto.png"
                 alt="Sede do Movimento"
                 width={148}
                 height={36}
@@ -87,9 +86,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
                       "flex items-center gap-1 px-3 py-2 rounded-sm text-[14px] font-medium transition-all duration-150",
                       isActive(item.href)
                         ? "text-brand-purple-600 font-semibold"
-                        : scrolled
-                          ? "text-gray-700 hover:text-brand-purple-600 hover:bg-brand-light"
-                          : "text-white/90 hover:text-white hover:bg-white/10"
+                        : "text-gray-700 hover:text-brand-purple-600 hover:bg-brand-light"
                     )}
                   >
                     {item.label}
@@ -141,10 +138,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
             <div className="hidden lg:flex items-center gap-3">
               <Link
                 href="/blog"
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  scrolled ? "text-gray-600 hover:text-brand-purple-600" : "text-white/80 hover:text-white"
-                )}
+                className="text-sm font-medium text-gray-600 hover:text-brand-purple-600 transition-colors"
               >
                 Blog
               </Link>
@@ -161,10 +155,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
             {/* Mobile Hamburger */}
             <button
               onClick={() => setDrawerOpen(true)}
-              className={cn(
-                "lg:hidden flex items-center justify-center w-11 h-11 rounded-sm transition-colors",
-                scrolled ? "text-gray-700 hover:bg-gray-100" : "text-white hover:bg-white/10"
-              )}
+              className="lg:hidden flex items-center justify-center w-11 h-11 rounded-sm transition-colors text-gray-700 hover:bg-gray-100"
               aria-label="Abrir menu"
             >
               <Menu size={24} />
@@ -222,13 +213,16 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
                 href={item.href}
                 onClick={() => setDrawerOpen(false)}
                 className={cn(
-                  "flex items-center px-5 py-4 text-[15px] font-medium transition-colors",
+                  "flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors",
                   isActive(item.href)
                     ? "text-brand-purple-600 font-semibold bg-brand-light"
                     : "text-gray-800 active:bg-gray-50"
                 )}
               >
                 {item.label}
+                {item.children && (
+                  <ChevronDown size={15} className="text-gray-400 shrink-0" />
+                )}
               </Link>
 
               {item.children && (
