@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
+// Reject emails longer than the RFC 5321 maximum
+const MAX_EMAIL_LENGTH = 254;
+
 export async function POST(req: NextRequest) {
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { email } = await req.json();
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (
+      !email ||
+      typeof email !== "string" ||
+      email.length > MAX_EMAIL_LENGTH ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
       return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
     }
 
