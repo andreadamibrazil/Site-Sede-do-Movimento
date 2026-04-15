@@ -155,6 +155,16 @@ const modalidades = [
     ages: "A confirmar",
     sanityKey: "Preparação Física",
   },
+  {
+    id: "grupo-de-competicao",
+    name: "Grupo de Competição",
+    area: "Dança",
+    tagline: "Excelência técnica, identidade de grupo e palco de alto nível.",
+    description:
+      "Formação voltada para competições coreográficas, desenvolvendo técnica apurada, entrosamento de elenco e presença cênica em apresentações externas.",
+    ages: "A confirmar",
+    sanityKey: "Grupo de Competição",
+  },
 ];
 
 type TurmaImage = { modality: string; image: Record<string, unknown> };

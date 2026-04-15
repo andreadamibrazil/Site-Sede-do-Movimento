@@ -14,6 +14,7 @@ const MODALITY_OPTIONS = [
   { title: "Teclado", value: "Teclado" },
   { title: "Preparação para o Movimento", value: "Preparação" },
   { title: "Preparação Física", value: "Preparação Física" },
+  { title: "Grupo de Competição", value: "Grupo de Competição" },
 ];
 
 const AGE_GROUP_OPTIONS = [
