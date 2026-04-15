@@ -45,7 +45,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
 
   const isActive = (href: string, children?: { href: string }[]) => {
     if (children?.length) {
-      return children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
+      return pathname === href || children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
     }
     return pathname === href || pathname.startsWith(href + "/");
   };
