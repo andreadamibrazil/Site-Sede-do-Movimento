@@ -13,7 +13,7 @@ const MODALITY_OPTIONS = [
   { title: "Violão", value: "Violão" },
   { title: "Teclado", value: "Teclado" },
   { title: "Preparação para o Movimento", value: "Preparação" },
-  { title: "Preparação Física", value: "Preparação Física" },
+  { title: "Preparação Física para Bailarinos", value: "Preparação Física para Bailarinos" },
   { title: "Grupo de Competição", value: "Grupo de Competição" },
 ];
 

@@ -147,23 +147,13 @@ const modalidades = [
   },
   {
     id: "preparacao-fisica",
-    name: "Preparação Física",
+    name: "Preparação Física para Bailarinos",
     area: "Iniciação",
     tagline: "Corpo forte e preparado para ir mais longe na arte.",
     description:
       "Condicionamento físico específico para bailarinos e artistas, com foco em força, flexibilidade, resistência e consciência corporal.",
     ages: "A confirmar",
-    sanityKey: "Preparação Física",
-  },
-  {
-    id: "grupo-de-competicao",
-    name: "Grupo de Competição",
-    area: "Dança",
-    tagline: "Excelência técnica, identidade de grupo e palco de alto nível.",
-    description:
-      "Formação voltada para competições coreográficas, desenvolvendo técnica apurada, entrosamento de elenco e presença cênica em apresentações externas.",
-    ages: "A confirmar",
-    sanityKey: "Grupo de Competição",
+    sanityKey: "Preparação Física para Bailarinos",
   },
 ];
 

@@ -12,6 +12,8 @@ const MODALIDADE_OPTIONS = [
   { title: "Violão", value: "Violão" },
   { title: "Teclado", value: "Teclado" },
   { title: "Preparação para o Movimento", value: "Preparação" },
+  { title: "Charme", value: "Charme" },
+  { title: "Preparação Física para Bailarinos", value: "Preparação Física para Bailarinos" },
 ];
 
 export const modalidadeFotoType = defineType({

@@ -43,7 +43,12 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
     return () => { document.body.style.overflowY = ""; };
   }, [drawerOpen]);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const isActive = (href: string, children?: { href: string }[]) => {
+    if (children?.length) {
+      return children.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <>
@@ -73,7 +78,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-1">
-              {navigationItems.slice(0, 5).map((item) => (
+              {navigationItems.slice(0, 6).map((item) => (
                 <div
                   key={item.href}
                   className="relative"
@@ -84,7 +89,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
                     href={item.href}
                     className={cn(
                       "flex items-center gap-1 px-3 py-2 rounded-sm text-[14px] font-medium transition-all duration-150",
-                      isActive(item.href)
+                      isActive(item.href, item.children)
                         ? "text-brand-purple-600 font-semibold"
                         : "text-gray-700 hover:text-brand-purple-600 hover:bg-brand-light"
                     )}
@@ -214,7 +219,7 @@ export default function SiteHeader({ whatsapp, phone }: SiteHeaderProps) {
                 onClick={() => setDrawerOpen(false)}
                 className={cn(
                   "flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors",
-                  isActive(item.href)
+                  isActive(item.href, item.children)
                     ? "text-brand-purple-600 font-semibold bg-brand-light"
                     : "text-gray-800 active:bg-gray-50"
                 )}
