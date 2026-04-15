@@ -6,12 +6,14 @@ const MODALITY_OPTIONS = [
   { title: "Jazz", value: "Jazz" },
   { title: "Sapateado", value: "Sapateado" },
   { title: "Danças Urbanas", value: "Danças Urbanas" },
+  { title: "Charme", value: "Charme" },
   { title: "Dança Contemporânea", value: "Dança Contemporânea" },
   { title: "Teatro", value: "Teatro" },
   { title: "Música/Canto", value: "Música/Canto" },
   { title: "Violão", value: "Violão" },
   { title: "Teclado", value: "Teclado" },
   { title: "Preparação para o Movimento", value: "Preparação" },
+  { title: "Preparação Física", value: "Preparação Física" },
 ];
 
 const AGE_GROUP_OPTIONS = [

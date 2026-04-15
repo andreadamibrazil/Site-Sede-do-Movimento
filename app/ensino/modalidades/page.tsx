@@ -76,6 +76,16 @@ const modalidades = [
     sanityKey: "Danças Urbanas",
   },
   {
+    id: "charme",
+    name: "Charme",
+    area: "Dança",
+    tagline: "Ritmo, estilo e raízes afro-brasileiras.",
+    description:
+      "Uma dança que celebra a identidade e a cultura afro-brasileira, desenvolvendo ritmo, expressão corporal e consciência cultural.",
+    ages: "A confirmar",
+    sanityKey: "Charme",
+  },
+  {
     id: "contemporaneo",
     name: "Dança Contemporânea",
     area: "Dança",
@@ -134,6 +144,16 @@ const modalidades = [
       "Ideal para crianças em fase de descoberta, o desenvolvimento se dá de forma lúdica, com estímulos que integram movimento, musicalidade, expressão e desenvolvimento motor.",
     ages: "A confirmar",
     sanityKey: "Preparação",
+  },
+  {
+    id: "preparacao-fisica",
+    name: "Preparação Física",
+    area: "Iniciação",
+    tagline: "Corpo forte e preparado para ir mais longe na arte.",
+    description:
+      "Condicionamento físico específico para bailarinos e artistas, com foco em força, flexibilidade, resistência e consciência corporal.",
+    ages: "A confirmar",
+    sanityKey: "Preparação Física",
   },
 ];
 
