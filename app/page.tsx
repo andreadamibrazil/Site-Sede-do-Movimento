@@ -15,13 +15,14 @@ import StatsSection from "@/components/sections/StatsSection";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
-import BlogPostCard from "@/components/sections/BlogPostCard";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
+import Badge from "@/components/ui/Badge";
 import FAQSection from "@/components/sections/FAQSection";
 import FAQSchema from "@/components/schema/FAQSchema";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { stats } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { formatDate } from "@/lib/utils/formatDate";
 import { sanityFetch } from "@/sanity/lib/live";
 import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
@@ -389,14 +390,132 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {espetaculos.slice(0, 3).map((esp, i) => (
               <ScrollReveal key={esp.slug} delay={i * 0.08}>
-                <EspetaculoCard espetaculo={esp} featured={i === 0} />
+                <EspetaculoCard espetaculo={esp} featured={esp.featured ?? false} />
               </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 9. CTA ──────────────────────────────────────────────────────────── */}
+      {/* ── 9. BLOG PREVIEW ──────────────────────────────────────────────────── */}
+      <section id="blog" className="section-padding bg-gradient-dark overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-brand-purple-600/10 blur-[100px]" />
+        </div>
+        <div className="container-main relative">
+          {/* Header */}
+          <div className="flex items-end justify-between mb-10 md:mb-12">
+            <div>
+              <p className="text-brand-pink font-semibold text-[11px] uppercase tracking-[0.15em] mb-3">
+                Blog
+              </p>
+              <h2 className="text-[1.9rem] sm:text-[2.2rem] font-bold text-white leading-[1.18]">
+                Novidades e conteúdo
+              </h2>
+            </div>
+            <Link
+              href="/blog"
+              className="hidden md:flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-semibold hover:gap-3 transition-all"
+            >
+              Ver todos <ArrowRight size={15} />
+            </Link>
+          </div>
+
+          {recentPosts.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 xl:gap-8">
+
+              {/* Featured post — large left */}
+              <ScrollReveal>
+                <Link href={`/blog/${recentPosts[0].slug}`} className="group block h-full">
+                  <div className="aspect-[16/9] rounded-2xl overflow-hidden relative mb-5 bg-white/5">
+                    {recentPosts[0].coverImage ? (
+                      <Image
+                        src={urlFor(recentPosts[0].coverImage).width(900).height(506).url()}
+                        alt={recentPosts[0].title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(max-width: 1024px) 100vw, 60vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                        <span className="text-white/20 text-lg font-bold">{recentPosts[0].title}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  </div>
+                  <Badge color="accent" variant="subtle" size="xs" className="mb-3">
+                    {recentPosts[0].category}
+                  </Badge>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 leading-snug group-hover:text-brand-pink transition-colors duration-200">
+                    {recentPosts[0].title}
+                  </h3>
+                  {recentPosts[0].excerpt && (
+                    <p className="text-white/50 text-sm leading-relaxed line-clamp-2 mb-4">
+                      {recentPosts[0].excerpt}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 text-xs text-white/35">
+                    <span>{formatDate(recentPosts[0].publishedAt)}</span>
+                    <span>·</span>
+                    <span>{recentPosts[0].readingTime} min de leitura</span>
+                  </div>
+                </Link>
+              </ScrollReveal>
+
+              {/* Side column — 2 smaller posts + CTA */}
+              <div className="flex flex-col gap-4">
+                {recentPosts.slice(1, 3).map((post, i) => (
+                  <ScrollReveal key={post._id} delay={(i + 1) * 0.1}>
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="group flex gap-4 bg-white/5 hover:bg-white/9 rounded-xl p-4 border border-white/8 transition-all duration-200"
+                    >
+                      <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden relative bg-white/10">
+                        {post.coverImage ? (
+                          <Image
+                            src={urlFor(post.coverImage).width(160).height(160).url()}
+                            alt={post.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="80px"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="flex flex-col justify-center min-w-0">
+                        <Badge color="primary" variant="subtle" size="xs" className="mb-1.5 w-fit">
+                          {post.category}
+                        </Badge>
+                        <h3 className="font-bold text-white text-sm leading-snug line-clamp-2 group-hover:text-brand-pink transition-colors duration-200 mb-1.5">
+                          {post.title}
+                        </h3>
+                        <p className="text-xs text-white/35">{formatDate(post.publishedAt)}</p>
+                      </div>
+                    </Link>
+                  </ScrollReveal>
+                ))}
+
+                <ScrollReveal delay={0.3}>
+                  <Link
+                    href="/blog"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-white/12 text-white/60 hover:text-white hover:border-white/25 text-sm font-semibold transition-all duration-200 mt-1"
+                  >
+                    Ver todos os artigos <ArrowRight size={14} />
+                  </Link>
+                </ScrollReveal>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile "ver todos" */}
+          <div className="mt-6 md:hidden text-center">
+            <Link href="/blog" className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-sm font-semibold transition-colors">
+              Ver todos os artigos <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 10. CTA ─────────────────────────────────────────────────────────── */}
       <section id="contato" className="relative py-16 sm:py-24 bg-gradient-brand overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-white/10 blur-[80px]" />
@@ -429,7 +548,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── 10. FAQ / GEO ────────────────────────────────────────────────────── */}
+      {/* ── 11. FAQ / GEO ────────────────────────────────────────────────────── */}
       <section id="faq" className="section-padding bg-gray-50">
         <div className="container-main">
           <SectionTitle
@@ -442,32 +561,6 @@ export default async function HomePage() {
               <FAQSection items={faqItems} />
             </div>
           </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ── 11. BLOG PREVIEW ─────────────────────────────────────────────────── */}
-      <section id="blog" className="section-padding bg-gray-50">
-        <div className="container-main">
-          <div className="flex items-end justify-between mb-7 md:mb-10">
-            <SectionTitle
-              eyebrow="Blog"
-              title="Novidades e conteúdo"
-              subtitle="Artigos, notícias e histórias do universo da Sede do Movimento."
-              align="left"
-              className="mb-0"
-            />
-            <Link href="/blog" className="hidden md:flex items-center gap-1.5 text-brand-purple-600 font-semibold text-sm hover:gap-3 transition-all">
-              Ver todos os posts <ArrowRight size={15} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {recentPosts.map((post, i) => (
-              <ScrollReveal key={post._id} delay={i * 0.07}>
-                <BlogPostCard post={post} />
-              </ScrollReveal>
-            ))}
-          </div>
         </div>
       </section>
     </>

@@ -132,7 +132,7 @@ export default async function BlogPostPage({ params }: PageProps) {
               </div>
 
               {/* Meta info */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-8 pb-6 border-b border-gray-100">
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6 pb-6 border-b border-gray-100">
                 <div className="flex items-center gap-1.5">
                   <Calendar size={14} />
                   {formatDate(post.publishedAt)}
@@ -145,6 +145,11 @@ export default async function BlogPostPage({ params }: PageProps) {
                   {post.category}
                 </Badge>
               </div>
+
+              {/* Post title — bold, above body */}
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 leading-snug">
+                {post.title}
+              </h1>
 
               {/* Article body — Portable Text */}
               <div

@@ -9,7 +9,7 @@ import { Menu, X, ChevronDown, Phone, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { navigationItems } from "@/lib/constants/navigation";
 import { siteConfig } from "@/lib/constants/siteConfig";
-import { dropdownVariants, drawerVariants, backdropVariants } from "@/lib/animations";
+import { dropdownVariants } from "@/lib/animations";
 import Button from "@/components/ui/Button";
 import { trackWhatsAppClick } from "@/lib/analytics";
 
@@ -17,6 +17,7 @@ export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function SiteHeader() {
   useEffect(() => {
     setDrawerOpen(false);
     setActiveDropdown(null);
+    setExpandedNav(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -165,101 +167,151 @@ export default function SiteHeader() {
         </div>
       </motion.header>
 
-      {/* Mobile Drawer */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            <motion.div
-              variants={backdropVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 bg-black/40 z-[190] lg:hidden"
-            />
-            <motion.div
-              variants={drawerVariants}
-              initial="closed"
-              animate="open"
-              exit="closed"
-              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white z-[200] lg:hidden overflow-y-auto"
-            >
-              {/* Drawer header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100">
-                <Link href="/" onClick={() => setDrawerOpen(false)}>
-                  <Image
-                    src="/images/LogoPreto.png"
-                    alt="Sede do Movimento"
-                    width={120}
-                    height={30}
-                    className="h-7 w-auto object-contain"
-                  />
-                </Link>
-                <button
-                  onClick={() => setDrawerOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center rounded-sm text-gray-500 hover:bg-gray-100"
-                  aria-label="Fechar menu"
-                >
-                  <X size={22} />
-                </button>
-              </div>
-
-              {/* Drawer links */}
-              <nav className="p-4">
-                {navigationItems.map((item) => (
-                  <div key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setDrawerOpen(false)}
-                      className={cn(
-                        "flex items-center px-4 py-3.5 rounded-sm text-[15px] font-medium border-b border-gray-50 transition-colors",
-                        isActive(item.href)
-                          ? "bg-brand-light text-brand-purple-600 border-l-[3px] border-l-brand-purple-600 font-semibold"
-                          : "text-gray-700 hover:bg-gray-50"
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                    {item.children && (
-                      <div className="ml-4 mb-2">
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            onClick={() => setDrawerOpen(false)}
-                            className={cn(
-                              "flex items-center px-4 py-2.5 text-sm border-b border-gray-50 transition-colors",
-                              isActive(child.href)
-                                ? "text-brand-purple-600 font-semibold"
-                                : "text-gray-500 hover:text-brand-purple-600"
-                            )}
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </nav>
-
-              {/* Drawer footer */}
-              <div className="p-6 border-t border-gray-100">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  onClick={() => { trackWhatsAppClick('header', 'global'); window.open(siteConfig.social.whatsapp, "_blank"); setDrawerOpen(false); }}
-                  leftIcon={<Phone size={18} />}
-                >
-                  Fale conosco pelo WhatsApp
-                </Button>
-                <p className="text-center text-sm text-gray-400 mt-3">{siteConfig.phone}</p>
-              </div>
-            </motion.div>
-          </>
+      {/* Mobile Drawer — CSS-driven, always mounted for instant response */}
+      {/* Backdrop */}
+      <div
+        onClick={() => setDrawerOpen(false)}
+        aria-hidden="true"
+        className={cn(
+          "fixed inset-0 bg-black/50 z-[190] lg:hidden transition-opacity duration-200",
+          drawerOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
-      </AnimatePresence>
+      />
+
+      {/* Drawer panel */}
+      <div
+        aria-label="Menu de navegação"
+        aria-hidden={!drawerOpen}
+        className={cn(
+          "fixed top-0 right-0 bottom-0 w-[85vw] max-w-sm bg-white z-[200] lg:hidden overflow-y-auto",
+          "shadow-2xl transition-transform duration-[220ms] ease-out will-change-transform",
+          drawerOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <Link href="/" onClick={() => setDrawerOpen(false)}>
+            <Image
+              src="/images/LogoPreto.png"
+              alt="Sede do Movimento"
+              width={120}
+              height={30}
+              className="h-7 w-auto object-contain"
+            />
+          </Link>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            aria-label="Fechar menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Drawer links — accordion for items with children */}
+        <nav className="py-2">
+          {navigationItems.map((item) => {
+            const hasChildren = !!item.children?.length;
+            const isExpanded = expandedNav === item.href;
+            const active = isActive(item.href);
+
+            return (
+              <div key={item.href}>
+                {hasChildren ? (
+                  /* Accordion toggle for parent items */
+                  <button
+                    onClick={() => setExpandedNav(isExpanded ? null : item.href)}
+                    className={cn(
+                      "w-full flex items-center justify-between px-5 py-4 text-[15px] font-medium transition-colors",
+                      active
+                        ? "text-brand-purple-600 font-semibold bg-brand-light"
+                        : "text-gray-800 active:bg-gray-50"
+                    )}
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={16}
+                      className={cn(
+                        "text-gray-400 transition-transform duration-200",
+                        isExpanded && "rotate-180"
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={() => setDrawerOpen(false)}
+                    className={cn(
+                      "flex items-center px-5 py-4 text-[15px] font-medium transition-colors",
+                      active
+                        ? "text-brand-purple-600 font-semibold bg-brand-light"
+                        : "text-gray-800 active:bg-gray-50"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                )}
+
+                {/* Sub-items — smooth height transition */}
+                {hasChildren && (
+                  <div
+                    className={cn(
+                      "overflow-hidden transition-all duration-200",
+                      isExpanded ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+                    )}
+                  >
+                    <div className="bg-gray-50 py-1">
+                      <Link
+                        href={item.href}
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center justify-between px-5 py-3 text-sm font-semibold text-brand-purple-600 active:bg-gray-100 transition-colors"
+                      >
+                        Ver tudo em {item.label}
+                        <ArrowRight size={13} />
+                      </Link>
+                      {item.children!.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          onClick={() => setDrawerOpen(false)}
+                          className={cn(
+                            "flex items-center px-5 py-3 text-sm transition-colors",
+                            isActive(child.href)
+                              ? "text-brand-purple-600 font-semibold bg-brand-light/60"
+                              : "text-gray-600 active:bg-gray-100"
+                          )}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mx-5 border-b border-gray-100" />
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Drawer footer */}
+        <div className="p-5 pt-4">
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => {
+              trackWhatsAppClick("header", "global");
+              window.open(siteConfig.social.whatsapp, "_blank");
+              setDrawerOpen(false);
+            }}
+            leftIcon={<Phone size={18} />}
+          >
+            Fale conosco pelo WhatsApp
+          </Button>
+          <p className="text-center text-sm text-gray-400 mt-3">{siteConfig.phone}</p>
+        </div>
+      </div>
     </>
   );
 }
