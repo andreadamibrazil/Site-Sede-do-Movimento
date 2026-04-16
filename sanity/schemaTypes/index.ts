@@ -11,6 +11,7 @@ import { videoEmbedType } from "./videoEmbed";
 import { professorType } from "./professor";
 import { pageSeoType } from "./pageSeo";
 import { modalidadeFotoType } from "./modalidadeFoto";
+import { legalPageType } from "./legalPage";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -33,5 +34,8 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     // ── Blog ────────────────────────────────────────────────────────────────
     authorType,
     postType,
+
+    // ── Páginas legais ──────────────────────────────────────────────────────
+    legalPageType,
   ],
 };

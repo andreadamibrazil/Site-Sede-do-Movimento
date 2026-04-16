@@ -13,6 +13,7 @@ import { siteSettingsQuery } from "@/lib/sanity/queries";
 import type { SanitySiteSettings } from "@/lib/sanity/types";
 import { urlFor } from "@/sanity/lib/image";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import CookieNotice from "@/components/ui/CookieNotice";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -82,6 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
         <OrganizationSchema />
         <SiteShell settings={siteSettings}>{children}</SiteShell>
+        <CookieNotice />
         <SanityLive />
         <Analytics />
         <SpeedInsights />

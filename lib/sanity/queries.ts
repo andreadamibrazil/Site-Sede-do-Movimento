@@ -210,6 +210,14 @@ export const videoInstitucionalQuery = groq`
   }
 `;
 
+// ─── Páginas Legais ───────────────────────────────────────────────────────────
+
+export const legalPageBySlugQuery = groq`
+  *[_type == "legalPage" && slug.current == $slug][0] {
+    title, effectiveDate, content
+  }
+`;
+
 // ─── SEO por Página ───────────────────────────────────────────────────────────
 
 export const pageSeoQuery = groq`

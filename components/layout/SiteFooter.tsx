@@ -188,10 +188,10 @@ export default function SiteFooter({ settings }: { settings?: SanitySiteSettings
             © {new Date().getFullYear()} Sede do Movimento. Todos os direitos reservados.
           </p>
           <div className="flex gap-4">
-            <Link href="/privacidade" className="text-white/40 hover:text-white/70 text-xs transition-colors">
+            <Link href="/politica-de-privacidade" className="text-white/40 hover:text-white/70 text-xs transition-colors">
               Política de Privacidade
             </Link>
-            <Link href="/termos" className="text-white/40 hover:text-white/70 text-xs transition-colors">
+            <Link href="/termos-de-uso" className="text-white/40 hover:text-white/70 text-xs transition-colors">
               Termos de Uso
             </Link>
           </div>
