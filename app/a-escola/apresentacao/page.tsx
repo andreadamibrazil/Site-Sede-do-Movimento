@@ -5,9 +5,9 @@ import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { sanityFetch } from "@/sanity/lib/live";
-import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
-import type { SanitySiteSettings } from "@/lib/sanity/types";
+import type { SanitySiteSettings, SanityGalleryPhoto } from "@/lib/sanity/types";
 import { Heart, Users, GraduationCap } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,8 +18,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ApresentacaoPage() {
-  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const [{ data }, { data: galleryData }] = await Promise.all([
+    sanityFetch({ query: siteSettingsQuery }),
+    sanityFetch({ query: recentGalleryPhotosQuery }),
+  ]);
   const imagens = (data as SanitySiteSettings | null)?.imagens;
+
+  // Flatten photos from all active albums, shuffle, take 4
+  const allPhotos = ((galleryData as { photos: SanityGalleryPhoto[] }[] | null) ?? [])
+    .flatMap((a) => a.photos ?? []);
+  for (let i = allPhotos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allPhotos[i], allPhotos[j]] = [allPhotos[j], allPhotos[i]];
+  }
+  const bottomPhotos = allPhotos.slice(0, 4);
 
   return (
     <>
@@ -70,12 +82,12 @@ export default async function ApresentacaoPage() {
             </blockquote>
           </ScrollReveal>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-12">
-            {imagens?.apresentacaoFotos && imagens.apresentacaoFotos.length > 0 ? (
-              imagens.apresentacaoFotos.slice(0, 4).map((item, i) => (
+            {bottomPhotos.length > 0 ? (
+              bottomPhotos.map((photo, i) => (
                 <div key={i} className="aspect-square rounded-xl overflow-hidden relative">
                   <Image
-                    src={urlFor(item.image).width(400).height(400).url()}
-                    alt={item.alt ?? `Foto ${i + 1}`}
+                    src={urlFor(photo.img).width(400).height(400).url()}
+                    alt={photo.alt ?? `Foto ${i + 1}`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 50vw, 25vw"

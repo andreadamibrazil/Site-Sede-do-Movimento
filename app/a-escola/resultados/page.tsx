@@ -7,7 +7,7 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Badge from "@/components/ui/Badge";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { sanityFetch } from "@/sanity/lib/live";
-import { gallerySectionPhotosQuery } from "@/lib/sanity/queries";
+import { galleryAlbumBySlugQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityGalleryPhoto } from "@/lib/sanity/types";
 
@@ -25,13 +25,11 @@ const premios = [
 ];
 
 export default async function ResultadosPage() {
-  const { data: galleryData } = await sanityFetch({
-    query: gallerySectionPhotosQuery,
-    params: { section: "resultados" },
+  const { data: albumData } = await sanityFetch({
+    query: galleryAlbumBySlugQuery,
+    params: { slug: "grupo-de-competicao" },
   });
-  const photos = ((galleryData as { photos: SanityGalleryPhoto[] }[] | null) ?? [])
-    .flatMap((a) => a.photos ?? [])
-    .slice(0, 8);
+  const photos = ((albumData as { photos: SanityGalleryPhoto[] } | null)?.photos ?? []).slice(0, 8);
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Award, Users, Building, Heart } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -13,8 +14,9 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { stats, timelineEntries } from "@/lib/constants/mockData";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allEspetaculosQuery } from "@/lib/sanity/queries";
-import type { SanityEspetaculo } from "@/lib/sanity/types";
+import { allEspetaculosQuery, siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola", {
@@ -33,8 +35,12 @@ const subPages = [
 ];
 
 export default async function AEscolaPage() {
-  const { data } = await sanityFetch({ query: allEspetaculosQuery });
+  const [{ data }, { data: settingsData }] = await Promise.all([
+    sanityFetch({ query: allEspetaculosQuery }),
+    sanityFetch({ query: siteSettingsQuery }),
+  ]);
   const espetaculos = ((data as SanityEspetaculo[]) ?? []).slice(0, 3);
+  const espacoFotos = (settingsData as SanitySiteSettings | null)?.imagens?.espacoFotos ?? [];
   return (
     <>
       <PageHero
@@ -149,11 +155,25 @@ export default async function AEscolaPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.15}>
               <div className="grid grid-cols-2 gap-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-square rounded-xl overflow-hidden">
-                    <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Sala ${i + 1}`} />
-                  </div>
-                ))}
+                {espacoFotos.length > 0 ? (
+                  espacoFotos.slice(0, 4).map((item, i) => (
+                    <div key={i} className="aspect-square rounded-xl overflow-hidden relative">
+                      <Image
+                        src={urlFor(item.image).width(400).height(400).url()}
+                        alt={item.alt ?? `Espaço ${i + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 50vw, 25vw"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                      <PlaceholderImage className="w-full h-full rounded-none border-none" label={`Sala ${i + 1}`} />
+                    </div>
+                  ))
+                )}
               </div>
             </ScrollReveal>
           </div>
