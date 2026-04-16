@@ -99,9 +99,24 @@ export default async function AEscolaPage() {
               </Link>
             </ScrollReveal>
             <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label="Foto escola" />
-              </div>
+              {(() => {
+                const homeHistoria = (settingsData as SanitySiteSettings | null)?.imagens?.homeHistoria;
+                return (
+                  <div className="aspect-[4/5] rounded-2xl overflow-hidden relative">
+                    {homeHistoria ? (
+                      <Image
+                        src={urlFor(homeHistoria).width(700).height(875).url()}
+                        alt="Nossa escola"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                      />
+                    ) : (
+                      <PlaceholderImage className="w-full h-full rounded-none border-none" label="Foto escola" />
+                    )}
+                  </div>
+                );
+              })()}
             </ScrollReveal>
           </div>
         </div>
