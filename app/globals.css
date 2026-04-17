@@ -162,3 +162,22 @@
 img[data-nimg] {
   transition: opacity 0.3s ease;
 }
+
+/* ── Proteção de imagens ────────────────────────────────────────────────── */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Overlay invisível sobre imagens protegidas bloqueia menu de contexto */
+.img-protected {
+  position: relative;
+}
+.img-protected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}

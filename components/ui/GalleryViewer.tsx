@@ -82,6 +82,7 @@ export default function GalleryViewer({ photos, columns = 4, className }: Galler
           <button
             key={i}
             onClick={() => { setLightboxIndex(i); trackGalleryOpen(photo.alt); }}
+            onContextMenu={(e) => e.preventDefault()}
             className="group relative overflow-hidden rounded-lg aspect-square cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-purple-600"
             aria-label={`Abrir foto: ${photo.alt}`}
           >
@@ -159,18 +160,22 @@ export default function GalleryViewer({ photos, columns = 4, className }: Galler
               transition={{ duration: 0.2 }}
               className="relative max-w-5xl max-h-[85vh] w-full mx-16"
               onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
             >
               {current.src ? (
-                <Image
-                  src={current.src}
-                  alt={current.alt}
-                  width={1200}
-                  height={800}
-                  className="max-h-[80vh] w-auto mx-auto object-contain rounded-lg"
-                  priority
-                  placeholder="blur"
-                  blurDataURL={BLUR_DATA_URL}
-                />
+                <div className="img-protected">
+                  <Image
+                    src={current.src}
+                    alt={current.alt}
+                    width={1200}
+                    height={800}
+                    className="max-h-[80vh] w-auto mx-auto object-contain rounded-lg"
+                    priority
+                    placeholder="blur"
+                    blurDataURL={BLUR_DATA_URL}
+                    draggable={false}
+                  />
+                </div>
               ) : (
                 <div className="aspect-[4/3] w-full max-w-xl mx-auto">
                   <PlaceholderImage label={current.alt} className="w-full h-full rounded-lg" />

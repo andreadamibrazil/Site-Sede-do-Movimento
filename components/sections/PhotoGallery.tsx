@@ -34,6 +34,7 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
             whileHover="hover"
             className={cn("group relative overflow-hidden rounded-lg cursor-pointer", aspectClass)}
             onClick={() => setLightboxIndex(i)}
+            onContextMenu={(e) => e.preventDefault()}
           >
             {photo.thumbnailSrc ?? photo.src ? (
               <Image src={photo.thumbnailSrc ?? photo.src} alt={photo.alt} fill className="object-cover" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" />
@@ -93,7 +94,8 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative rounded-xl overflow-hidden flex items-center justify-center"
+              onContextMenu={(e) => e.preventDefault()}
+              className="relative rounded-xl overflow-hidden flex items-center justify-center img-protected"
             >
               {photos[lightboxIndex]?.src ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -101,6 +103,7 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
                   src={photos[lightboxIndex].src}
                   alt={photos[lightboxIndex].alt}
                   className="max-w-[85vw] max-h-[82vh] w-auto h-auto rounded-xl object-contain"
+                  draggable={false}
                 />
               ) : (
                 <PlaceholderImage className="min-w-[320px] min-h-[240px] rounded-none border-none" label={photos[lightboxIndex]?.alt} />
