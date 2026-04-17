@@ -28,7 +28,7 @@ function WatermarkOverlay() {
             src="/images/LogoBranco.png"
             alt=""
             aria-hidden="true"
-            className="w-16 opacity-[0.18] rotate-[-20deg] m-auto"
+            className="w-16 opacity-35 rotate-[-20deg] m-auto"
             draggable={false}
           />
         ))}
