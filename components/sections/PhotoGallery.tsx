@@ -16,6 +16,27 @@ interface PhotoGalleryProps {
   watermark?: boolean;
 }
 
+function WatermarkOverlay() {
+  return (
+    <div className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden">
+      {/* 3×3 grid of logos covering all areas including light backgrounds */}
+      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+        {Array.from({ length: 9 }).map((_, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src="/images/LogoPreto.png"
+            alt=""
+            aria-hidden="true"
+            className="w-16 opacity-[0.18] rotate-[-20deg] m-auto"
+            draggable={false}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PhotoGallery({ photos, columns = 4, aspect = "square", className, watermark = false }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -41,10 +62,11 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
             ) : (
               <PlaceholderImage className="w-full h-full rounded-none border-none" label={photo.alt} />
             )}
-            {/* Overlay */}
+            {/* Hover overlay */}
             <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/60 transition-all duration-300 flex items-center justify-center">
               <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100" size={28} />
             </div>
+            {watermark && <WatermarkOverlay />}
             {/* Caption */}
             {photo.caption && (
               <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
@@ -108,18 +130,7 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
               ) : (
                 <PlaceholderImage className="min-w-[320px] min-h-[240px] rounded-none border-none" label={photos[lightboxIndex]?.alt} />
               )}
-              {watermark && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/images/LogoBranco.png"
-                    alt=""
-                    aria-hidden="true"
-                    className="w-40 opacity-20 rotate-[-20deg]"
-                    draggable={false}
-                  />
-                </div>
-              )}
+              {watermark && <WatermarkOverlay />}
             </motion.div>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm px-4 py-2 rounded-full">
