@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils/cn";
 interface PhotoGalleryProps {
   photos: Photo[];
   columns?: 2 | 3 | 4 | 5;
-  /** Thumbnail aspect ratio in the grid. Defaults to "square". */
   aspect?: "square" | "video";
   className?: string;
+  watermark?: boolean;
 }
 
-export default function PhotoGallery({ photos, columns = 4, aspect = "square", className }: PhotoGalleryProps) {
+export default function PhotoGallery({ photos, columns = 4, aspect = "square", className, watermark = false }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const colClass = { 2: "grid-cols-2", 3: "grid-cols-2 sm:grid-cols-3", 4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", 5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5" }[columns];
@@ -107,6 +107,18 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
                 />
               ) : (
                 <PlaceholderImage className="min-w-[320px] min-h-[240px] rounded-none border-none" label={photos[lightboxIndex]?.alt} />
+              )}
+              {watermark && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/LogoBranco.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="w-40 opacity-20 rotate-[-20deg]"
+                    draggable={false}
+                  />
+                </div>
               )}
             </motion.div>
 

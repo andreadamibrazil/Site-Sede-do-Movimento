@@ -73,7 +73,7 @@ export default async function AlbumPage({ params }: PageProps) {
 
           <ScrollReveal>
             {photos.length > 0 ? (
-              <PhotoGallery photos={photos} columns={3} />
+              <PhotoGallery photos={photos} columns={3} watermark={album?.category === "Espetáculos"} />
             ) : (
               <div className="py-16 text-center text-gray-400">
                 <p className="text-lg font-medium">Álbum sendo preparado.</p>
