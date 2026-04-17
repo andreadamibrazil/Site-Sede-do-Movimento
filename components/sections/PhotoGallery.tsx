@@ -25,7 +25,7 @@ function WatermarkOverlay() {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={i}
-            src="/images/LogoPreto.png"
+            src="/images/LogoBranco.png"
             alt=""
             aria-hidden="true"
             className="w-16 opacity-[0.18] rotate-[-20deg] m-auto"
