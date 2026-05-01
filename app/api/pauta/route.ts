@@ -140,9 +140,10 @@ export async function DELETE(req: NextRequest) {
     // Get sheet id (gid) for the sheet named SHEET_NAME
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
     const sheet = meta.data.sheets?.find(
-      (s: { properties?: { title?: string; sheetId?: number } }) => s.properties?.title === SHEET_NAME
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) => s.properties?.title === SHEET_NAME
     );
-    const sheetId = sheet?.properties?.sheetId ?? 0;
+    const sheetId = (sheet?.properties?.sheetId as number | null | undefined) ?? 0;
 
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,

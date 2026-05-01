@@ -65,12 +65,14 @@ function Badge({ label, colorClass }: { label: string; colorClass: string }) {
 // ─── Speech Recognition hook ─────────────────────────────────────────────────
 
 function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => void) {
-  const recognitionRef = useRef<InstanceType<typeof window.SpeechRecognition> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
   const [isListening, setIsListening] = useState(false);
 
   const start = useCallback(() => {
-    const SR = (window as typeof window & { SpeechRecognition?: typeof SpeechRecognition; webkitSpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition
-      ?? (window as typeof window & { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
 
     if (!SR) {
       alert("Seu navegador não suporta reconhecimento de voz.");
@@ -82,7 +84,8 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
     recognition.continuous = false;
     recognition.interimResults = true;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
       let interim = "";
       let final = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
