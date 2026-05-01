@@ -406,7 +406,7 @@ export default function PautaPage() {
     if (status !== "authenticated") return;
     fetch("/api/pauta")
       .then((r) => r.json())
-      .then((data: Entry[]) => setEntries(data))
+      .then((data: Entry[] | { error: string }) => Array.isArray(data) && setEntries(data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [status]);
