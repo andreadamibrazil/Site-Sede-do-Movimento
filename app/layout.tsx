@@ -72,6 +72,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="pt-BR" className={jakarta.variable}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#6A00FF" />
+      </head>
       <body className="font-sans antialiased">
         {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
         <Script

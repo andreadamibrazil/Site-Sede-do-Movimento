@@ -9,8 +9,9 @@ export default function SiteShell({ children, settings }: { children: React.Reac
   const pathname = usePathname();
   const isStudio = pathname?.startsWith("/studio");
   const isLegal = pathname === "/politica-de-privacidade" || pathname === "/termos-de-uso";
+  const isPauta = pathname?.startsWith("/pauta");
 
-  if (isStudio || isLegal) {
+  if (isStudio || isLegal || isPauta) {
     return <>{children}</>;
   }
 
