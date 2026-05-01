@@ -22,14 +22,14 @@ const COL = {
 } as const;
 
 function getSheets() {
-  const authClient = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\\n/g, "\n"),
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+  );
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
   });
-  return google.sheets({ version: "v4", auth: authClient });
+  return google.sheets({ version: "v4", auth: oauth2Client });
 }
 
 function detectPlatform(url: string): string {
@@ -58,7 +58,7 @@ export async function GET() {
     });
 
     const rows = res.data.values ?? [];
-    const entries = rows.map((row) => ({
+    const entries = rows.map((row: string[]) => ({
       id: row[COL.id] ?? "",
       timestamp: row[COL.timestamp] ?? "",
       user: row[COL.user] ?? "",
@@ -131,7 +131,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     const rows = res.data.values ?? [];
-    const rowIndex = rows.findIndex((row) => row[0] === id);
+    const rowIndex = rows.findIndex((row: string[]) => row[0] === id);
 
     if (rowIndex === -1) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
@@ -140,7 +140,7 @@ export async function DELETE(req: NextRequest) {
     // Get sheet id (gid) for the sheet named SHEET_NAME
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
     const sheet = meta.data.sheets?.find(
-      (s) => s.properties?.title === SHEET_NAME
+      (s: { properties?: { title?: string; sheetId?: number } }) => s.properties?.title === SHEET_NAME
     );
     const sheetId = sheet?.properties?.sheetId ?? 0;
 
