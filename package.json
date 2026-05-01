@@ -22,6 +22,8 @@
     "next-sanity": "^11.6.12",
     "react": "^18",
     "react-dom": "^18",
+    "googleapis": "^144.0.0",
+    "next-auth": "^5.0.0-beta.29",
     "resend": "^6.9.4",
     "sanity": "^4.22.0",
     "sanity-plugin-media": "^4.1.1",
