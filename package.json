@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "@portabletext/react": "^6.0.3",
     "@sanity/image-url": "^1.2.0",
     "@sanity/vision": "^4.22.0",
@@ -17,13 +18,13 @@
     "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
+    "googleapis": "^144.0.0",
     "lucide-react": "^1.0.1",
     "next": "15.5.14",
+    "next-auth": "^5.0.0-beta.29",
     "next-sanity": "^11.6.12",
     "react": "^18",
     "react-dom": "^18",
-    "googleapis": "^144.0.0",
-    "next-auth": "^5.0.0-beta.29",
     "resend": "^6.9.4",
     "sanity": "^4.22.0",
     "sanity-plugin-media": "^4.1.1",

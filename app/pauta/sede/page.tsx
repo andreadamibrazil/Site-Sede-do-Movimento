@@ -169,6 +169,9 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
 
 function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) => void }) {
   const [deleting, setDeleting] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState("");
+  const [copied, setCopied] = useState(false);
 
   async function handleDelete() {
     if (!confirm("Remover esta entrada?")) return;
@@ -183,6 +186,46 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
     } catch {
       alert("Erro ao remover entrada.");
       setDeleting(false);
+    }
+  }
+
+  async function handleCopy() {
+    const text = [
+      entry.url && `URL: ${entry.url}`,
+      entry.annotation && `Anotação: ${entry.annotation}`,
+      entry.dores_desejos && `Dores e Desejos: ${entry.dores_desejos}`,
+      entry.assunto && `Assunto: ${entry.assunto}`,
+      entry.funil && `Funil: ${entry.funil}`,
+      entry.negocio && `Negócio: ${entry.negocio}`,
+    ].filter(Boolean).join("\n");
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleGenerate() {
+    setGenerating(true);
+    setGenerated("");
+    try {
+      const res = await fetch("/api/pauta/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: entry.url,
+          annotation: entry.annotation,
+          dores_desejos: entry.dores_desejos,
+          funil: entry.funil,
+          negocio: entry.negocio,
+          assunto: entry.assunto,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro");
+      setGenerated(data.result);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erro ao gerar.");
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -250,6 +293,44 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
           {entry.assunto && <span className="text-[#6A00FF]/60 font-medium mr-1">#{entry.assunto}</span>}
           {entry.user} · {new Date(entry.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
         </p>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 pt-1 border-t border-gray-50">
+          <button
+            onClick={handleCopy}
+            className="flex-1 text-xs font-medium py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-1.5"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            {copied ? "Copiado!" : "Copiar"}
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex-1 text-xs font-semibold py-2 rounded-xl bg-[#6A00FF] text-white hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            {generating ? (
+              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            )}
+            {generating ? "Gerando…" : "Gerar post"}
+          </button>
+        </div>
+
+        {/* Generated result */}
+        {generated && (
+          <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-[#6A00FF] uppercase tracking-wide">Ideia gerada</p>
+              <button onClick={() => { navigator.clipboard.writeText(generated); }} className="text-xs text-gray-400 hover:text-[#6A00FF] transition">copiar</button>
+            </div>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{generated}</p>
+          </div>
+        )}
       </div>
     </div>
   );
