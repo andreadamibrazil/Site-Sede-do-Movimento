@@ -112,6 +112,45 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id, status } = await req.json();
+    if (!id || !status) {
+      return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
+    }
+
+    const sheets = getSheets();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_NAME}!A:A`,
+    });
+
+    const rows = res.data.values ?? [];
+    const rowIndex = rows.findIndex((row: string[]) => row[0] === id);
+    if (rowIndex === -1) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    const sheetRow = rowIndex + 1;
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_NAME}!J${sheetRow}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[status]] },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("PATCH /api/pauta error:", err);
+    return NextResponse.json({ error: "Failed to update entry" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session) {

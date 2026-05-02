@@ -8,7 +8,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 type Funil = "Topo" | "Meio" | "Fundo";
 type Negocio = "Sede" | "MoviRio" | "Nova Atmosfera";
 type Status = "Referência" | "Para Fazer";
-type Tab = Status | "Busca Viral";
+type DraftStatus = "Rascunho" | "Publicado";
+type Tab = Status | "Busca Viral" | "Rascunho";
 
 interface Entry {
   id: string;
@@ -22,6 +23,17 @@ interface Entry {
   negocio: Negocio | "";
   status: Status;
   assunto: string;
+}
+
+interface Draft {
+  id: string;
+  timestamp: string;
+  user: string;
+  entry_id: string;
+  assunto: string;
+  negocio: string;
+  content: string;
+  status: DraftStatus;
 }
 
 interface FormState {
@@ -167,11 +179,20 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
 
 // ─── Entry Card ──────────────────────────────────────────────────────────────
 
-function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) => void }) {
+function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
+  entry: Entry;
+  onDelete: (id: string) => void;
+  onStatusChange?: (id: string, newStatus: Status) => void;
+  onDraftAdded?: (draft: Draft) => void;
+}) {
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState("");
   const [copied, setCopied] = useState(false);
+  const [movingStatus, setMovingStatus] = useState(false);
+  const [movedStatus, setMovedStatus] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
 
   async function handleDelete() {
     if (!confirm("Remover esta entrada?")) return;
@@ -201,6 +222,48 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleMoveToParaFazer() {
+    setMovingStatus(true);
+    try {
+      const res = await fetch("/api/pauta", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, status: "Para Fazer" }),
+      });
+      if (!res.ok) throw new Error("API error");
+      setMovedStatus(true);
+      onStatusChange?.(entry.id, "Para Fazer");
+    } catch {
+      alert("Erro ao mover entrada.");
+    } finally {
+      setMovingStatus(false);
+    }
+  }
+
+  async function handleSaveDraft() {
+    setSavingDraft(true);
+    try {
+      const res = await fetch("/api/pauta/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entry_id: entry.id,
+          assunto: entry.assunto,
+          negocio: entry.negocio,
+          content: generated,
+        }),
+      });
+      if (!res.ok) throw new Error("API error");
+      const draft = await res.json();
+      setDraftSaved(true);
+      onDraftAdded?.(draft);
+    } catch {
+      alert("Erro ao salvar rascunho.");
+    } finally {
+      setSavingDraft(false);
+    }
   }
 
   async function handleGenerate() {
@@ -319,6 +382,16 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
             )}
             {generating ? "Gerando…" : "Gerar post"}
           </button>
+          {entry.status === "Referência" && !movedStatus && (
+            <button
+              onClick={handleMoveToParaFazer}
+              disabled={movingStatus}
+              title="Mover para Para Fazer"
+              className="flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              {movingStatus ? "…" : "→ Fazer"}
+            </button>
+          )}
         </div>
 
         {/* Generated result */}
@@ -326,7 +399,20 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
           <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-[#6A00FF] uppercase tracking-wide">Ideia gerada</p>
-              <button onClick={() => { navigator.clipboard.writeText(generated); }} className="text-xs text-gray-400 hover:text-[#6A00FF] transition">copiar</button>
+              <div className="flex items-center gap-3">
+                <button onClick={() => { navigator.clipboard.writeText(generated); }} className="text-xs text-gray-400 hover:text-[#6A00FF] transition">copiar</button>
+                {draftSaved ? (
+                  <span className="text-xs text-green-600 font-medium">rascunho salvo ✓</span>
+                ) : (
+                  <button
+                    onClick={handleSaveDraft}
+                    disabled={savingDraft}
+                    className="text-xs text-[#6A00FF] hover:text-[#5800d4] transition font-medium disabled:opacity-50"
+                  >
+                    {savingDraft ? "salvando…" : "salvar rascunho"}
+                  </button>
+                )}
+              </div>
             </div>
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{generated}</p>
           </div>
@@ -585,6 +671,156 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
   );
 }
 
+// ─── Draft Card ──────────────────────────────────────────────────────────────
+
+const DRAFT_STATUS_COLORS: Record<DraftStatus, string> = {
+  Rascunho: "bg-yellow-100 text-yellow-700",
+  Publicado: "bg-green-100 text-green-700",
+};
+
+function DraftCard({ draft, onDelete, onUpdate }: {
+  draft: Draft;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, changes: Partial<Pick<Draft, "content" | "status">>) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState(draft.content);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+
+  async function handleSaveEdit() {
+    if (editContent === draft.content) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/pauta/drafts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draft.id, content: editContent }),
+      });
+      if (!res.ok) throw new Error("API error");
+      onUpdate(draft.id, { content: editContent });
+      setEditing(false);
+    } catch {
+      alert("Erro ao salvar edição.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleStatus() {
+    const newStatus: DraftStatus = draft.status === "Rascunho" ? "Publicado" : "Rascunho";
+    setTogglingStatus(true);
+    try {
+      const res = await fetch("/api/pauta/drafts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draft.id, status: newStatus }),
+      });
+      if (!res.ok) throw new Error("API error");
+      onUpdate(draft.id, { status: newStatus });
+    } catch {
+      alert("Erro ao atualizar status.");
+    } finally {
+      setTogglingStatus(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm("Remover este rascunho?")) return;
+    setDeleting(true);
+    try {
+      await fetch("/api/pauta/drafts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: draft.id }),
+      });
+      onDelete(draft.id);
+    } catch {
+      alert("Erro ao remover rascunho.");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      <div className="p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={handleToggleStatus}
+              disabled={togglingStatus}
+              className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium transition hover:opacity-80 ${DRAFT_STATUS_COLORS[draft.status]}`}
+              title="Clique para alternar status"
+            >
+              {draft.status}
+            </button>
+            {draft.negocio && (
+              <Badge label={draft.negocio} colorClass={NEGOCIO_COLORS[draft.negocio] ?? "bg-gray-100 text-gray-600"} />
+            )}
+          </div>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Remover rascunho"
+            className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 p-1"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
+        {editing ? (
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={6}
+            className="w-full text-sm text-gray-700 border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+          />
+        ) : (
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{draft.content}</p>
+        )}
+
+        <p className="text-xs text-gray-300">
+          {draft.assunto && <span className="text-[#6A00FF]/60 font-medium mr-1">#{draft.assunto}</span>}
+          {draft.user} · {new Date(draft.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+        </p>
+
+        <div className="flex gap-2 pt-1 border-t border-gray-50">
+          {editing ? (
+            <>
+              <button
+                onClick={() => { setEditing(false); setEditContent(draft.content); }}
+                className="flex-1 text-xs font-medium py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saving}
+                className="flex-1 text-xs font-semibold py-2 rounded-xl bg-[#6A00FF] text-white hover:bg-[#5800d4] transition disabled:opacity-50"
+              >
+                {saving ? "Salvando…" : "Salvar"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => setEditing(true)}
+              className="flex-1 text-xs font-medium py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-1.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Editar
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
 function LoginScreen() {
@@ -632,7 +868,9 @@ export default function PautaPage() {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<Tab>("Referência");
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [last30, setLast30] = useState(false);
 
@@ -643,10 +881,15 @@ export default function PautaPage() {
       .then((data: Entry[] | { error: string }) => Array.isArray(data) && setEntries(data))
       .catch(console.error)
       .finally(() => setLoading(false));
+    fetch("/api/pauta/drafts")
+      .then((r) => r.json())
+      .then((data: Draft[] | { error: string }) => Array.isArray(data) && setDrafts(data))
+      .catch(console.error)
+      .finally(() => setLoadingDrafts(false));
   }, [status]);
 
   const cutoff = last30 ? Date.now() - 30 * 24 * 60 * 60 * 1000 : 0;
-  const filtered = activeTab !== "Busca Viral"
+  const filtered = activeTab !== "Busca Viral" && activeTab !== "Rascunho"
     ? entries.filter((e: Entry) =>
         e.status === activeTab &&
         (!last30 || new Date(e.timestamp).getTime() >= cutoff)
@@ -662,6 +905,22 @@ export default function PautaPage() {
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
+  function handleStatusChange(id: string, newStatus: Status) {
+    setEntries((prev) => prev.map((e) => e.id === id ? { ...e, status: newStatus } : e));
+  }
+
+  function handleDraftAdded(draft: Draft) {
+    setDrafts((prev) => [draft, ...prev]);
+  }
+
+  function handleDraftDelete(id: string) {
+    setDrafts((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  function handleDraftUpdate(id: string, changes: Partial<Pick<Draft, "content" | "status">>) {
+    setDrafts((prev) => prev.map((d) => d.id === id ? { ...d, ...changes } : d));
+  }
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -672,7 +931,7 @@ export default function PautaPage() {
 
   if (!session) return <LoginScreen />;
 
-  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral"];
+  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral", "Rascunho"];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -686,18 +945,6 @@ export default function PautaPage() {
           <span className="font-bold text-gray-900 text-sm">Pauta Digital</span>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href={SHEET_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-gray-400 hover:text-[#6A00FF] transition flex items-center gap-1"
-            title="Abrir planilha no Google Sheets"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
-            </svg>
-            Planilha
-          </a>
           <button onClick={() => signOut({ callbackUrl: "/pauta/login" })} className="text-xs text-gray-400 hover:text-gray-600 transition">
             Sair
           </button>
@@ -720,13 +967,15 @@ export default function PautaPage() {
                 {tab}
                 {tab !== "Busca Viral" && (
                   <span className="ml-1.5 text-xs font-normal opacity-60">
-                    ({entries.filter((e: Entry) => e.status === tab).length})
+                    ({tab === "Rascunho"
+                      ? drafts.length
+                      : entries.filter((e: Entry) => e.status === tab).length})
                   </span>
                 )}
               </button>
             ))}
           </div>
-          {activeTab !== "Busca Viral" && (
+          {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
             <button
               onClick={() => setLast30((v: boolean) => !v)}
               className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full transition ml-2 ${
@@ -744,6 +993,29 @@ export default function PautaPage() {
       <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-4">
         {activeTab === "Busca Viral" ? (
           <BuscaViral onSave={handleAdd} />
+        ) : activeTab === "Rascunho" ? (
+          <>
+            {loadingDrafts ? (
+              <div className="flex justify-center py-16">
+                <div className="w-6 h-6 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : drafts.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <p className="text-4xl mb-3">✏️</p>
+                <p className="text-sm">Nenhum rascunho ainda.</p>
+                <p className="text-xs mt-1">Gere um post em qualquer referência e clique em <strong>salvar rascunho</strong>.</p>
+              </div>
+            ) : (
+              drafts.map((draft) => (
+                <DraftCard
+                  key={draft.id}
+                  draft={draft}
+                  onDelete={handleDraftDelete}
+                  onUpdate={handleDraftUpdate}
+                />
+              ))
+            )}
+          </>
         ) : (
           <>
             {showForm && (
@@ -752,7 +1024,7 @@ export default function PautaPage() {
                   <span className="text-xs text-gray-400">Nova entrada</span>
                   <button onClick={() => setShowForm(false)} className="text-xs text-gray-400 hover:text-gray-600">cancelar</button>
                 </div>
-                <NewEntryForm activeTab={activeTab} onAdd={handleAdd} />
+                <NewEntryForm activeTab={activeTab as Status} onAdd={handleAdd} />
               </div>
             )}
 
@@ -768,14 +1040,20 @@ export default function PautaPage() {
               </div>
             ) : (
               filtered.map((entry) => (
-                <EntryCard key={entry.id} entry={entry} onDelete={handleDelete} />
+                <EntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onDelete={handleDelete}
+                  onStatusChange={handleStatusChange}
+                  onDraftAdded={handleDraftAdded}
+                />
               ))
             )}
           </>
         )}
       </main>
 
-      {activeTab !== "Busca Viral" && (
+      {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
         <button
           onClick={() => setShowForm((v) => !v)}
           aria-label="Adicionar entrada"
