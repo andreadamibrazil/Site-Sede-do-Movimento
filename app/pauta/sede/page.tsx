@@ -553,6 +553,7 @@ export default function PautaPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [last30, setLast30] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -563,8 +564,12 @@ export default function PautaPage() {
       .finally(() => setLoading(false));
   }, [status]);
 
+  const cutoff = last30 ? Date.now() - 30 * 24 * 60 * 60 * 1000 : 0;
   const filtered = activeTab !== "Busca Viral"
-    ? entries.filter((e: Entry) => e.status === activeTab)
+    ? entries.filter((e: Entry) =>
+        e.status === activeTab &&
+        (!last30 || new Date(e.timestamp).getTime() >= cutoff)
+      )
     : [];
 
   function handleAdd(entry: Entry) {
@@ -619,25 +624,39 @@ export default function PautaPage() {
       </header>
 
       <div className="sticky top-[57px] z-20 bg-white border-b border-gray-100 px-4">
-        <div className="flex overflow-x-auto">
-          {tabs.map((tab) => (
+        <div className="flex items-center justify-between">
+          <div className="flex overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setShowForm(false); }}
+                className={`flex-shrink-0 px-3 py-3 text-sm font-semibold transition border-b-2 ${
+                  activeTab === tab
+                    ? "border-[#6A00FF] text-[#6A00FF]"
+                    : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                {tab}
+                {tab !== "Busca Viral" && (
+                  <span className="ml-1.5 text-xs font-normal opacity-60">
+                    ({entries.filter((e: Entry) => e.status === tab).length})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          {activeTab !== "Busca Viral" && (
             <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setShowForm(false); }}
-              className={`flex-shrink-0 px-3 py-3 text-sm font-semibold transition border-b-2 ${
-                activeTab === tab
-                  ? "border-[#6A00FF] text-[#6A00FF]"
-                  : "border-transparent text-gray-400 hover:text-gray-600"
+              onClick={() => setLast30((v: boolean) => !v)}
+              className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full transition ml-2 ${
+                last30
+                  ? "bg-[#6A00FF] text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
               }`}
             >
-              {tab}
-              {tab !== "Busca Viral" && (
-                <span className="ml-1.5 text-xs font-normal opacity-60">
-                  ({entries.filter((e: Entry) => e.status === tab).length})
-                </span>
-              )}
+              30d
             </button>
-          ))}
+          )}
         </div>
       </div>
 
