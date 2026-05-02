@@ -119,15 +119,16 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const { id, status } = await req.json();
-    if (!id || !status) {
-      return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
+    const body = await req.json();
+    const { id, status, annotation, dores_desejos, funil, negocio, assunto } = body;
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:A`,
+      range: `${SHEET_NAME}!A:K`,
     });
 
     const rows = res.data.values ?? [];
@@ -137,11 +138,23 @@ export async function PATCH(req: NextRequest) {
     }
 
     const sheetRow = rowIndex + 1;
+    const existing = rows[rowIndex];
+
+    // Update F:K (annotation, dores_desejos, funil, negocio, status, assunto)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!J${sheetRow}`,
+      range: `${SHEET_NAME}!F${sheetRow}:K${sheetRow}`,
       valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[status]] },
+      requestBody: {
+        values: [[
+          annotation  ?? existing[COL.annotation]  ?? "",
+          dores_desejos ?? existing[COL.dores_desejos] ?? "",
+          funil       ?? existing[COL.funil]       ?? "",
+          negocio     ?? existing[COL.negocio]     ?? "",
+          status      ?? existing[COL.status]      ?? "",
+          assunto     ?? existing[COL.assunto]     ?? "",
+        ]],
+      },
     });
 
     return NextResponse.json({ success: true });

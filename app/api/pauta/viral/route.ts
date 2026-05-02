@@ -43,10 +43,23 @@ export async function GET(req: NextRequest) {
         .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
     }
 
-    const items = res.data.items ?? [];
-    const videos = items
-      .filter((item) => item.id?.videoId)
-      .map((item) => ({
+    const items = (res.data.items ?? []).filter((item) => item.id?.videoId);
+    const videoIds = items.map((item) => item.id!.videoId!);
+
+    // Fetch statistics + full description in one batch call
+    const statsRes = await youtube.videos.list({
+      part: ["statistics", "snippet"],
+      id: videoIds,
+    });
+    const statsMap = new Map(
+      (statsRes.data.items ?? []).map((v) => [v.id!, v])
+    );
+
+    const videos = items.map((item) => {
+      const v = statsMap.get(item.id!.videoId!);
+      const stats = v?.statistics;
+      const desc = decodeHtml(v?.snippet?.description ?? "");
+      return {
         videoId: item.id!.videoId!,
         title: decodeHtml(item.snippet?.title ?? ""),
         channel: item.snippet?.channelTitle ?? "",
@@ -56,7 +69,12 @@ export async function GET(req: NextRequest) {
           item.snippet?.thumbnails?.default?.url ??
           "",
         url: `https://www.youtube.com/watch?v=${item.id!.videoId}`,
-      }));
+        viewCount: Number(stats?.viewCount ?? 0),
+        likeCount: Number(stats?.likeCount ?? 0),
+        commentCount: Number(stats?.commentCount ?? 0),
+        description: desc.slice(0, 300),
+      };
+    });
 
     return NextResponse.json(videos);
   } catch (err) {

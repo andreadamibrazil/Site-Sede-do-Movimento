@@ -52,6 +52,10 @@ interface ViralVideo {
   publishedAt: string;
   thumbnail: string;
   url: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  description: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -66,6 +70,11 @@ function getYouTubeThumbnail(url: string): string | null {
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
   return m ? m[1] : null;
+}
+
+function getInstagramEmbedUrl(url: string): string | null {
+  const m = url.match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+  return m ? `https://www.instagram.com/${m[1]}/${m[2]}/embed/` : null;
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -179,11 +188,20 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
 
 // ─── Entry Card ──────────────────────────────────────────────────────────────
 
-function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
+interface EditForm {
+  annotation: string;
+  dores_desejos: string;
+  assunto: string;
+  funil: Funil | "";
+  negocio: Negocio | "";
+}
+
+function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: {
   entry: Entry;
   onDelete: (id: string) => void;
   onStatusChange?: (id: string, newStatus: Status) => void;
   onDraftAdded?: (draft: Draft) => void;
+  onUpdate?: (id: string, changes: Partial<Entry>) => void;
 }) {
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -193,6 +211,15 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
   const [movedStatus, setMovedStatus] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<EditForm>({
+    annotation: entry.annotation,
+    dores_desejos: entry.dores_desejos,
+    assunto: entry.assunto,
+    funil: entry.funil,
+    negocio: entry.negocio,
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   async function handleDelete() {
     if (!confirm("Remover esta entrada?")) return;
@@ -266,6 +293,24 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
     }
   }
 
+  async function handleSaveEdit() {
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/pauta", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, ...editForm }),
+      });
+      if (!res.ok) throw new Error("API error");
+      onUpdate?.(entry.id, editForm);
+      setEditing(false);
+    } catch {
+      alert("Erro ao salvar edição.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     setGenerated("");
@@ -294,6 +339,22 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
 
   const ytThumbnail = entry.url ? getYouTubeThumbnail(entry.url) : null;
   const ytId = entry.url ? getYouTubeId(entry.url) : null;
+  const igEmbedUrl = entry.url ? getInstagramEmbedUrl(entry.url) : null;
+
+  // Keep editForm in sync when entry changes externally
+  const prevEntryRef = useRef(entry);
+  if (prevEntryRef.current !== entry) {
+    prevEntryRef.current = entry;
+    if (!editing) {
+      setEditForm({
+        annotation: entry.annotation,
+        dores_desejos: entry.dores_desejos,
+        assunto: entry.assunto,
+        funil: entry.funil,
+        negocio: entry.negocio,
+      });
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
@@ -305,34 +366,66 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
         </a>
       )}
 
+      {/* Instagram embed */}
+      {igEmbedUrl && !ytThumbnail && (
+        <iframe
+          src={igEmbedUrl}
+          className="w-full"
+          style={{ minHeight: 480, border: "none" }}
+          scrolling="no"
+          allowTransparency
+          title="Instagram post"
+        />
+      )}
+
       <div className="p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
             {entry.platform && (
               <Badge label={entry.platform} colorClass={PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.Outro} />
             )}
-            {entry.funil && (
+            {!editing && entry.funil && (
               <Badge label={entry.funil} colorClass={FUNIL_COLORS[entry.funil] ?? ""} />
             )}
-            {entry.negocio && (
+            {!editing && entry.negocio && (
               <Badge label={entry.negocio} colorClass={NEGOCIO_COLORS[entry.negocio] ?? ""} />
             )}
           </div>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            aria-label="Remover entrada"
-            className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 p-1"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => {
+                setEditing((v) => !v);
+                setEditForm({ annotation: entry.annotation, dores_desejos: entry.dores_desejos, assunto: entry.assunto, funil: entry.funil, negocio: entry.negocio });
+              }}
+              className="text-gray-300 hover:text-[#6A00FF] transition-colors p-1"
+              aria-label="Editar entrada"
+              title="Editar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              aria-label="Remover entrada"
+              className="text-gray-300 hover:text-red-400 transition-colors p-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        {entry.url && !ytId && (
+        {entry.url && !ytId && !igEmbedUrl && (
           <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6A00FF] underline underline-offset-2 break-all line-clamp-2 hover:opacity-75 transition-opacity">
             {entry.url}
+          </a>
+        )}
+        {entry.url && !ytId && igEmbedUrl && (
+          <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-[#6A00FF] transition-colors truncate">
+            instagram.com ↗
           </a>
         )}
         {entry.url && ytId && (
@@ -341,15 +434,71 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded }: {
           </a>
         )}
 
-        {entry.annotation && (
-          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.annotation}</p>
-        )}
-
-        {entry.dores_desejos && (
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dores & Desejos</p>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{entry.dores_desejos}</p>
+        {/* Edit mode */}
+        {editing ? (
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={editForm.annotation}
+              onChange={(e) => setEditForm((f) => ({ ...f, annotation: e.target.value }))}
+              placeholder="Anotação"
+              rows={3}
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+            />
+            <textarea
+              value={editForm.dores_desejos}
+              onChange={(e) => setEditForm((f) => ({ ...f, dores_desejos: e.target.value }))}
+              placeholder="Dores & Desejos"
+              rows={2}
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+            />
+            <input
+              value={editForm.assunto}
+              onChange={(e) => setEditForm((f) => ({ ...f, assunto: e.target.value }))}
+              placeholder="Assunto"
+              className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+            />
+            <div className="flex gap-2">
+              <select
+                value={editForm.funil}
+                onChange={(e) => setEditForm((f) => ({ ...f, funil: e.target.value as Funil | "" }))}
+                className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+              >
+                <option value="">Funil</option>
+                <option>Topo</option>
+                <option>Meio</option>
+                <option>Fundo</option>
+              </select>
+              <select
+                value={editForm.negocio}
+                onChange={(e) => setEditForm((f) => ({ ...f, negocio: e.target.value as Negocio | "" }))}
+                className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30"
+              >
+                <option value="">Negócio</option>
+                <option>Sede</option>
+                <option>MoviRio</option>
+                <option>Nova Atmosfera</option>
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setEditing(false)} className="flex-1 text-xs py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition">Cancelar</button>
+              <button onClick={handleSaveEdit} disabled={savingEdit} className="flex-1 text-xs font-semibold py-2 rounded-xl bg-[#6A00FF] text-white hover:bg-[#5800d4] transition disabled:opacity-50">
+                {savingEdit ? "Salvando…" : "Salvar"}
+              </button>
+            </div>
           </div>
+        ) : (
+          <>
+            {entry.annotation && (
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.annotation}</p>
+            )}
+
+            {entry.dores_desejos && (
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dores & Desejos</p>
+                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{entry.dores_desejos}</p>
+              </div>
+            )}
+          </>
         )}
 
         <p className="text-xs text-gray-300">
@@ -648,6 +797,28 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
             <p className="text-xs text-gray-400">
               {video.channel} · {new Date(video.publishedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
             </p>
+            {/* Stats */}
+            {(video.viewCount > 0 || video.likeCount > 0) && (
+              <div className="flex gap-3 text-xs text-gray-400">
+                {video.viewCount > 0 && (
+                  <span>👁 {video.viewCount >= 1_000_000
+                    ? `${(video.viewCount / 1_000_000).toFixed(1)}M`
+                    : video.viewCount >= 1_000
+                    ? `${(video.viewCount / 1_000).toFixed(0)}K`
+                    : video.viewCount} views</span>
+                )}
+                {video.likeCount > 0 && (
+                  <span>👍 {video.likeCount >= 1_000 ? `${(video.likeCount / 1_000).toFixed(0)}K` : video.likeCount}</span>
+                )}
+                {video.commentCount > 0 && (
+                  <span>💬 {video.commentCount >= 1_000 ? `${(video.commentCount / 1_000).toFixed(0)}K` : video.commentCount}</span>
+                )}
+              </div>
+            )}
+            {/* Description snippet */}
+            {video.description && (
+              <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{video.description}</p>
+            )}
             <div className="flex gap-2 mt-1">
               <a href={video.url} target="_blank" rel="noopener noreferrer" className="flex-1 text-center rounded-xl border border-gray-200 text-xs font-medium text-gray-600 py-2 hover:bg-gray-50 transition">
                 Ver vídeo
@@ -921,6 +1092,10 @@ export default function PautaPage() {
     setDrafts((prev) => prev.map((d) => d.id === id ? { ...d, ...changes } : d));
   }
 
+  function handleEntryUpdate(id: string, changes: Partial<Entry>) {
+    setEntries((prev) => prev.map((e) => e.id === id ? { ...e, ...changes } : e));
+  }
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -1046,6 +1221,7 @@ export default function PautaPage() {
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
                   onDraftAdded={handleDraftAdded}
+                  onUpdate={handleEntryUpdate}
                 />
               ))
             )}
