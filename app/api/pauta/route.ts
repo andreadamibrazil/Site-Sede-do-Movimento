@@ -7,7 +7,7 @@ const SPREADSHEET_ID =
   "1LHL8J-KjJJZTTREk1LeQw_ZbR7HNDF7WalL6ZpgQyt8";
 const SHEET_NAME = "Pauta";
 
-// Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status
+// Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto
 const COL = {
   id: 0,
   timestamp: 1,
@@ -19,6 +19,7 @@ const COL = {
   funil: 7,
   negocio: 8,
   status: 9,
+  assunto: 10,
 } as const;
 
 function getSheets() {
@@ -54,7 +55,7 @@ export async function GET() {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A2:J`,
+      range: `${SHEET_NAME}!A2:K`,
     });
 
     const rows = res.data.values ?? [];
@@ -69,6 +70,7 @@ export async function GET() {
       funil: row[COL.funil] ?? "",
       negocio: row[COL.negocio] ?? "",
       status: row[COL.status] ?? "",
+      assunto: row[COL.assunto] ?? "",
     }));
 
     return NextResponse.json(entries);
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { url, annotation, dores_desejos, funil, negocio, status } = body;
+    const { url, annotation, dores_desejos, funil, negocio, status, assunto } = body;
 
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
@@ -96,14 +98,14 @@ export async function POST(req: NextRequest) {
     const sheets = getSheets();
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:J`,
+      range: `${SHEET_NAME}!A:K`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status]],
+        values: [[id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto ?? ""]],
       },
     });
 
-    return NextResponse.json({ id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status }, { status: 201 });
+    return NextResponse.json({ id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto: assunto ?? "" }, { status: 201 });
   } catch (err) {
     console.error("POST /api/pauta error:", err);
     return NextResponse.json({ error: "Failed to create entry" }, { status: 500 });
@@ -124,7 +126,6 @@ export async function DELETE(req: NextRequest) {
 
     const sheets = getSheets();
 
-    // Find row index with this id
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A:A`,
@@ -137,7 +138,6 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
-    // Get sheet id (gid) for the sheet named SHEET_NAME
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
     const sheet = meta.data.sheets?.find(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -154,7 +154,7 @@ export async function DELETE(req: NextRequest) {
               range: {
                 sheetId,
                 dimension: "ROWS",
-                startIndex: rowIndex, // 0-based; row 0 = data row 1 (header is row 0 in sheet but we read from A2)
+                startIndex: rowIndex,
                 endIndex: rowIndex + 1,
               },
             },

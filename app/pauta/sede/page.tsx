@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 type Funil = "Topo" | "Meio" | "Fundo";
 type Negocio = "Sede" | "MoviRio" | "Nova Atmosfera";
 type Status = "Referência" | "Para Fazer";
+type Tab = Status | "Busca Viral";
 
 interface Entry {
   id: string;
@@ -20,6 +21,7 @@ interface Entry {
   funil: Funil | "";
   negocio: Negocio | "";
   status: Status;
+  assunto: string;
 }
 
 interface FormState {
@@ -28,6 +30,16 @@ interface FormState {
   dores_desejos: string;
   funil: Funil | "";
   negocio: Negocio | "";
+  assunto: string;
+}
+
+interface ViralVideo {
+  videoId: string;
+  title: string;
+  channel: string;
+  publishedAt: string;
+  thumbnail: string;
+  url: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -103,13 +115,8 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
       }
     };
 
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
 
     recognitionRef.current = recognition;
     recognition.start();
@@ -147,7 +154,6 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-3">
-      {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap gap-1.5">
           {entry.platform && (
@@ -172,24 +178,16 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
         </button>
       </div>
 
-      {/* URL */}
       {entry.url && (
-        <a
-          href={entry.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-[#6A00FF] underline underline-offset-2 break-all line-clamp-2 hover:opacity-75 transition-opacity"
-        >
+        <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6A00FF] underline underline-offset-2 break-all line-clamp-2 hover:opacity-75 transition-opacity">
           {entry.url}
         </a>
       )}
 
-      {/* Annotation */}
       {entry.annotation && (
         <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.annotation}</p>
       )}
 
-      {/* Dores e Desejos */}
       {entry.dores_desejos && (
         <div className="bg-gray-50 rounded-xl p-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dores & Desejos</p>
@@ -197,8 +195,8 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
         </div>
       )}
 
-      {/* Footer */}
       <p className="text-xs text-gray-300">
+        {entry.assunto && <span className="text-[#6A00FF]/60 font-medium mr-1">#{entry.assunto}</span>}
         {entry.user} · {new Date(entry.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
       </p>
     </div>
@@ -208,7 +206,7 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
 // ─── New Entry Form ───────────────────────────────────────────────────────────
 
 function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: Entry) => void }) {
-  const defaultForm: FormState = { url: "", annotation: "", dores_desejos: "", funil: "", negocio: "" };
+  const defaultForm: FormState = { url: "", annotation: "", dores_desejos: "", funil: "", negocio: "", assunto: "" };
   const [form, setForm] = useState<FormState>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [interimText, setInterimText] = useState("");
@@ -259,19 +257,11 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
     <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-4">
       <p className="text-xs font-semibold text-[#6A00FF] uppercase tracking-wider">Nova entrada · {activeTab}</p>
 
-      {/* URL */}
       <div>
         <label className={labelClass}>URL</label>
-        <input
-          type="url"
-          placeholder="Cole o link aqui"
-          value={form.url}
-          onChange={field("url")}
-          className={inputClass}
-        />
+        <input type="url" placeholder="Cole o link aqui" value={form.url} onChange={field("url")} className={inputClass} />
       </div>
 
-      {/* Annotation + audio button */}
       <div>
         <label className={labelClass}>Anotação</label>
         <div className="relative">
@@ -287,7 +277,6 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
             onClick={isListening ? stop : start}
             className={`absolute bottom-2 right-2 p-2 rounded-lg transition-colors ${isListening ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-500 hover:bg-[#6A00FF]/10 hover:text-[#6A00FF]"}`}
             aria-label={isListening ? "Parar gravação" : "Gravar áudio"}
-            title={isListening ? "Parar" : "Ditado por voz (pt-BR)"}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -302,19 +291,16 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
         )}
       </div>
 
-      {/* Dores e Desejos */}
       <div>
         <label className={labelClass}>Dores e Desejos</label>
-        <textarea
-          rows={2}
-          placeholder="Que dores ou desejos esse conteúdo reflete?"
-          value={form.dores_desejos}
-          onChange={field("dores_desejos")}
-          className={`${inputClass} resize-none`}
-        />
+        <textarea rows={2} placeholder="Que dores ou desejos esse conteúdo reflete?" value={form.dores_desejos} onChange={field("dores_desejos")} className={`${inputClass} resize-none`} />
       </div>
 
-      {/* Funil + Negócio */}
+      <div>
+        <label className={labelClass}>Assunto</label>
+        <input type="text" placeholder="Ex: dança contemporânea, captação de alunos…" value={form.assunto} onChange={field("assunto")} className={inputClass} />
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Funil</label>
@@ -347,6 +333,122 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
   );
 }
 
+// ─── Busca Viral ─────────────────────────────────────────────────────────────
+
+function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ViralVideo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState<string | null>(null);
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setLoading(true);
+    setError("");
+    setResults([]);
+    try {
+      const res = await fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro na busca");
+      setResults(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro na busca");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSave(video: ViralVideo) {
+    setSaving(video.videoId);
+    try {
+      const res = await fetch("/api/pauta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: video.url,
+          annotation: video.title,
+          dores_desejos: "",
+          funil: "",
+          negocio: "",
+          status: "Referência",
+          assunto: query,
+        }),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar");
+      const entry = await res.json() as Entry;
+      onSave(entry);
+      setResults((prev: ViralVideo[]) => prev.filter((v: ViralVideo) => v.videoId !== video.videoId));
+    } catch {
+      alert("Erro ao salvar referência.");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  const inputClass = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6A00FF]/30 focus:border-[#6A00FF] transition";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Ex: dança contemporânea, ballet infantil…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className={inputClass}
+        />
+        <button
+          type="submit"
+          disabled={loading || !query.trim()}
+          className="rounded-xl bg-[#6A00FF] text-white font-semibold px-4 py-2.5 text-sm hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+        >
+          {loading ? "…" : "Buscar"}
+        </button>
+      </form>
+      <p className="text-xs text-gray-400">Vídeos do YouTube dos últimos 30 dias, por relevância.</p>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      {loading && (
+        <div className="flex justify-center py-10">
+          <div className="w-6 h-6 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {results.map((video) => (
+        <div key={video.videoId} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={video.thumbnail} alt={video.title} className="w-full aspect-video object-cover" />
+          <div className="p-4 flex flex-col gap-2">
+            <p className="text-sm font-semibold text-gray-800 line-clamp-2">{video.title}</p>
+            <p className="text-xs text-gray-400">
+              {video.channel} · {new Date(video.publishedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+            </p>
+            <div className="flex gap-2 mt-1">
+              <a href={video.url} target="_blank" rel="noopener noreferrer" className="flex-1 text-center rounded-xl border border-gray-200 text-xs font-medium text-gray-600 py-2 hover:bg-gray-50 transition">
+                Ver vídeo
+              </a>
+              <button
+                onClick={() => handleSave(video)}
+                disabled={saving === video.videoId}
+                className="flex-1 rounded-xl bg-[#6A00FF] text-white text-xs font-semibold py-2 hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-40"
+              >
+                {saving === video.videoId ? "Salvando…" : "→ Referência"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {!loading && results.length === 0 && query && !error && (
+        <p className="text-center text-sm text-gray-400 py-10">Nenhum resultado. Tente outro assunto.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 
 function LoginScreen() {
@@ -364,17 +466,13 @@ function LoginScreen() {
           <h1 className="text-2xl font-bold text-gray-900">Pauta Digital</h1>
           <p className="text-sm text-gray-500 mt-1">Sede do Movimento</p>
         </div>
-
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <p className="text-sm text-gray-600 text-center mb-6">
             Acesso restrito ao time<br />
             <span className="text-[#6A00FF] font-medium">@sededomovimento.art</span>
           </p>
           <button
-            onClick={() => {
-              setLoading(true);
-              signIn("google", { callbackUrl: "/pauta/sede" });
-            }}
+            onClick={() => { setLoading(true); signIn("google", { callbackUrl: "/pauta/sede" }); }}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-95 transition disabled:opacity-60"
           >
@@ -396,12 +494,11 @@ function LoginScreen() {
 
 export default function PautaPage() {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<Status>("Referência");
+  const [activeTab, setActiveTab] = useState<Tab>("Referência");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
-  // Fetch entries on mount
   useEffect(() => {
     if (status !== "authenticated") return;
     fetch("/api/pauta")
@@ -411,7 +508,9 @@ export default function PautaPage() {
       .finally(() => setLoading(false));
   }, [status]);
 
-  const filtered = entries.filter((e) => e.status === activeTab);
+  const filtered = activeTab !== "Busca Viral"
+    ? entries.filter((e: Entry) => e.status === activeTab)
+    : [];
 
   function handleAdd(entry: Entry) {
     setEntries((prev) => [entry, ...prev]);
@@ -430,13 +529,12 @@ export default function PautaPage() {
     );
   }
 
-  if (!session) {
-    return <LoginScreen />;
-  }
+  if (!session) return <LoginScreen />;
+
+  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral"];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Top bar */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[#6A00FF] flex items-center justify-center">
@@ -446,77 +544,79 @@ export default function PautaPage() {
           </div>
           <span className="font-bold text-gray-900 text-sm">Pauta Digital</span>
         </div>
-        <button
-          onClick={() => signOut({ callbackUrl: "/pauta/login" })}
-          className="text-xs text-gray-400 hover:text-gray-600 transition"
-        >
+        <button onClick={() => signOut({ callbackUrl: "/pauta/login" })} className="text-xs text-gray-400 hover:text-gray-600 transition">
           Sair
         </button>
       </header>
 
-      {/* Tab switcher */}
       <div className="sticky top-[57px] z-20 bg-white border-b border-gray-100 px-4">
-        <div className="flex">
-          {(["Referência", "Para Fazer"] as Status[]).map((tab) => (
+        <div className="flex overflow-x-auto">
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => { setActiveTab(tab); setShowForm(false); }}
-              className={`flex-1 py-3 text-sm font-semibold transition border-b-2 ${
+              className={`flex-shrink-0 px-3 py-3 text-sm font-semibold transition border-b-2 ${
                 activeTab === tab
                   ? "border-[#6A00FF] text-[#6A00FF]"
                   : "border-transparent text-gray-400 hover:text-gray-600"
               }`}
             >
               {tab}
-              <span className="ml-1.5 text-xs font-normal opacity-60">
-                ({entries.filter((e) => e.status === tab).length})
-              </span>
+              {tab !== "Busca Viral" && (
+                <span className="ml-1.5 text-xs font-normal opacity-60">
+                  ({entries.filter((e: Entry) => e.status === tab).length})
+                </span>
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
       <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-4">
-        {/* Inline form (visible when FAB clicked) */}
-        {showForm && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-400">Nova entrada</span>
-              <button onClick={() => setShowForm(false)} className="text-xs text-gray-400 hover:text-gray-600">cancelar</button>
-            </div>
-            <NewEntryForm activeTab={activeTab} onAdd={handleAdd} />
-          </div>
-        )}
-
-        {/* List */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-4xl mb-3">📋</p>
-            <p className="text-sm">Nenhuma entrada em <strong>{activeTab}</strong> ainda.</p>
-            <p className="text-xs mt-1">Toque no <strong>+</strong> para adicionar.</p>
-          </div>
+        {activeTab === "Busca Viral" ? (
+          <BuscaViral onSave={handleAdd} />
         ) : (
-          filtered.map((entry) => (
-            <EntryCard key={entry.id} entry={entry} onDelete={handleDelete} />
-          ))
+          <>
+            {showForm && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-gray-400">Nova entrada</span>
+                  <button onClick={() => setShowForm(false)} className="text-xs text-gray-400 hover:text-gray-600">cancelar</button>
+                </div>
+                <NewEntryForm activeTab={activeTab} onAdd={handleAdd} />
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-6 h-6 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <p className="text-4xl mb-3">📋</p>
+                <p className="text-sm">Nenhuma entrada em <strong>{activeTab}</strong> ainda.</p>
+                <p className="text-xs mt-1">Toque no <strong>+</strong> para adicionar.</p>
+              </div>
+            ) : (
+              filtered.map((entry) => (
+                <EntryCard key={entry.id} entry={entry} onDelete={handleDelete} />
+              ))
+            )}
+          </>
         )}
       </main>
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowForm((v) => !v)}
-        aria-label="Adicionar entrada"
-        className={`fixed bottom-6 right-5 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl font-light transition-all active:scale-90 ${
-          showForm ? "bg-gray-400 rotate-45" : "bg-[#6A00FF] hover:bg-[#5800d4] shadow-purple-300"
-        }`}
-      >
-        +
-      </button>
+      {activeTab !== "Busca Viral" && (
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          aria-label="Adicionar entrada"
+          className={`fixed bottom-6 right-5 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-2xl font-light transition-all active:scale-90 ${
+            showForm ? "bg-gray-400 rotate-45" : "bg-[#6A00FF] hover:bg-[#5800d4] shadow-purple-300"
+          }`}
+        >
+          +
+        </button>
+      )}
     </div>
   );
 }
