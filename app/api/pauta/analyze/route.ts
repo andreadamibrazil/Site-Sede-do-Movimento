@@ -42,14 +42,40 @@ async function getTranscript(url: string): Promise<string> {
   return raw.slice(0, 8000);
 }
 
-function buildAnalysisPrompt(url: string, transcript: string, annotation: string, assunto: string): string {
-  return `Você é um especialista em marketing de conteúdo para dança e artes do movimento.
+async function fetchConfig(): Promise<Record<string, string>> {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_SHEETS_CLIENT_ID ?? process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_SHEETS_CLIENT_SECRET ?? process.env.GOOGLE_CLIENT_SECRET,
+    );
+    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+    const sheets = google.sheets({ version: "v4", auth: oauth2Client });
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID ?? "1LHL8J-KjJJZTTREk1LeQw_ZbR7HNDF7WalL6ZpgQyt8",
+      range: "Config!A2:B50",
+    });
+    const config: Record<string, string> = {};
+    (res.data.values ?? []).forEach(([k, v]: string[]) => { if (k) config[k] = v ?? ""; });
+    return config;
+  } catch {
+    return {};
+  }
+}
+
+function buildAnalysisPrompt(url: string, transcript: string, annotation: string, assunto: string, config: Record<string, string>): string {
+  const negocio = config.negocio_nome || "Sede do Movimento";
+  const descricao = config.negocio_descricao || "escola de dança no Rio de Janeiro: ballet, contemporâneo, jazz, MoviRio, Nova Atmosfera";
+  const publico = config.publico_principal || "";
+  const dores = config.publico_dores || "";
+  const desejos = config.publico_desejos || "";
+
+  return `Você é um especialista em marketing de conteúdo para ${negocio} — ${descricao}.${publico ? `\nPúblico: ${publico}.` : ""}${dores ? `\nDores: ${dores}.` : ""}${desejos ? `\nDesejos: ${desejos}.` : ""}
 
 Analise este vídeo com base na transcrição abaixo e extraia:
 
 1. **Resumo** (2-3 linhas): do que se trata o vídeo
 2. **Hooks virais** (3-5): frases ou momentos do vídeo que têm alto potencial de engajamento — algo surpreendente, contraintuitivo, emocional ou acionável que poderia virar um reel/post
-3. **Contexto estratégico** (1-2 linhas): por que esse conteúdo é relevante para a Sede do Movimento (escola de dança: ballet, contemporâneo, jazz, MoviRio, Nova Atmosfera)
+3. **Contexto estratégico** (1-2 linhas): por que esse conteúdo é relevante para ${negocio}
 
 URL: ${url}
 ${assunto ? `Assunto: ${assunto}` : ""}
@@ -91,28 +117,27 @@ export async function POST(req: NextRequest) {
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  const config = await fetchConfig();
   let analysis = "";
 
   if (apiKey) {
     try {
       const client = new Anthropic({ apiKey });
       const msg = await client.messages.create({
-        model: "claude-haiku-4-5",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 800,
-        messages: [{ role: "user", content: buildAnalysisPrompt(url, transcript, annotation, assunto) }],
+        messages: [{ role: "user", content: buildAnalysisPrompt(url, transcript, annotation, assunto, config) }],
       });
       analysis = (msg.content[0] as { type: string; text: string }).text;
     } catch (err) {
       console.error("Claude analysis error:", err);
-      // Fall back to returning just the transcript summary
       analysis = `TRANSCRIÇÃO (sem análise — configure ANTHROPIC_API_KEY):\n${transcript.slice(0, 500)}…`;
     }
   } else {
-    // No API key — just return the raw transcript so it's still useful
     analysis = `TRANSCRIÇÃO:\n${transcript.slice(0, 1500)}…`;
   }
 
-  // Save analysis to sheet column L
+  // Save analysis (col L) + transcript (col M) to sheet
   try {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
@@ -124,14 +149,13 @@ export async function POST(req: NextRequest) {
     if (rowIndex !== -1) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${SHEET_NAME}!L${rowIndex + 1}`,
+        range: `${SHEET_NAME}!L${rowIndex + 1}:M${rowIndex + 1}`,
         valueInputOption: "USER_ENTERED",
-        requestBody: { values: [[analysis]] },
+        requestBody: { values: [[analysis, transcript]] },
       });
     }
   } catch (err) {
     console.error("Failed to save analysis to sheet:", err);
-    // Don't fail the request if sheet save fails
   }
 
   return NextResponse.json({ analysis, transcript: transcript.slice(0, 500) });
