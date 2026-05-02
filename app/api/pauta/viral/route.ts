@@ -2,17 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { auth } from "@/lib/auth";
 
-function getYouTube() {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_SHEETS_CLIENT_ID ?? process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_SHEETS_CLIENT_SECRET ?? process.env.GOOGLE_CLIENT_SECRET,
-  );
-  oauth2Client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-  });
-  return google.youtube({ version: "v3", auth: oauth2Client });
-}
-
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) {
@@ -24,8 +13,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing q param" }, { status: 400 });
   }
 
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "YouTube API key not configured" }, { status: 500 });
+  }
+
   try {
-    const youtube = getYouTube();
+    const youtube = google.youtube({ version: "v3", auth: apiKey });
     const publishedAfter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const res = await youtube.search.list({
