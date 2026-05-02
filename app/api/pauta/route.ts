@@ -111,13 +111,30 @@ export async function POST(req: NextRequest) {
       if (!aRows[i]?.[0]?.trim()) { nextRow = i + 1; break; }
     }
 
-    // Write data to A:K and initialize P:Q checkboxes as FALSE
+    // Write data columns A:K, leave L-O empty, set P:Q as FALSE
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A${nextRow}:Q${nextRow}`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: {
-        values: [[id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto ?? "", "", "", "", "", false, false]],
+        values: [[id, timestamp, user, platform, url ?? "", annotation ?? "", dores_desejos ?? "", funil ?? "", negocio ?? "", status ?? "", assunto ?? "", "", "", "", "", false, false]],
+      },
+    });
+
+    // Apply BOOLEAN (checkbox) validation to P and Q of the new row
+    const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+    const sheetObj = sheetMeta.data.sheets?.find((s) => s.properties?.title === SHEET_NAME);
+    const sheetId = sheetObj?.properties?.sheetId ?? 0;
+    const rowIdx = nextRow - 1; // 0-based
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [15, 16].map((col) => ({
+          setDataValidation: {
+            range: { sheetId, startRowIndex: rowIdx, endRowIndex: rowIdx + 1, startColumnIndex: col, endColumnIndex: col + 1 },
+            rule: { condition: { type: "BOOLEAN" }, showCustomUi: true },
+          },
+        })),
       },
     });
 
