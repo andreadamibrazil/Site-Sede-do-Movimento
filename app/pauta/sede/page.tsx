@@ -1120,6 +1120,18 @@ export default function PautaPage() {
           <span className="font-bold text-gray-900 text-sm">Pauta Digital</span>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href={SHEET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-400 hover:text-[#6A00FF] transition flex items-center gap-1"
+            title="Abrir planilha no Google Sheets"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+            Planilha
+          </a>
           <button onClick={() => signOut({ callbackUrl: "/pauta/login" })} className="text-xs text-gray-400 hover:text-gray-600 transition">
             Sair
           </button>
