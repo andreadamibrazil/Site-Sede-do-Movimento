@@ -20,6 +20,7 @@ const ContentSecurityPolicy = [
     "img-src 'self' data: blob:",
     "https://cdn.sanity.io",
     "https://img.youtube.com",
+    "https://i.ytimg.com",
     "https://www.google-analytics.com",
     "https://www.googletagmanager.com",
   ].join(" "),

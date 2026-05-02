@@ -33,12 +33,22 @@ export async function GET(req: NextRequest) {
       relevanceLanguage: "pt",
     });
 
+    function decodeHtml(str: string): string {
+      return str
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
+    }
+
     const items = res.data.items ?? [];
     const videos = items
       .filter((item) => item.id?.videoId)
       .map((item) => ({
         videoId: item.id!.videoId!,
-        title: item.snippet?.title ?? "",
+        title: decodeHtml(item.snippet?.title ?? ""),
         channel: item.snippet?.channelTitle ?? "",
         publishedAt: item.snippet?.publishedAt ?? "",
         thumbnail:
