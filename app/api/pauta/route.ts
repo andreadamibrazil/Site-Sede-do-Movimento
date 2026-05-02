@@ -7,7 +7,7 @@ const SPREADSHEET_ID =
   "1LHL8J-KjJJZTTREk1LeQw_ZbR7HNDF7WalL6ZpgQyt8";
 const SHEET_NAME = "Pauta";
 
-// Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto
+// Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto, analise
 const COL = {
   id: 0,
   timestamp: 1,
@@ -20,6 +20,7 @@ const COL = {
   negocio: 8,
   status: 9,
   assunto: 10,
+  analise: 11,
 } as const;
 
 function getSheets() {
@@ -55,7 +56,7 @@ export async function GET() {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A2:K`,
+      range: `${SHEET_NAME}!A2:L`,
     });
 
     const rows = res.data.values ?? [];
@@ -71,6 +72,7 @@ export async function GET() {
       negocio: row[COL.negocio] ?? "",
       status: row[COL.status] ?? "",
       assunto: row[COL.assunto] ?? "",
+      analise: row[COL.analise] ?? "",
     }));
 
     return NextResponse.json(entries);

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { url, annotation, dores_desejos, funil, negocio, assunto } = await req.json();
+    const { url, annotation, dores_desejos, funil, negocio, assunto, analise } = await req.json();
 
     const client = new Anthropic({ apiKey });
 
@@ -27,7 +27,7 @@ Anotação: ${annotation || "não informado"}
 Dores e Desejos do público: ${dores_desejos || "não informado"}
 Etapa do funil: ${funil || "não informado"}
 Negócio: ${negocio || "não informado"}
-Assunto: ${assunto || "não informado"}
+Assunto: ${assunto || "não informado"}${analise ? `\n\nANÁLISE DO VÍDEO (transcrição + hooks extraídos):\n${analise}` : ""}
 
 Gere:
 1. **Título** — chamativo, até 10 palavras

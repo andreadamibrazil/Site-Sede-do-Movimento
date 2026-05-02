@@ -23,6 +23,7 @@ interface Entry {
   negocio: Negocio | "";
   status: Status;
   assunto: string;
+  analise: string;
 }
 
 interface Draft {
@@ -212,6 +213,9 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState(entry.analise ?? "");
+  const [showAnalysis, setShowAnalysis] = useState(!!entry.analise);
   const [editForm, setEditForm] = useState<EditForm>({
     annotation: entry.annotation,
     dores_desejos: entry.dores_desejos,
@@ -311,6 +315,26 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
     }
   }
 
+  async function handleAnalyze() {
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/pauta/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, url: entry.url, annotation: entry.annotation, assunto: entry.assunto }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro ao analisar");
+      setAnalysis(data.analysis);
+      setShowAnalysis(true);
+      onUpdate?.(entry.id, { analise: data.analysis });
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Erro ao analisar vídeo.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   async function handleGenerate() {
     setGenerating(true);
     setGenerated("");
@@ -325,6 +349,7 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
           funil: entry.funil,
           negocio: entry.negocio,
           assunto: entry.assunto,
+          analise: analysis || entry.analise,
         }),
       });
       const data = await res.json();
@@ -531,6 +556,25 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
             )}
             {generating ? "Gerando…" : "Gerar post"}
           </button>
+          {(entry.platform === "YouTube" || entry.platform === "TikTok" || entry.platform === "Instagram" || entry.platform === "Twitter/X") && (
+            <button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              title="Buscar transcrição e extrair hooks virais"
+              className={`flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border transition disabled:opacity-50 flex items-center gap-1 ${
+                analysis ? "border-purple-200 text-[#6A00FF] bg-purple-50" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              {analyzing ? (
+                <span className="w-3 h-3 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin inline-block" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              )}
+              {analyzing ? "…" : analysis ? "Analisado ✓" : "Analisar"}
+            </button>
+          )}
           {entry.status === "Referência" && !movedStatus && (
             <button
               onClick={handleMoveToParaFazer}
@@ -542,6 +586,25 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
             </button>
           )}
         </div>
+
+        {/* Analysis result */}
+        {analysis && showAnalysis && (
+          <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">Análise do vídeo</p>
+              <div className="flex gap-2">
+                <button onClick={() => navigator.clipboard.writeText(analysis)} className="text-xs text-gray-400 hover:text-indigo-600 transition">copiar</button>
+                <button onClick={() => setShowAnalysis(false)} className="text-xs text-gray-400 hover:text-gray-600 transition">fechar</button>
+              </div>
+            </div>
+            <p className="text-xs text-indigo-900 whitespace-pre-wrap leading-relaxed">{analysis}</p>
+          </div>
+        )}
+        {analysis && !showAnalysis && (
+          <button onClick={() => setShowAnalysis(true)} className="text-xs text-indigo-600 hover:text-indigo-800 transition text-left">
+            ▸ Ver análise salva
+          </button>
+        )}
 
         {/* Generated result */}
         {generated && (
