@@ -98,12 +98,26 @@ export async function POST(req: NextRequest) {
     const platform = detectPlatform(url ?? "");
 
     const sheets = getSheets();
-    await sheets.spreadsheets.values.append({
+
+    // Find first truly empty row in column A (ignore rows with only checkbox data in P:Q)
+    const colA = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:K`,
+      range: `${SHEET_NAME}!A:A`,
+    });
+    const aRows = colA.data.values ?? [];
+    // First empty row after header (row index 0 = row 1)
+    let nextRow = aRows.length + 1;
+    for (let i = 1; i < aRows.length; i++) {
+      if (!aRows[i]?.[0]?.trim()) { nextRow = i + 1; break; }
+    }
+
+    // Write data to A:K and initialize P:Q checkboxes as FALSE
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${SHEET_NAME}!A${nextRow}:Q${nextRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
-        values: [[id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto ?? ""]],
+        values: [[id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto ?? "", "", "", "", "", false, false]],
       },
     });
 
