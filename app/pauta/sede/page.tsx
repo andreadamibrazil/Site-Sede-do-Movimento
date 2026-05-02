@@ -44,6 +44,18 @@ interface ViralVideo {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${process.env.NEXT_PUBLIC_SHEETS_ID ?? "1LHL8J-KjJJZTTREk1LeQw_ZbR7HNDF7WalL6ZpgQyt8"}`;
+
+function getYouTubeThumbnail(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : null;
+}
+
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?\s]+)/);
+  return m ? m[1] : null;
+}
+
 const PLATFORM_COLORS: Record<string, string> = {
   Instagram: "bg-pink-100 text-pink-700",
   YouTube: "bg-red-100 text-red-700",
@@ -80,47 +92,69 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
 
   const start = useCallback(() => {
+    setVoiceError("");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
     const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
 
     if (!SR) {
-      alert("Seu navegador não suporta reconhecimento de voz.");
+      setVoiceError("Voz não suportada neste browser. Use Chrome ou Safari.");
       return;
     }
 
-    const recognition = new SR();
-    recognition.lang = "pt-BR";
-    recognition.continuous = false;
-    recognition.interimResults = true;
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      let interim = "";
-      let final = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += transcript;
-        } else {
-          interim += transcript;
+      const recognition = new SR();
+      recognition.lang = "pt-BR";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        let interim = "";
+        let final = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript;
+          } else {
+            interim += transcript;
+          }
         }
-      }
-      if (final) {
-        onTranscript(final, true);
-      } else if (interim) {
-        onTranscript(interim, false);
-      }
-    };
+        if (final) {
+          onTranscript(final, true);
+        } else if (interim) {
+          onTranscript(interim, false);
+        }
+      };
 
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        if (event.error === "not-allowed") {
+          setVoiceError("Permissão de microfone negada. Verifique as configurações do browser.");
+        } else if (event.error === "no-speech") {
+          setVoiceError("Nenhuma fala detectada. Tente novamente.");
+        } else if (event.error !== "aborted") {
+          setVoiceError(`Erro: ${event.error}`);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      setVoiceError("Não foi possível iniciar o microfone.");
+    }
   }, [onTranscript]);
 
   const stop = useCallback(() => {
@@ -128,7 +162,7 @@ function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => 
     setIsListening(false);
   }, []);
 
-  return { isListening, start, stop };
+  return { isListening, start, stop, voiceError, clearVoiceError: () => setVoiceError("") };
 }
 
 // ─── Entry Card ──────────────────────────────────────────────────────────────
@@ -152,53 +186,71 @@ function EntryCard({ entry, onDelete }: { entry: Entry; onDelete: (id: string) =
     }
   }
 
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {entry.platform && (
-            <Badge label={entry.platform} colorClass={PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.Outro} />
-          )}
-          {entry.funil && (
-            <Badge label={entry.funil} colorClass={FUNIL_COLORS[entry.funil] ?? ""} />
-          )}
-          {entry.negocio && (
-            <Badge label={entry.negocio} colorClass={NEGOCIO_COLORS[entry.negocio] ?? ""} />
-          )}
-        </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          aria-label="Remover entrada"
-          className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 p-1"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
+  const ytThumbnail = entry.url ? getYouTubeThumbnail(entry.url) : null;
+  const ytId = entry.url ? getYouTubeId(entry.url) : null;
 
-      {entry.url && (
-        <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6A00FF] underline underline-offset-2 break-all line-clamp-2 hover:opacity-75 transition-opacity">
-          {entry.url}
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+      {/* YouTube thumbnail */}
+      {ytThumbnail && (
+        <a href={entry.url} target="_blank" rel="noopener noreferrer" className="block w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ytThumbnail} alt={entry.annotation || "thumbnail"} className="w-full aspect-video object-cover" />
         </a>
       )}
 
-      {entry.annotation && (
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.annotation}</p>
-      )}
-
-      {entry.dores_desejos && (
-        <div className="bg-gray-50 rounded-xl p-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dores & Desejos</p>
-          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{entry.dores_desejos}</p>
+      <div className="p-4 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {entry.platform && (
+              <Badge label={entry.platform} colorClass={PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.Outro} />
+            )}
+            {entry.funil && (
+              <Badge label={entry.funil} colorClass={FUNIL_COLORS[entry.funil] ?? ""} />
+            )}
+            {entry.negocio && (
+              <Badge label={entry.negocio} colorClass={NEGOCIO_COLORS[entry.negocio] ?? ""} />
+            )}
+          </div>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Remover entrada"
+            className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 p-1"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
         </div>
-      )}
 
-      <p className="text-xs text-gray-300">
-        {entry.assunto && <span className="text-[#6A00FF]/60 font-medium mr-1">#{entry.assunto}</span>}
-        {entry.user} · {new Date(entry.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
-      </p>
+        {entry.url && !ytId && (
+          <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6A00FF] underline underline-offset-2 break-all line-clamp-2 hover:opacity-75 transition-opacity">
+            {entry.url}
+          </a>
+        )}
+        {entry.url && ytId && (
+          <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-[#6A00FF] transition-colors truncate">
+            youtu.be/{ytId}
+          </a>
+        )}
+
+        {entry.annotation && (
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.annotation}</p>
+        )}
+
+        {entry.dores_desejos && (
+          <div className="bg-gray-50 rounded-xl p-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Dores & Desejos</p>
+            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{entry.dores_desejos}</p>
+          </div>
+        )}
+
+        <p className="text-xs text-gray-300">
+          {entry.assunto && <span className="text-[#6A00FF]/60 font-medium mr-1">#{entry.assunto}</span>}
+          {entry.user} · {new Date(entry.timestamp).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+        </p>
+      </div>
     </div>
   );
 }
@@ -220,7 +272,7 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
     }
   }, []);
 
-  const { isListening, start, stop } = useSpeechRecognition(handleTranscript);
+  const { isListening, start, stop, voiceError } = useSpeechRecognition(handleTranscript);
 
   function field<K extends keyof FormState>(key: K) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -288,6 +340,9 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block animate-pulse" />
             Ouvindo…
           </p>
+        )}
+        {voiceError && (
+          <p className="text-xs text-orange-500 mt-1">{voiceError}</p>
         )}
       </div>
 
@@ -544,9 +599,23 @@ export default function PautaPage() {
           </div>
           <span className="font-bold text-gray-900 text-sm">Pauta Digital</span>
         </div>
-        <button onClick={() => signOut({ callbackUrl: "/pauta/login" })} className="text-xs text-gray-400 hover:text-gray-600 transition">
-          Sair
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href={SHEET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-gray-400 hover:text-[#6A00FF] transition flex items-center gap-1"
+            title="Abrir planilha no Google Sheets"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+            </svg>
+            Planilha
+          </a>
+          <button onClick={() => signOut({ callbackUrl: "/pauta/login" })} className="text-xs text-gray-400 hover:text-gray-600 transition">
+            Sair
+          </button>
+        </div>
       </header>
 
       <div className="sticky top-[57px] z-20 bg-white border-b border-gray-100 px-4">
