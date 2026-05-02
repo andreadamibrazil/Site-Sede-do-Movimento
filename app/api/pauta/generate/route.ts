@@ -56,9 +56,11 @@ export async function POST(req: NextRequest) {
     const publicoDesejos = config.publico_desejos || "";
     const tomVoz = config.tom_de_voz || "";
     const objetivo = config.objetivo_conteudo || "";
+    const diferenciais = config.diferenciais || "";
+    const local = config.local || "";
 
     const prompt = `Você é um especialista em marketing de conteúdo para ${negocioNome} — ${negocioDesc}.
-Modalidades: ${modalidades}.${publicoPrincipal ? `\nPúblico: ${publicoPrincipal}.` : ""}${tomVoz ? `\nTom de voz: ${tomVoz}.` : ""}${objetivo ? `\nObjetivo: ${objetivo}.` : ""}
+Modalidades: ${modalidades}.${publicoPrincipal ? `\nPúblico: ${publicoPrincipal}.` : ""}${tomVoz ? `\nTom de voz: ${tomVoz}.` : ""}${diferenciais ? `\nDiferenciais: ${diferenciais}.` : ""}${local ? `\nLocalização: ${local}.` : ""}${objetivo ? `\nObjetivo: ${objetivo}.` : ""}
 
 Com base nesta referência de conteúdo, crie uma ideia de post para redes sociais ou blog:
 
