@@ -1071,9 +1071,15 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
 
 type AnalyzeState = "idle" | "analyzing" | "done" | "error";
 
-function AnalisarTab({ entries, onUpdate }: { entries: Entry[]; onUpdate: (id: string, changes: Partial<Entry>) => void }) {
+function AnalisarTab({ entries, onUpdate, onAdd }: {
+  entries: Entry[];
+  onUpdate: (id: string, changes: Partial<Entry>) => void;
+  onAdd: (entry: Entry) => void;
+}) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [stateMap, setStateMap] = useState<Record<string, AnalyzeState>>({});
+  const [synthesizing, setSynthesizing] = useState(false);
+  const [synthDone, setSynthDone] = useState(false);
 
   const allEntries = entries.filter((e) => e.status === "Referência" || e.status === "Para Fazer");
 
@@ -1093,38 +1099,41 @@ function AnalisarTab({ entries, onUpdate }: { entries: Entry[]; onUpdate: (id: s
     }
   }
 
-  async function handleAnalyzeSelected() {
-    const ids = Array.from(selected);
-    setStateMap((prev) => {
-      const next = { ...prev };
-      ids.forEach((id) => { next[id] = "analyzing"; });
-      return next;
-    });
-
-    await Promise.allSettled(
-      ids.map(async (id) => {
-        const entry = allEntries.find((e) => e.id === id);
-        if (!entry) return;
-        try {
-          const res = await fetch("/api/pauta/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: entry.id, url: entry.url, annotation: entry.annotation, assunto: entry.assunto }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error ?? "Erro");
-          onUpdate(id, { analise: data.analysis });
-          setStateMap((prev) => ({ ...prev, [id]: "done" }));
-        } catch {
-          setStateMap((prev) => ({ ...prev, [id]: "error" }));
-        }
-      })
+  async function handleSynthesize() {
+    const selectedEntries = allEntries.filter((e) => selected.has(e.id));
+    setSynthesizing(true);
+    setSynthDone(false);
+    Array.from(selected).forEach((id) =>
+      setStateMap((prev) => ({ ...prev, [id]: "analyzing" }))
     );
-
-    setSelected(new Set());
+    try {
+      const res = await fetch("/api/pauta/synthesize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries: selectedEntries.map((e) => ({
+          id: e.id, url: e.url, annotation: e.annotation,
+          assunto: e.assunto, analise: e.analise, platform: e.platform,
+        })) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro");
+      Array.from(selected).forEach((id) =>
+        setStateMap((prev) => ({ ...prev, [id]: "done" }))
+      );
+      onAdd(data as Entry);
+      setSynthDone(true);
+      setSelected(new Set());
+    } catch (err: unknown) {
+      Array.from(selected).forEach((id) =>
+        setStateMap((prev) => ({ ...prev, [id]: "error" }))
+      );
+      alert(err instanceof Error ? err.message : "Erro ao sintetizar");
+    } finally {
+      setSynthesizing(false);
+    }
   }
 
-  const analyzing = Object.values(stateMap).some((s) => s === "analyzing");
+  const processing = synthesizing || Object.values(stateMap).some((s) => s === "analyzing");
 
   return (
     <div className="flex flex-col gap-3 pb-24">
@@ -1202,20 +1211,26 @@ function AnalisarTab({ entries, onUpdate }: { entries: Entry[]; onUpdate: (id: s
         </>
       )}
 
+      {synthDone && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-green-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg">
+          ✓ Síntese criada na aba Referência!
+        </div>
+      )}
+
       {selected.size > 0 && (
         <button
-          onClick={handleAnalyzeSelected}
-          disabled={analyzing}
+          onClick={handleSynthesize}
+          disabled={processing}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#6A00FF] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg shadow-purple-300 hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center gap-2"
         >
-          {analyzing ? (
+          {processing ? (
             <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           )}
-          {analyzing ? "Analisando…" : `Analisar ${selected.size} entrada${selected.size > 1 ? "s" : ""}`}
+          {processing ? "Sintetizando…" : `Sintetizar ${selected.size} referência${selected.size > 1 ? "s" : ""} → nova entrada`}
         </button>
       )}
     </div>
@@ -1559,7 +1574,7 @@ export default function PautaPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-4">
         {activeTab === "Analisar" ? (
-          <AnalisarTab entries={entries} onUpdate={handleEntryUpdate} />
+          <AnalisarTab entries={entries} onUpdate={handleEntryUpdate} onAdd={handleAdd} />
         ) : activeTab === "Busca Viral" ? (
           <BuscaViral onSave={handleAdd} />
         ) : activeTab === "Rascunho" ? (

@@ -69,20 +69,22 @@ function buildAnalysisPrompt(url: string, transcript: string, annotation: string
   const dores = config.publico_dores || "";
   const desejos = config.publico_desejos || "";
 
+  const transcriptSection = transcript
+    ? `\nTRANSCRIÇÃO:\n${transcript}`
+    : "\n(Transcrição não disponível — analise com base na anotação e contexto.)";
+
   return `Você é um especialista em marketing de conteúdo para ${negocio} — ${descricao}.${publico ? `\nPúblico: ${publico}.` : ""}${dores ? `\nDores: ${dores}.` : ""}${desejos ? `\nDesejos: ${desejos}.` : ""}
 
-Analise este vídeo com base na transcrição abaixo e extraia:
+Analise esta referência e extraia:
 
-1. **Resumo** (2-3 linhas): do que se trata o vídeo
-2. **Hooks virais** (3-5): frases ou momentos do vídeo que têm alto potencial de engajamento — algo surpreendente, contraintuitivo, emocional ou acionável que poderia virar um reel/post
-3. **Contexto estratégico** (1-2 linhas): por que esse conteúdo é relevante para ${negocio}
+1. **Resumo** (2-3 linhas): do que se trata
+2. **Hooks virais** (3-5): frases ou ângulos com alto potencial de engajamento — surpreendente, contraintuitivo, emocional ou acionável
+3. **Contexto estratégico** (1-2 linhas): por que é relevante para ${negocio}
 
 URL: ${url}
 ${assunto ? `Assunto: ${assunto}` : ""}
 ${annotation ? `Anotação: ${annotation}` : ""}
-
-TRANSCRIÇÃO:
-${transcript}
+${transcriptSection}
 
 Responda em português, de forma direta e prática. Formato:
 
@@ -104,16 +106,10 @@ export async function POST(req: NextRequest) {
   if (!id || !url) return NextResponse.json({ error: "Missing id or url" }, { status: 400 });
 
   let transcript = "";
-  let transcriptError = "";
 
-  try {
-    transcript = await getTranscript(url);
-  } catch (err) {
-    transcriptError = err instanceof Error ? err.message : "Erro ao buscar transcrição";
-  }
-
-  if (!transcript) {
-    return NextResponse.json({ error: transcriptError || "Transcrição não disponível para este vídeo" }, { status: 422 });
+  const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
+  if (isYouTube) {
+    try { transcript = await getTranscript(url); } catch { /* proceed without transcript */ }
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
