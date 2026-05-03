@@ -24,6 +24,7 @@ interface Entry {
   status: Status;
   assunto: string;
   analise: string;
+  favorito: boolean;
 }
 
 interface Draft {
@@ -57,6 +58,27 @@ interface ViralVideo {
   likeCount: number;
   commentCount: number;
   description: string;
+}
+
+interface NewsItem {
+  title: string;
+  url: string;
+  description: string;
+  source: string;
+  publishedAt: string;
+  image: string;
+}
+
+interface TrendChip {
+  term: string;
+  trending?: boolean;
+}
+
+interface OgPreview {
+  title: string;
+  description: string;
+  image: string;
+  siteName: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -210,6 +232,8 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
   const [copied, setCopied] = useState(false);
   const [movingStatus, setMovingStatus] = useState(false);
   const [movedStatus, setMovedStatus] = useState(false);
+  const [favorito, setFavorito] = useState(entry.favorito ?? false);
+  const [togglingFav, setTogglingFav] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -224,6 +248,24 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
     negocio: entry.negocio,
   });
   const [savingEdit, setSavingEdit] = useState(false);
+
+  async function handleToggleFavorito() {
+    setTogglingFav(true);
+    const next = !favorito;
+    try {
+      await fetch("/api/pauta", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, favorito: next }),
+      });
+      setFavorito(next);
+      onUpdate?.(entry.id, { favorito: next });
+    } catch {
+      // silently ignore
+    } finally {
+      setTogglingFav(false);
+    }
+  }
 
   async function handleDelete() {
     if (!confirm("Remover esta entrada?")) return;
@@ -417,6 +459,17 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={handleToggleFavorito}
+              disabled={togglingFav}
+              aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              title={favorito ? "Favorito" : "Marcar favorito"}
+              className={`p-1 transition-colors ${favorito ? "text-yellow-400" : "text-gray-300 hover:text-yellow-400"}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill={favorito ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </button>
             <button
               onClick={() => {
                 setEditing((v) => !v);
@@ -641,6 +694,22 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
   const [form, setForm] = useState<FormState>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [interimText, setInterimText] = useState("");
+  const [ogPreview, setOgPreview] = useState<OgPreview | null>(null);
+  const [loadingOg, setLoadingOg] = useState(false);
+
+  async function fetchOgPreview(url: string) {
+    if (!url) { setOgPreview(null); return; }
+    setLoadingOg(true);
+    try {
+      const res = await fetch(`/api/pauta/preview?url=${encodeURIComponent(url)}`);
+      if (res.ok) {
+        const data: OgPreview = await res.json();
+        setOgPreview(data.title || data.image ? data : null);
+      }
+    } catch { /* ignore */ } finally {
+      setLoadingOg(false);
+    }
+  }
 
   const handleTranscript = useCallback((text: string, isFinal: boolean) => {
     if (isFinal) {
@@ -690,7 +759,28 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
 
       <div>
         <label className={labelClass}>URL</label>
-        <input type="url" placeholder="Cole o link aqui" value={form.url} onChange={field("url")} className={inputClass} />
+        <input
+          type="url"
+          placeholder="Cole o link aqui"
+          value={form.url}
+          onChange={(e) => { field("url")(e); setOgPreview(null); }}
+          onBlur={(e) => fetchOgPreview(e.target.value)}
+          className={inputClass}
+        />
+        {loadingOg && <p className="text-xs text-gray-400 mt-1">Carregando prévia…</p>}
+        {ogPreview && (
+          <div className="mt-2 rounded-xl border border-gray-200 overflow-hidden flex gap-3 bg-gray-50 p-3">
+            {ogPreview.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ogPreview.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+            )}
+            <div className="flex flex-col gap-0.5 min-w-0">
+              {ogPreview.siteName && <p className="text-xs text-gray-400 truncate">{ogPreview.siteName}</p>}
+              {ogPreview.title && <p className="text-xs font-semibold text-gray-700 line-clamp-2">{ogPreview.title}</p>}
+              {ogPreview.description && <p className="text-xs text-gray-500 line-clamp-2">{ogPreview.description}</p>}
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
@@ -772,9 +862,18 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
 function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ViralVideo[]>([]);
+  const [newsResults, setNewsResults] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [trends, setTrends] = useState<TrendChip[]>([]);
+
+  useEffect(() => {
+    fetch("/api/pauta/trends")
+      .then((r) => r.json())
+      .then((data) => setTrends(data))
+      .catch(() => {});
+  }, []);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -782,11 +881,21 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
     setLoading(true);
     setError("");
     setResults([]);
+    setNewsResults([]);
     try {
-      const res = await fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro na busca");
-      setResults(data);
+      const [viralRes, newsRes] = await Promise.allSettled([
+        fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`),
+        fetch(`/api/pauta/news?q=${encodeURIComponent(query)}`),
+      ]);
+      if (viralRes.status === "fulfilled") {
+        const data = await viralRes.value.json();
+        if (!viralRes.value.ok) throw new Error(data.error ?? "Erro na busca");
+        setResults(data);
+      }
+      if (newsRes.status === "fulfilled" && newsRes.value.ok) {
+        const data = await newsRes.value.json();
+        setNewsResults(data);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro na busca");
     } finally {
@@ -825,6 +934,26 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {trends.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {trends.map((chip) => (
+            <button
+              key={chip.term}
+              type="button"
+              onClick={() => setQuery(chip.term)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition ${
+                chip.trending
+                  ? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {chip.trending && <span className="mr-1">🔥</span>}
+              {chip.term}
+            </button>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleSearch} className="flex gap-2">
         <input
           type="text"
@@ -841,7 +970,7 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
           {loading ? "…" : "Buscar"}
         </button>
       </form>
-      <p className="text-xs text-gray-400">Vídeos do YouTube dos últimos 30 dias, por relevância.</p>
+      <p className="text-xs text-gray-400">Vídeos do YouTube dos últimos 30 dias + notícias de portais brasileiros.</p>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -898,8 +1027,35 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
         </div>
       ))}
 
-      {!loading && results.length === 0 && query && !error && (
+      {!loading && results.length === 0 && newsResults.length === 0 && query && !error && (
         <p className="text-center text-sm text-gray-400 py-10">Nenhum resultado. Tente outro assunto.</p>
+      )}
+
+      {newsResults.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notícias</p>
+          {newsResults.map((item) => (
+            <div key={item.url} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex gap-3 p-3">
+              {item.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.image} alt="" className="w-20 h-20 object-cover rounded-xl flex-shrink-0" />
+              )}
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <p className="text-xs text-gray-400">{item.source}</p>
+                <p className="text-sm font-semibold text-gray-800 line-clamp-2">{item.title}</p>
+                {item.description && <p className="text-xs text-gray-500 line-clamp-2">{item.description}</p>}
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#6A00FF] hover:underline mt-auto"
+                >
+                  Ler notícia ↗
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

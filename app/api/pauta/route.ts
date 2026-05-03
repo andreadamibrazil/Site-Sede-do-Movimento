@@ -8,6 +8,7 @@ const SPREADSHEET_ID =
 const SHEET_NAME = "Pauta";
 
 // Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto, analise
+// Cols M(12)–Q(16) managed by local app. R(17) = favorito
 const COL = {
   id: 0,
   timestamp: 1,
@@ -21,6 +22,7 @@ const COL = {
   status: 9,
   assunto: 10,
   analise: 11,
+  favorito: 17,
 } as const;
 
 function getSheets() {
@@ -56,7 +58,7 @@ export async function GET() {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A2:L`,
+      range: `${SHEET_NAME}!A2:R`,
     });
 
     const rows = res.data.values ?? [];
@@ -73,6 +75,7 @@ export async function GET() {
       status: row[COL.status] ?? "",
       assunto: row[COL.assunto] ?? "",
       analise: row[COL.analise] ?? "",
+      favorito: row[COL.favorito] === "TRUE",
     }));
 
     return NextResponse.json(entries);
@@ -111,13 +114,13 @@ export async function POST(req: NextRequest) {
       if (!aRows[i]?.[0]?.trim()) { nextRow = i + 1; break; }
     }
 
-    // Write data columns A:K, leave L-O empty, set P:Q as FALSE
+    // Write data columns A:K, leave L-O empty, P:Q checkboxes, R=favorito
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A${nextRow}:Q${nextRow}`,
+      range: `${SHEET_NAME}!A${nextRow}:R${nextRow}`,
       valueInputOption: "RAW",
       requestBody: {
-        values: [[id, timestamp, user, platform, url ?? "", annotation ?? "", dores_desejos ?? "", funil ?? "", negocio ?? "", status ?? "", assunto ?? "", "", "", "", "", false, false]],
+        values: [[id, timestamp, user, platform, url ?? "", annotation ?? "", dores_desejos ?? "", funil ?? "", negocio ?? "", status ?? "", assunto ?? "", "", "", "", "", false, false, false]],
       },
     });
 
@@ -153,7 +156,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, annotation, dores_desejos, funil, negocio, assunto } = body;
+    const { id, status, annotation, dores_desejos, funil, negocio, assunto, favorito } = body;
     if (!id) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
@@ -161,7 +164,7 @@ export async function PATCH(req: NextRequest) {
     const sheets = getSheets();
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:K`,
+      range: `${SHEET_NAME}!A:R`,
     });
 
     const rows = res.data.values ?? [];
@@ -189,6 +192,16 @@ export async function PATCH(req: NextRequest) {
         ]],
       },
     });
+
+    // Update R (favorito) if provided
+    if (favorito !== undefined) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${SHEET_NAME}!R${sheetRow}`,
+        valueInputOption: "RAW",
+        requestBody: { values: [[favorito ? "TRUE" : "FALSE"]] },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
