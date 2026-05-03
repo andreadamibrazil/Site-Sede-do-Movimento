@@ -867,6 +867,7 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
   const [trends, setTrends] = useState<TrendChip[]>([]);
+  const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     fetch("/api/pauta/trends")
@@ -882,6 +883,7 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
     setError("");
     setResults([]);
     setNewsResults([]);
+    setSearched(false);
     try {
       const [viralRes, newsRes] = await Promise.allSettled([
         fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`),
@@ -900,6 +902,7 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
       setError(err instanceof Error ? err.message : "Erro na busca");
     } finally {
       setLoading(false);
+      setSearched(true);
     }
   }
 
@@ -1027,13 +1030,16 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
         </div>
       ))}
 
-      {!loading && results.length === 0 && newsResults.length === 0 && query && !error && (
-        <p className="text-center text-sm text-gray-400 py-10">Nenhum resultado. Tente outro assunto.</p>
+      {!loading && searched && results.length === 0 && newsResults.length === 0 && !error && (
+        <p className="text-center text-sm text-gray-400 py-4">Nenhum vídeo encontrado no YouTube. Tente outro assunto.</p>
       )}
 
-      {newsResults.length > 0 && (
+      {searched && !loading && (
         <div className="flex flex-col gap-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notícias</p>
+          {newsResults.length === 0 && (
+            <p className="text-xs text-gray-400">Nenhuma notícia encontrada para este assunto nos portais (G1, Folha, UOL).</p>
+          )}
           {newsResults.map((item) => (
             <div key={item.url} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex gap-3 p-3">
               {item.image && (
