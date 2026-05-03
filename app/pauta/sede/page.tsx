@@ -9,7 +9,7 @@ type Funil = "Topo" | "Meio" | "Fundo";
 type Negocio = "Sede" | "MoviRio" | "Nova Atmosfera";
 type Status = "Referência" | "Para Fazer";
 type DraftStatus = "Rascunho" | "Publicado";
-type Tab = Status | "Busca Viral" | "Rascunho";
+type Tab = Status | "Busca Viral" | "Rascunho" | "Analisar";
 
 interface Entry {
   id: string;
@@ -1067,6 +1067,161 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
   );
 }
 
+// ─── Analisar Tab ────────────────────────────────────────────────────────────
+
+type AnalyzeState = "idle" | "analyzing" | "done" | "error";
+
+function AnalisarTab({ entries, onUpdate }: { entries: Entry[]; onUpdate: (id: string, changes: Partial<Entry>) => void }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [stateMap, setStateMap] = useState<Record<string, AnalyzeState>>({});
+
+  const allEntries = entries.filter((e) => e.status === "Referência" || e.status === "Para Fazer");
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (selected.size === allEntries.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(allEntries.map((e) => e.id)));
+    }
+  }
+
+  async function handleAnalyzeSelected() {
+    const ids = Array.from(selected);
+    setStateMap((prev) => {
+      const next = { ...prev };
+      ids.forEach((id) => { next[id] = "analyzing"; });
+      return next;
+    });
+
+    await Promise.allSettled(
+      ids.map(async (id) => {
+        const entry = allEntries.find((e) => e.id === id);
+        if (!entry) return;
+        try {
+          const res = await fetch("/api/pauta/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: entry.id, url: entry.url, annotation: entry.annotation, assunto: entry.assunto }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? "Erro");
+          onUpdate(id, { analise: data.analysis });
+          setStateMap((prev) => ({ ...prev, [id]: "done" }));
+        } catch {
+          setStateMap((prev) => ({ ...prev, [id]: "error" }));
+        }
+      })
+    );
+
+    setSelected(new Set());
+  }
+
+  const analyzing = Object.values(stateMap).some((s) => s === "analyzing");
+
+  return (
+    <div className="flex flex-col gap-3 pb-24">
+      {allEntries.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-4xl mb-3">🔬</p>
+          <p className="text-sm">Nenhuma entrada para analisar.</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-3 px-1">
+            <input
+              type="checkbox"
+              checked={selected.size === allEntries.length && allEntries.length > 0}
+              onChange={toggleAll}
+              className="w-4 h-4 accent-[#6A00FF] cursor-pointer"
+            />
+            <span className="text-xs text-gray-400">
+              {selected.size > 0 ? `${selected.size} selecionado${selected.size > 1 ? "s" : ""}` : "Selecionar todos"}
+            </span>
+          </div>
+
+          {allEntries.map((entry) => {
+            const state = stateMap[entry.id] ?? "idle";
+            const isSelected = selected.has(entry.id);
+            const ytThumb = getYouTubeThumbnail(entry.url);
+
+            return (
+              <div
+                key={entry.id}
+                onClick={() => state !== "analyzing" && toggleOne(entry.id)}
+                className={`bg-white rounded-2xl border transition cursor-pointer flex gap-3 p-3 ${
+                  isSelected ? "border-[#6A00FF] shadow-sm shadow-purple-100" : "border-gray-100"
+                } ${state === "analyzing" ? "opacity-60 cursor-wait" : ""}`}
+              >
+                <div className="flex items-start pt-0.5 flex-shrink-0">
+                  {state === "analyzing" ? (
+                    <span className="w-4 h-4 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin inline-block" />
+                  ) : state === "done" ? (
+                    <span className="text-green-500 text-sm font-bold">✓</span>
+                  ) : state === "error" ? (
+                    <span className="text-red-400 text-sm">✕</span>
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleOne(entry.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 accent-[#6A00FF] cursor-pointer"
+                    />
+                  )}
+                </div>
+
+                {ytThumb && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ytThumb} alt="" className="w-16 h-12 object-cover rounded-lg flex-shrink-0" />
+                )}
+
+                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap gap-1">
+                    <Badge label={entry.status} colorClass={entry.status === "Referência" ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"} />
+                    {entry.platform && <Badge label={entry.platform} colorClass={PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.Outro} />}
+                    {entry.analise && <Badge label="Analisado" colorClass="bg-green-50 text-green-600" />}
+                  </div>
+                  {(entry.annotation || entry.assunto) && (
+                    <p className="text-sm text-gray-700 line-clamp-2">{entry.annotation || entry.assunto}</p>
+                  )}
+                  {entry.assunto && entry.annotation && (
+                    <p className="text-xs text-[#6A00FF]/60 font-medium">#{entry.assunto}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {selected.size > 0 && (
+        <button
+          onClick={handleAnalyzeSelected}
+          disabled={analyzing}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#6A00FF] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg shadow-purple-300 hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center gap-2"
+        >
+          {analyzing ? (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          )}
+          {analyzing ? "Analisando…" : `Analisar ${selected.size} entrada${selected.size > 1 ? "s" : ""}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Draft Card ──────────────────────────────────────────────────────────────
 
 const DRAFT_STATUS_COLORS: Record<DraftStatus, string> = {
@@ -1285,7 +1440,7 @@ export default function PautaPage() {
   }, [status]);
 
   const cutoff = last30 ? Date.now() - 30 * 24 * 60 * 60 * 1000 : 0;
-  const filtered = activeTab !== "Busca Viral" && activeTab !== "Rascunho"
+  const filtered = activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar"
     ? entries.filter((e: Entry) =>
         e.status === activeTab &&
         (!last30 || new Date(e.timestamp).getTime() >= cutoff)
@@ -1331,7 +1486,7 @@ export default function PautaPage() {
 
   if (!session) return <LoginScreen />;
 
-  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral", "Rascunho"];
+  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral", "Rascunho", "Analisar"];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -1377,7 +1532,7 @@ export default function PautaPage() {
                 }`}
               >
                 {tab}
-                {tab !== "Busca Viral" && (
+                {tab !== "Busca Viral" && tab !== "Analisar" && (
                   <span className="ml-1.5 text-xs font-normal opacity-60">
                     ({tab === "Rascunho"
                       ? drafts.length
@@ -1387,7 +1542,7 @@ export default function PautaPage() {
               </button>
             ))}
           </div>
-          {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
+          {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar" && (
             <button
               onClick={() => setLast30((v: boolean) => !v)}
               className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full transition ml-2 ${
@@ -1403,7 +1558,9 @@ export default function PautaPage() {
       </div>
 
       <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-4">
-        {activeTab === "Busca Viral" ? (
+        {activeTab === "Analisar" ? (
+          <AnalisarTab entries={entries} onUpdate={handleEntryUpdate} />
+        ) : activeTab === "Busca Viral" ? (
           <BuscaViral onSave={handleAdd} />
         ) : activeTab === "Rascunho" ? (
           <>
@@ -1466,7 +1623,7 @@ export default function PautaPage() {
         )}
       </main>
 
-      {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
+      {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar" && (
         <button
           onClick={() => setShowForm((v) => !v)}
           aria-label="Adicionar entrada"
