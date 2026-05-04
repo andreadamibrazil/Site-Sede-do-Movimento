@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
   if (apiKey) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
       const result = await model.generateContent(buildAnalysisPrompt(url, transcript, annotation, assunto, config));
       analysis = result.response.text();
     } catch (err) {

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const config = await fetchConfig();
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
 
     const negocioNome = config.negocio_nome || "Sede do Movimento";
     const negocioDesc = config.negocio_descricao || "escola de dança no Rio de Janeiro";
