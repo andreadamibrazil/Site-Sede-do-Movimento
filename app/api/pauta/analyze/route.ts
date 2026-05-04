@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/lib/auth";
 
 const SPREADSHEET_ID =
@@ -112,25 +112,22 @@ export async function POST(req: NextRequest) {
     try { transcript = await getTranscript(url); } catch { /* proceed without transcript */ }
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_KEY;
   const config = await fetchConfig();
   let analysis = "";
 
   if (apiKey) {
     try {
-      const client = new Anthropic({ apiKey });
-      const msg = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 800,
-        messages: [{ role: "user", content: buildAnalysisPrompt(url, transcript, annotation, assunto, config) }],
-      });
-      analysis = (msg.content[0] as { type: string; text: string }).text;
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(buildAnalysisPrompt(url, transcript, annotation, assunto, config));
+      analysis = result.response.text();
     } catch (err) {
-      console.error("Claude analysis error:", err);
-      analysis = `TRANSCRIÇÃO (sem análise — configure ANTHROPIC_API_KEY):\n${transcript.slice(0, 500)}…`;
+      console.error("Gemini analysis error:", err);
+      analysis = transcript ? `TRANSCRIÇÃO:\n${transcript.slice(0, 500)}…` : "Erro ao gerar análise.";
     }
   } else {
-    analysis = `TRANSCRIÇÃO:\n${transcript.slice(0, 1500)}…`;
+    analysis = transcript ? `TRANSCRIÇÃO:\n${transcript.slice(0, 1500)}…` : "GOOGLE_AI_KEY não configurada.";
   }
 
   // Save analysis (col L) + transcript (col M) to sheet

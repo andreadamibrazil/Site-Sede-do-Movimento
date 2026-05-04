@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { auth } from "@/lib/auth";
 
 const SPREADSHEET_ID =
@@ -108,23 +108,18 @@ IDEIAS DE CONTEÚDO:
 ÂNGULO DIFERENCIADOR: [texto]`;
 
   let analysis = "";
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_KEY;
 
-  if (apiKey) {
-    try {
-      const client = new Anthropic({ apiKey });
-      const msg = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1200,
-        messages: [{ role: "user", content: prompt }],
-      });
-      analysis = (msg.content[0] as { type: string; text: string }).text;
-    } catch (err) {
-      console.error("Claude synthesize error:", err);
-      return NextResponse.json({ error: "Erro ao gerar síntese" }, { status: 500 });
-    }
-  } else {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+  if (!apiKey) return NextResponse.json({ error: "GOOGLE_AI_KEY not configured" }, { status: 500 });
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    analysis = result.response.text();
+  } catch (err) {
+    console.error("Gemini synthesize error:", err);
+    return NextResponse.json({ error: "Erro ao gerar síntese" }, { status: 500 });
   }
 
   // Create new entry in spreadsheet
