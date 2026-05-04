@@ -152,6 +152,6 @@ IDEIAS DE CONTEÚDO:
     url: firstUrl, annotation,
     dores_desejos: "", funil: "", negocio: "",
     status: "Referência", assunto: assuntos,
-    analise: analysis, favorito: false,
+    analise: analysis, instrucao: "", blog: "", favorito: false,
   }, { status: 201 });
 }

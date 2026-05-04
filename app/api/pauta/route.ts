@@ -7,8 +7,9 @@ const SPREADSHEET_ID =
   "1LHL8J-KjJJZTTREk1LeQw_ZbR7HNDF7WalL6ZpgQyt8";
 const SHEET_NAME = "Pauta";
 
-// Columns: id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto, analise
-// Cols M(12)–Q(16) managed by local app. R(17) = favorito
+// Columns: id(A), timestamp(B), user(C), platform(D), url(E), annotation(F), dores_desejos(G),
+// funil(H), negocio(I), status(J), assunto(K), analise(L), transcricao(M), instrucao(N), blog(O),
+// ☑instrucao(P), ☑blog(Q), favorito(R)
 const COL = {
   id: 0,
   timestamp: 1,
@@ -22,6 +23,8 @@ const COL = {
   status: 9,
   assunto: 10,
   analise: 11,
+  instrucao: 13,
+  blog: 14,
   favorito: 17,
 } as const;
 
@@ -75,6 +78,8 @@ export async function GET() {
       status: row[COL.status] ?? "",
       assunto: row[COL.assunto] ?? "",
       analise: row[COL.analise] ?? "",
+      instrucao: row[COL.instrucao] ?? "",
+      blog: row[COL.blog] ?? "",
       favorito: row[COL.favorito] === "TRUE",
     }));
 
@@ -141,7 +146,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto: assunto ?? "" }, { status: 201 });
+    return NextResponse.json({ id, timestamp, user, platform, url, annotation, dores_desejos, funil, negocio, status, assunto: assunto ?? "", analise: "", instrucao: "", blog: "", favorito: false }, { status: 201 });
   } catch (err) {
     console.error("POST /api/pauta error:", err);
     return NextResponse.json({ error: "Failed to create entry" }, { status: 500 });
