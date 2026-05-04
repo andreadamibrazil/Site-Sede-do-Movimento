@@ -1,6 +1,6 @@
 {
-  "name": "Pauta Digital — Sede",
-  "short_name": "Pauta Sede",
+  "name": "Pauta Sede",
+  "short_name": "Pauta",
   "description": "Ferramenta interna de pauta de conteúdo da Sede do Movimento",
   "start_url": "/pauta/sede",
   "display": "standalone",
@@ -22,5 +22,14 @@
     }
   ],
   "categories": ["productivity"],
-  "lang": "pt-BR"
+  "lang": "pt-BR",
+  "share_target": {
+    "action": "/pauta/sede",
+    "method": "GET",
+    "params": {
+      "url": "url",
+      "text": "text",
+      "title": "title"
+    }
+  }
 }

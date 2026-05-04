@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -132,83 +133,58 @@ function Badge({ label, colorClass }: { label: string; colorClass: string }) {
   );
 }
 
-// ─── Speech Recognition hook ─────────────────────────────────────────────────
+// ─── Audio Recorder hook (MediaRecorder → Gemini transcription) ──────────────
 
-function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => void) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
-  const [isListening, setIsListening] = useState(false);
+function useAudioRecorder(onTranscript: (text: string) => void) {
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [voiceError, setVoiceError] = useState("");
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     setVoiceError("");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any;
-    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-
-    if (!SR) {
-      setVoiceError("Voz não suportada neste browser. Use Chrome ou Safari.");
-      return;
-    }
-
     try {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-        recognitionRef.current = null;
-      }
-
-      const recognition = new SR();
-      recognition.lang = "pt-BR";
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onresult = (event: any) => {
-        let interim = "";
-        let final = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            final += transcript;
-          } else {
-            interim += transcript;
-          }
-        }
-        if (final) {
-          onTranscript(final, true);
-        } else if (interim) {
-          onTranscript(interim, false);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/mp4";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setIsTranscribing(true);
+        try {
+          const blob = new Blob(chunksRef.current, { type: mimeType });
+          const fd = new FormData();
+          fd.append("audio", blob, "audio.webm");
+          const res = await fetch("/api/pauta/transcribe", { method: "POST", body: fd });
+          const data = await res.json();
+          if (data.text) onTranscript(data.text);
+          else setVoiceError(data.error ?? "Erro na transcrição.");
+        } catch {
+          setVoiceError("Erro ao transcrever áudio.");
+        } finally {
+          setIsTranscribing(false);
         }
       };
-
-      recognition.onend = () => setIsListening(false);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognition.onerror = (event: any) => {
-        setIsListening(false);
-        if (event.error === "not-allowed") {
-          setVoiceError("Permissão de microfone negada. Verifique as configurações do browser.");
-        } else if (event.error === "no-speech") {
-          setVoiceError("Nenhuma fala detectada. Tente novamente.");
-        } else if (event.error !== "aborted") {
-          setVoiceError(`Erro: ${event.error}`);
-        }
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-      setIsListening(true);
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
     } catch {
-      setVoiceError("Não foi possível iniciar o microfone.");
+      setVoiceError("Permissão de microfone negada ou não disponível.");
     }
   }, [onTranscript]);
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
   }, []);
 
-  return { isListening, start, stop, voiceError, clearVoiceError: () => setVoiceError("") };
+  return { isRecording, isTranscribing, start, stop, voiceError, clearVoiceError: () => setVoiceError("") };
 }
 
 // ─── Entry Card ──────────────────────────────────────────────────────────────
@@ -746,13 +722,18 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
 
 // ─── New Entry Form ───────────────────────────────────────────────────────────
 
-function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: Entry) => void }) {
+function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onAdd: (entry: Entry) => void; initialUrl?: string }) {
   const defaultForm: FormState = { url: "", annotation: "", dores_desejos: "", funil: "", negocio: "", assunto: "" };
-  const [form, setForm] = useState<FormState>(defaultForm);
+  const [form, setForm] = useState<FormState>({ ...defaultForm, url: initialUrl ?? "" });
   const [saving, setSaving] = useState(false);
-  const [interimText, setInterimText] = useState("");
   const [ogPreview, setOgPreview] = useState<OgPreview | null>(null);
   const [loadingOg, setLoadingOg] = useState(false);
+
+  // Auto-fetch OG preview when opened from share_target
+  useEffect(() => {
+    if (initialUrl) fetchOgPreview(initialUrl);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl]);
 
   async function fetchOgPreview(url: string) {
     if (!url) { setOgPreview(null); return; }
@@ -768,16 +749,11 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
     }
   }
 
-  const handleTranscript = useCallback((text: string, isFinal: boolean) => {
-    if (isFinal) {
-      setForm((prev) => ({ ...prev, annotation: (prev.annotation + " " + text).trim() }));
-      setInterimText("");
-    } else {
-      setInterimText(text);
-    }
+  const handleTranscript = useCallback((text: string) => {
+    setForm((prev) => ({ ...prev, annotation: (prev.annotation + " " + text).trim() }));
   }, []);
 
-  const { isListening, start, stop, voiceError } = useSpeechRecognition(handleTranscript);
+  const { isRecording, isTranscribing, start, stop, voiceError } = useAudioRecorder(handleTranscript);
 
   function field<K extends keyof FormState>(key: K) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -799,7 +775,6 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
       const entry = await res.json() as Entry;
       onAdd(entry);
       setForm(defaultForm);
-      setInterimText("");
     } catch {
       alert("Erro ao salvar entrada.");
     } finally {
@@ -846,25 +821,32 @@ function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: 
           <textarea
             rows={3}
             placeholder="O que chama atenção neste conteúdo?"
-            value={isListening ? form.annotation + (interimText ? " " + interimText : "") : form.annotation}
+            value={form.annotation}
             onChange={field("annotation")}
             className={`${inputClass} resize-none pr-12`}
           />
           <button
             type="button"
-            onClick={isListening ? stop : start}
-            className={`absolute bottom-2 right-2 p-2 rounded-lg transition-colors ${isListening ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-500 hover:bg-[#6A00FF]/10 hover:text-[#6A00FF]"}`}
-            aria-label={isListening ? "Parar gravação" : "Gravar áudio"}
+            onClick={isRecording ? stop : start}
+            disabled={isTranscribing}
+            className={`absolute bottom-2 right-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${isRecording ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-500 hover:bg-[#6A00FF]/10 hover:text-[#6A00FF]"}`}
+            aria-label={isRecording ? "Parar gravação" : "Gravar áudio"}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
           </button>
         </div>
-        {isListening && (
+        {isRecording && (
           <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block animate-pulse" />
-            Ouvindo…
+            Gravando… clique no mic para parar
+          </p>
+        )}
+        {isTranscribing && (
+          <p className="text-xs text-[#6A00FF] mt-1 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-[#6A00FF] rounded-full inline-block animate-pulse" />
+            Transcrevendo…
           </p>
         )}
         {voiceError && (
@@ -1489,6 +1471,7 @@ function LoginScreen() {
 
 export default function PautaPage() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>("Referência");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -1496,6 +1479,12 @@ export default function PautaPage() {
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [last30, setLast30] = useState(false);
+
+  // Recebe links compartilhados via Web Share Target API (?url= ou ?text=)
+  const sharedUrl = searchParams.get("url") ?? searchParams.get("text") ?? undefined;
+  useEffect(() => {
+    if (sharedUrl) setShowForm(true);
+  }, [sharedUrl]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -1665,7 +1654,7 @@ export default function PautaPage() {
                   <span className="text-xs text-gray-400">Nova entrada</span>
                   <button onClick={() => setShowForm(false)} className="text-xs text-gray-400 hover:text-gray-600">cancelar</button>
                 </div>
-                <NewEntryForm activeTab={activeTab as Status} onAdd={handleAdd} />
+                <NewEntryForm activeTab={activeTab as Status} onAdd={handleAdd} initialUrl={sharedUrl} />
               </div>
             )}
 
