@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { google } from "googleapis";
 import { auth } from "@/lib/auth";
 
@@ -37,16 +37,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_AI_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY não configurada." }, { status: 500 });
+    return NextResponse.json({ error: "GOOGLE_AI_KEY não configurada." }, { status: 500 });
   }
 
   try {
     const { url, annotation, dores_desejos, funil, negocio, assunto, analise } = await req.json();
     const config = await fetchConfig();
 
-    const client = new Anthropic({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const negocioNome = config.negocio_nome || "Sede do Movimento";
     const negocioDesc = config.negocio_descricao || "escola de dança no Rio de Janeiro";
@@ -80,13 +81,8 @@ Gere:
 
 Seja direto, criativo e focado no público da ${negocioNome}.`;
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 800,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
     return NextResponse.json({ result: text });
   } catch (err) {
     console.error("POST /api/pauta/generate error:", err);
