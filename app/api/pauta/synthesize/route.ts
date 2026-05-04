@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithFallback } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 
 const SPREADSHEET_ID =
@@ -108,15 +108,8 @@ IDEIAS DE CONTEÚDO:
 ÂNGULO DIFERENCIADOR: [texto]`;
 
   let analysis = "";
-  const apiKey = process.env.GOOGLE_AI_KEY;
-
-  if (!apiKey) return NextResponse.json({ error: "GOOGLE_AI_KEY not configured" }, { status: 500 });
-
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
-    const result = await model.generateContent(prompt);
-    analysis = result.response.text();
+    analysis = await generateWithFallback(prompt);
   } catch (err) {
     console.error("Gemini synthesize error:", err);
     return NextResponse.json({ error: "Erro ao gerar síntese" }, { status: 500 });

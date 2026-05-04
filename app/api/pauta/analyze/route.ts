@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithFallback } from "@/lib/gemini";
 import { auth } from "@/lib/auth";
 
 const SPREADSHEET_ID =
@@ -112,22 +112,14 @@ export async function POST(req: NextRequest) {
     try { transcript = await getTranscript(url); } catch { /* proceed without transcript */ }
   }
 
-  const apiKey = process.env.GOOGLE_AI_KEY;
   const config = await fetchConfig();
   let analysis = "";
 
-  if (apiKey) {
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
-      const result = await model.generateContent(buildAnalysisPrompt(url, transcript, annotation, assunto, config));
-      analysis = result.response.text();
-    } catch (err) {
-      console.error("Gemini analysis error:", err);
-      analysis = transcript ? `TRANSCRIÇÃO:\n${transcript.slice(0, 500)}…` : "Erro ao gerar análise.";
-    }
-  } else {
-    analysis = transcript ? `TRANSCRIÇÃO:\n${transcript.slice(0, 1500)}…` : "GOOGLE_AI_KEY não configurada.";
+  try {
+    analysis = await generateWithFallback(buildAnalysisPrompt(url, transcript, annotation, assunto, config));
+  } catch (err) {
+    console.error("Gemini analysis error:", err);
+    analysis = transcript ? `TRANSCRIÇÃO:\n${transcript.slice(0, 500)}…` : "Erro ao gerar análise.";
   }
 
   // Save analysis (col L) + transcript (col M) to sheet

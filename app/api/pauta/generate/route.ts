@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithFallback } from "@/lib/gemini";
 import { google } from "googleapis";
 import { auth } from "@/lib/auth";
 
@@ -37,17 +37,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.GOOGLE_AI_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "GOOGLE_AI_KEY não configurada." }, { status: 500 });
-  }
-
   try {
     const { url, annotation, dores_desejos, funil, negocio, assunto, analise } = await req.json();
     const config = await fetchConfig();
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
 
     const negocioNome = config.negocio_nome || "Sede do Movimento";
     const negocioDesc = config.negocio_descricao || "escola de dança no Rio de Janeiro";
@@ -81,8 +74,7 @@ Gere:
 
 Seja direto, criativo e focado no público da ${negocioNome}.`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const text = await generateWithFallback(prompt);
     return NextResponse.json({ result: text });
   } catch (err) {
     console.error("POST /api/pauta/generate error:", err);
