@@ -144,6 +144,23 @@ function useAudioRecorder(onTranscript: (text: string) => void) {
 
   const start = useCallback(async () => {
     setVoiceError("");
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Microfone não suportado neste browser. Use Chrome ou Safari.");
+      return;
+    }
+
+    // Verifica permissão antes de tentar gravar
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
+        if (perm.state === "denied") {
+          setVoiceError("BLOCKED");
+          return;
+        }
+      } catch { /* ignora — nem todos os browsers suportam permissions.query */ }
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -174,8 +191,13 @@ function useAudioRecorder(onTranscript: (text: string) => void) {
       mediaRecorderRef.current = recorder;
       recorder.start();
       setIsRecording(true);
-    } catch {
-      setVoiceError("Permissão de microfone negada ou não disponível.");
+    } catch (err) {
+      const name = (err as { name?: string })?.name ?? "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        setVoiceError("BLOCKED");
+      } else {
+        setVoiceError(`Erro ao acessar microfone: ${name || "desconhecido"}`);
+      }
     }
   }, [onTranscript]);
 
@@ -849,9 +871,15 @@ function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onA
             Transcrevendo…
           </p>
         )}
-        {voiceError && (
+        {voiceError === "BLOCKED" ? (
+          <div className="mt-1 rounded-lg bg-orange-50 border border-orange-200 p-2 text-xs text-orange-700 space-y-1">
+            <p className="font-semibold">Microfone bloqueado para este site.</p>
+            <p>No Chrome: clique no 🔒 cadeado na barra de endereço → <strong>Microfone</strong> → <strong>Permitir</strong> → recarregue.</p>
+            <p>No macOS: <strong>Preferências do Sistema → Privacidade → Microfone</strong> → marque Google Chrome.</p>
+          </div>
+        ) : voiceError ? (
           <p className="text-xs text-orange-500 mt-1">{voiceError}</p>
-        )}
+        ) : null}
       </div>
 
       <div>
