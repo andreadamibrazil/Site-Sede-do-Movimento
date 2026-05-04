@@ -2,7 +2,7 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1470,6 +1470,14 @@ function LoginScreen() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PautaPage() {
+  return (
+    <Suspense>
+      <PautaPageContent />
+    </Suspense>
+  );
+}
+
+function PautaPageContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>("Referência");
