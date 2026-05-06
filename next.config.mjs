@@ -49,7 +49,7 @@ const securityHeaders = [
   // Control referrer information sent with requests
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Restrict access to browser features
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
   // Enable DNS prefetching for performance
   { key: "X-DNS-Prefetch-Control", value: "on" },
   // Full CSP
