@@ -39,13 +39,12 @@ const ContentSecurityPolicy = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "frame-ancestors 'self' https://*.sanity.io",
 ].join("; ");
 
 const securityHeaders = [
   // Prevent browsers from doing MIME-type sniffing
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // Block site from being embedded in iframes (clickjacking)
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   // Control referrer information sent with requests
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Restrict access to browser features
