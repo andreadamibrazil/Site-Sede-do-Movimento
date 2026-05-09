@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { draftMode } from "next/headers";
 import SiteShell from "@/components/layout/SiteShell";
 import { SanityLive } from "@/sanity/lib/live";
+import { VisualEditing } from "@/components/shared/VisualEditing";
+import { DisableDraftMode } from "@/components/shared/DisableDraftMode";
 import GoogleTagManager from "@/components/analytics/GoogleTagManager";
 import OrganizationSchema from "@/components/schema/OrganizationSchema";
 import Script from "next/script";
@@ -67,7 +70,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const { data: settings } = await sanityFetch({ query: siteSettingsQuery });
+  const [{ data: settings }, { isEnabled: isDraftMode }] = await Promise.all([
+    sanityFetch({ query: siteSettingsQuery }),
+    draftMode(),
+  ]);
   const siteSettings = settings as SanitySiteSettings | null;
 
   return (
@@ -89,6 +95,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteShell settings={siteSettings}>{children}</SiteShell>
         <CookieNotice />
         <SanityLive />
+        {isDraftMode && (
+          <>
+            <DisableDraftMode />
+            <VisualEditing />
+          </>
+        )}
         <Analytics />
         <SpeedInsights />
       </body>

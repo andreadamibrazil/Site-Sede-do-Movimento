@@ -57,7 +57,15 @@ export const postBySlugQuery = groq`
     category,
     tags,
     readingTime,
-    body
+    body,
+    seoTitle,
+    seoDescription,
+    ogImage,
+    noIndex,
+    instagramPost,
+    youtubeVideo,
+    externalCitations,
+    relatedInternalLinks
   }
 `;
 

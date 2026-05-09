@@ -34,7 +34,7 @@ const ContentSecurityPolicy = [
     "https://vitals.vercel-insights.com",
     "https://va.vercel-scripts.com",
   ].join(" "),
-  "frame-src https://www.youtube.com https://www.instagram.com https://www.googletagmanager.com",
+  "frame-src https://www.youtube.com https://www.instagram.com https://www.googletagmanager.com https://*.sanity.io",
   "media-src 'self' https://cdn.sanity.io blob:",
   "object-src 'none'",
   "base-uri 'self'",

@@ -21,18 +21,39 @@ export interface SanityAuthor {
   photo?: SanityImageSource;
 }
 
+export interface SanityExternalCitation {
+  label: string;
+  url: string;
+}
+
+export interface SanityInternalLink {
+  label: string;
+  href: string;
+}
+
 export interface SanityPost {
   _id: string;
   title: string;
   slug: string;
   excerpt: string;
   coverImage: SanityImageSource;
+  heroImage?: SanityImageSource;
   author: SanityAuthor;
   publishedAt: string;
   category: string;
   tags: string[];
   readingTime: number;
   body?: unknown[];
+  // SEO
+  seoTitle?: string;
+  seoDescription?: string;
+  ogImage?: SanityImageSource;
+  noIndex?: boolean;
+  // Links circulares
+  instagramPost?: string;
+  youtubeVideo?: string;
+  externalCitations?: SanityExternalCitation[];
+  relatedInternalLinks?: SanityInternalLink[];
 }
 
 export interface SanityEspetaculo {

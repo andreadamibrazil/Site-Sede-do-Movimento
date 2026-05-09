@@ -7,5 +7,9 @@ export const client = createClient({
   apiVersion,
   useCdn: process.env.NODE_ENV === "production",
   perspective: "published",
-  stega: { enabled: false },
+  stega: {
+    // Ativo em dev e preview; desligado em produção (NODE_ENV é "production" em Vercel prod)
+    enabled: process.env.NODE_ENV !== "production",
+    studioUrl: "/studio",
+  },
 });
