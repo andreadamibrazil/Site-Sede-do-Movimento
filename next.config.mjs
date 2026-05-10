@@ -78,7 +78,18 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // Studio routes: no CSP restriction — Sanity Studio manages its own security
+        source: "/studio(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "frame-ancestors", value: "'self' https://*.sanity.io" },
+        ],
+      },
+      {
+        // All other routes: full CSP
+        source: "/((?!studio).*)",
         headers: securityHeaders,
       },
     ];
