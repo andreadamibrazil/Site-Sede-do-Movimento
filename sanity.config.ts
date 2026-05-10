@@ -24,6 +24,7 @@ export default defineConfig({
     presentationTool({
       resolve,
       previewUrl: {
+        origin: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.sededomovimento.art',
         previewMode: {
           enable: '/api/draft-mode/enable',
           disable: '/api/draft-mode/disable',
