@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? "");
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY ?? process.env.GOOGLE_AI_API_KEY ?? "");
 
 // URL da API externa (planilha de pauta) definida no servidor — nunca vinda do cliente
 const EXTERNAL_API_URL = process.env.PAUTA_IMAGE_API_URL;
