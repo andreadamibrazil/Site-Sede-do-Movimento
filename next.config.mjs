@@ -11,8 +11,9 @@ const ContentSecurityPolicy = [
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
-    "https://www.clarity.ms",
+    "https://*.clarity.ms",
     "https://va.vercel-scripts.com",
+    "https://*.sanity-cdn.com",  // Sanity Studio bridge + modules
   ].join(" "),
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
@@ -23,18 +24,22 @@ const ContentSecurityPolicy = [
     "https://i.ytimg.com",
     "https://www.google-analytics.com",
     "https://www.googletagmanager.com",
+    "https://lh3.googleusercontent.com",  // Google profile photos in Studio
   ].join(" "),
   [
     "connect-src 'self'",
     "https://*.sanity.io",
     "wss://*.sanity.io",
+    "https://sanity-cdn.com",            // Sanity module registry
+    "https://*.sanity-cdn.com",
     "https://www.google-analytics.com",
     "https://region1.google-analytics.com",
-    "https://www.clarity.ms",
+    "https://*.clarity.ms",
     "https://vitals.vercel-insights.com",
     "https://va.vercel-scripts.com",
   ].join(" "),
-  "frame-src https://www.youtube.com https://www.instagram.com https://www.googletagmanager.com https://*.sanity.io",
+  // 'self' needed so Studio can iframe /api/draft-mode/enable on same domain
+  "frame-src 'self' https://www.youtube.com https://www.instagram.com https://www.googletagmanager.com https://*.sanity.io",
   "media-src 'self' https://cdn.sanity.io blob:",
   "object-src 'none'",
   "base-uri 'self'",
