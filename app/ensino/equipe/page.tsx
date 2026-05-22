@@ -38,7 +38,7 @@ export default async function EquipePage() {
                 title="Liderança criativa"
                 subtitle="A visão artística que guia toda a escola."
               />
-              <TeamGrid members={direcao} className="max-w-xs mx-auto" />
+              <TeamGrid members={direcao} isDirectorSection />
             </>
           )}
           {docentes.length > 0 && (
