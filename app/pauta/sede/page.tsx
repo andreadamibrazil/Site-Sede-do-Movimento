@@ -1,8 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -10,7 +9,7 @@ type Funil = "Topo" | "Meio" | "Fundo";
 type Negocio = "Sede" | "MoviRio" | "Nova Atmosfera";
 type Status = "Referência" | "Para Fazer";
 type DraftStatus = "Rascunho" | "Publicado";
-type Tab = Status | "Busca Viral" | "Rascunho" | "Analisar";
+type Tab = Status | "Busca Viral" | "Rascunho";
 
 interface Entry {
   id: string;
@@ -25,9 +24,6 @@ interface Entry {
   status: Status;
   assunto: string;
   analise: string;
-  instrucao: string;
-  blog: string;
-  favorito: boolean;
 }
 
 interface Draft {
@@ -61,27 +57,6 @@ interface ViralVideo {
   likeCount: number;
   commentCount: number;
   description: string;
-}
-
-interface NewsItem {
-  title: string;
-  url: string;
-  description: string;
-  source: string;
-  publishedAt: string;
-  image: string;
-}
-
-interface TrendChip {
-  term: string;
-  trending?: boolean;
-}
-
-interface OgPreview {
-  title: string;
-  description: string;
-  image: string;
-  siteName: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -133,80 +108,83 @@ function Badge({ label, colorClass }: { label: string; colorClass: string }) {
   );
 }
 
-// ─── Audio Recorder hook (MediaRecorder → Gemini transcription) ──────────────
+// ─── Speech Recognition hook ─────────────────────────────────────────────────
 
-function useAudioRecorder(onTranscript: (text: string) => void) {
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+function useSpeechRecognition(onTranscript: (text: string, isFinal: boolean) => void) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState("");
 
-  const start = useCallback(async () => {
+  const start = useCallback(() => {
     setVoiceError("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setVoiceError("Microfone não suportado neste browser. Use Chrome ou Safari.");
+    if (!SR) {
+      setVoiceError("Voz não suportada neste browser. Use Chrome ou Safari.");
       return;
     }
 
-    // Verifica permissão antes de tentar gravar
-    if (navigator.permissions) {
-      try {
-        const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
-        if (perm.state === "denied") {
-          setVoiceError("BLOCKED");
-          return;
-        }
-      } catch { /* ignora — nem todos os browsers suportam permissions.query */ }
-    }
-
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/mp4";
-      const recorder = new MediaRecorder(stream, { mimeType });
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        setIsTranscribing(true);
-        try {
-          const blob = new Blob(chunksRef.current, { type: mimeType });
-          const fd = new FormData();
-          fd.append("audio", blob, "audio.webm");
-          const res = await fetch("/api/pauta/transcribe", { method: "POST", body: fd });
-          const data = await res.json();
-          if (data.text) onTranscript(data.text);
-          else setVoiceError(data.error ?? "Erro na transcrição.");
-        } catch {
-          setVoiceError("Erro ao transcrever áudio.");
-        } finally {
-          setIsTranscribing(false);
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
+
+      const recognition = new SR();
+      recognition.lang = "pt-BR";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        let interim = "";
+        let final = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript;
+          } else {
+            interim += transcript;
+          }
+        }
+        if (final) {
+          onTranscript(final, true);
+        } else if (interim) {
+          onTranscript(interim, false);
         }
       };
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      const name = (err as { name?: string })?.name ?? "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        setVoiceError("BLOCKED");
-      } else {
-        setVoiceError(`Erro ao acessar microfone: ${name || "desconhecido"}`);
-      }
+
+      recognition.onend = () => setIsListening(false);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        if (event.error === "not-allowed") {
+          setVoiceError("Permissão de microfone negada. Verifique as configurações do browser.");
+        } else if (event.error === "no-speech") {
+          setVoiceError("Nenhuma fala detectada. Tente novamente.");
+        } else if (event.error !== "aborted") {
+          setVoiceError(`Erro: ${event.error}`);
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      setVoiceError("Não foi possível iniciar o microfone.");
     }
   }, [onTranscript]);
 
   const stop = useCallback(() => {
-    mediaRecorderRef.current?.stop();
-    setIsRecording(false);
+    recognitionRef.current?.stop();
+    setIsListening(false);
   }, []);
 
-  return { isRecording, isTranscribing, start, stop, voiceError, clearVoiceError: () => setVoiceError("") };
+  return { isListening, start, stop, voiceError, clearVoiceError: () => setVoiceError("") };
 }
 
 // ─── Entry Card ──────────────────────────────────────────────────────────────
@@ -228,14 +206,12 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
 }) {
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [generated, setGenerated] = useState(entry.instrucao ?? "");
+  const [generated, setGenerated] = useState("");
   const [generatingBlog, setGeneratingBlog] = useState(false);
-  const [generatedBlog, setGeneratedBlog] = useState(entry.blog ?? "");
+  const [generatedBlog, setGeneratedBlog] = useState("");
   const [copied, setCopied] = useState(false);
   const [movingStatus, setMovingStatus] = useState(false);
   const [movedStatus, setMovedStatus] = useState(false);
-  const [favorito, setFavorito] = useState(entry.favorito ?? false);
-  const [togglingFav, setTogglingFav] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -250,24 +226,6 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
     negocio: entry.negocio,
   });
   const [savingEdit, setSavingEdit] = useState(false);
-
-  async function handleToggleFavorito() {
-    setTogglingFav(true);
-    const next = !favorito;
-    try {
-      await fetch("/api/pauta", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: entry.id, favorito: next }),
-      });
-      setFavorito(next);
-      onUpdate?.(entry.id, { favorito: next });
-    } catch {
-      // silently ignore
-    } finally {
-      setTogglingFav(false);
-    }
-  }
 
   async function handleDelete() {
     if (!confirm("Remover esta entrada?")) return;
@@ -387,7 +345,6 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: entry.id,
           url: entry.url,
           annotation: entry.annotation,
           dores_desejos: entry.dores_desejos,
@@ -400,7 +357,6 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro");
       setGenerated(data.result);
-      onUpdate?.(entry.id, { instrucao: data.result });
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Erro ao gerar.");
     } finally {
@@ -416,9 +372,9 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: entry.id,
-          url: entry.url,
           annotation: entry.annotation,
+          dores_desejos: entry.dores_desejos,
+          negocio: entry.negocio,
           assunto: entry.assunto,
           analise: analysis || entry.analise,
         }),
@@ -426,7 +382,6 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro");
       setGeneratedBlog(data.result);
-      onUpdate?.(entry.id, { blog: data.result });
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Erro ao gerar blog.");
     } finally {
@@ -489,17 +444,6 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={handleToggleFavorito}
-              disabled={togglingFav}
-              aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-              title={favorito ? "Favorito" : "Marcar favorito"}
-              className={`p-1 transition-colors ${favorito ? "text-yellow-400" : "text-gray-300 hover:text-yellow-400"}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill={favorito ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-            </button>
             <button
               onClick={() => {
                 setEditing((v) => !v);
@@ -615,73 +559,77 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
         </p>
 
         {/* Action buttons */}
-        <div className="flex gap-2 pt-1 border-t border-gray-50">
-          <button
-            onClick={handleCopy}
-            className="flex-1 text-xs font-medium py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-1.5"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            {copied ? "Copiado!" : "Copiar"}
-          </button>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="flex-1 text-xs font-semibold py-2 rounded-xl bg-[#6A00FF] text-white hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
-          >
-            {generating ? (
-              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            )}
-            {generating ? "Gerando…" : "Gerar post"}
-          </button>
-          <button
-            onClick={handleGenerateBlog}
-            disabled={generatingBlog}
-            className="flex-1 text-xs font-semibold py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
-          >
-            {generatingBlog ? (
-              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            )}
-            {generatingBlog ? "Gerando…" : "Blog"}
-          </button>
-          {(entry.platform === "YouTube" || entry.platform === "TikTok" || entry.platform === "Instagram" || entry.platform === "Twitter/X") && (
+        <div className="flex flex-col gap-2 pt-1 border-t border-gray-50">
+          <div className="flex gap-2">
             <button
-              onClick={handleAnalyze}
-              disabled={analyzing}
-              title="Buscar transcrição e extrair hooks virais"
-              className={`flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border transition disabled:opacity-50 flex items-center gap-1 ${
-                analysis ? "border-purple-200 text-[#6A00FF] bg-purple-50" : "border-gray-200 text-gray-500 hover:bg-gray-50"
-              }`}
+              onClick={handleGenerate}
+              disabled={generating}
+              className="flex-1 text-xs font-semibold py-2 rounded-xl bg-[#6A00FF] text-white hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              {analyzing ? (
-                <span className="w-3 h-3 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin inline-block" />
+              {generating ? (
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
               ) : (
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               )}
-              {analyzing ? "…" : analysis ? "Analisado ✓" : "Analisar"}
+              {generating ? "Gerando…" : "Instrução"}
             </button>
-          )}
-          {entry.status === "Referência" && !movedStatus && (
             <button
-              onClick={handleMoveToParaFazer}
-              disabled={movingStatus}
-              title="Mover para Para Fazer"
-              className="flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition disabled:opacity-50"
+              onClick={handleGenerateBlog}
+              disabled={generatingBlog}
+              className="flex-1 text-xs font-semibold py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-1.5"
             >
-              {movingStatus ? "…" : "→ Fazer"}
+              {generatingBlog ? (
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              {generatingBlog ? "Gerando…" : "Blog"}
             </button>
-          )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCopy}
+              className="flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition flex items-center justify-center gap-1.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              {copied ? "Copiado!" : "Copiar"}
+            </button>
+            {(entry.platform === "YouTube" || entry.platform === "TikTok" || entry.platform === "Instagram" || entry.platform === "Twitter/X") && (
+              <button
+                onClick={handleAnalyze}
+                disabled={analyzing}
+                title="Buscar transcrição e extrair hooks virais"
+                className={`flex-1 text-xs font-medium py-2 px-3 rounded-xl border transition disabled:opacity-50 flex items-center justify-center gap-1 ${
+                  analysis ? "border-purple-200 text-[#6A00FF] bg-purple-50" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {analyzing ? (
+                  <span className="w-3 h-3 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin inline-block" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                )}
+                {analyzing ? "…" : analysis ? "Analisado ✓" : "Analisar"}
+              </button>
+            )}
+            {entry.status === "Referência" && !movedStatus && (
+              <button
+                onClick={handleMoveToParaFazer}
+                disabled={movingStatus}
+                title="Mover para Para Fazer"
+                className="flex-shrink-0 text-xs font-medium py-2 px-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {movingStatus ? "…" : "→ Fazer"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Analysis result */}
@@ -703,11 +651,11 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
           </button>
         )}
 
-        {/* Generated instrucao result */}
+        {/* Generated instruction result */}
         {generated && (
           <div className="bg-purple-50 rounded-xl p-3 border border-purple-100">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-[#6A00FF] uppercase tracking-wide">Ideia gerada</p>
+              <p className="text-xs font-semibold text-[#6A00FF] uppercase tracking-wide">Instrução gerada</p>
               <div className="flex items-center gap-3">
                 <button onClick={() => { navigator.clipboard.writeText(generated); }} className="text-xs text-gray-400 hover:text-[#6A00FF] transition">copiar</button>
                 {draftSaved ? (
@@ -731,8 +679,8 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
         {generatedBlog && (
           <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Artigo de blog</p>
-              <button onClick={() => { navigator.clipboard.writeText(generatedBlog); }} className="text-xs text-gray-400 hover:text-emerald-700 transition">copiar</button>
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Blog gerado</p>
+              <button onClick={() => navigator.clipboard.writeText(generatedBlog)} className="text-xs text-gray-400 hover:text-emerald-700 transition">copiar</button>
             </div>
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{generatedBlog}</p>
           </div>
@@ -744,38 +692,22 @@ function EntryCard({ entry, onDelete, onStatusChange, onDraftAdded, onUpdate }: 
 
 // ─── New Entry Form ───────────────────────────────────────────────────────────
 
-function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onAdd: (entry: Entry) => void; initialUrl?: string }) {
+function NewEntryForm({ activeTab, onAdd }: { activeTab: Status; onAdd: (entry: Entry) => void }) {
   const defaultForm: FormState = { url: "", annotation: "", dores_desejos: "", funil: "", negocio: "", assunto: "" };
-  const [form, setForm] = useState<FormState>({ ...defaultForm, url: initialUrl ?? "" });
+  const [form, setForm] = useState<FormState>(defaultForm);
   const [saving, setSaving] = useState(false);
-  const [ogPreview, setOgPreview] = useState<OgPreview | null>(null);
-  const [loadingOg, setLoadingOg] = useState(false);
+  const [interimText, setInterimText] = useState("");
 
-  // Auto-fetch OG preview when opened from share_target
-  useEffect(() => {
-    if (initialUrl) fetchOgPreview(initialUrl);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialUrl]);
-
-  async function fetchOgPreview(url: string) {
-    if (!url) { setOgPreview(null); return; }
-    setLoadingOg(true);
-    try {
-      const res = await fetch(`/api/pauta/preview?url=${encodeURIComponent(url)}`);
-      if (res.ok) {
-        const data: OgPreview = await res.json();
-        setOgPreview(data.title || data.image ? data : null);
-      }
-    } catch { /* ignore */ } finally {
-      setLoadingOg(false);
+  const handleTranscript = useCallback((text: string, isFinal: boolean) => {
+    if (isFinal) {
+      setForm((prev) => ({ ...prev, annotation: (prev.annotation + " " + text).trim() }));
+      setInterimText("");
+    } else {
+      setInterimText(text);
     }
-  }
-
-  const handleTranscript = useCallback((text: string) => {
-    setForm((prev) => ({ ...prev, annotation: (prev.annotation + " " + text).trim() }));
   }, []);
 
-  const { isRecording, isTranscribing, start, stop, voiceError } = useAudioRecorder(handleTranscript);
+  const { isListening, start, stop, voiceError } = useSpeechRecognition(handleTranscript);
 
   function field<K extends keyof FormState>(key: K) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -797,6 +729,7 @@ function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onA
       const entry = await res.json() as Entry;
       onAdd(entry);
       setForm(defaultForm);
+      setInterimText("");
     } catch {
       alert("Erro ao salvar entrada.");
     } finally {
@@ -813,28 +746,7 @@ function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onA
 
       <div>
         <label className={labelClass}>URL</label>
-        <input
-          type="url"
-          placeholder="Cole o link aqui"
-          value={form.url}
-          onChange={(e) => { field("url")(e); setOgPreview(null); }}
-          onBlur={(e) => fetchOgPreview(e.target.value)}
-          className={inputClass}
-        />
-        {loadingOg && <p className="text-xs text-gray-400 mt-1">Carregando prévia…</p>}
-        {ogPreview && (
-          <div className="mt-2 rounded-xl border border-gray-200 overflow-hidden flex gap-3 bg-gray-50 p-3">
-            {ogPreview.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={ogPreview.image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
-            )}
-            <div className="flex flex-col gap-0.5 min-w-0">
-              {ogPreview.siteName && <p className="text-xs text-gray-400 truncate">{ogPreview.siteName}</p>}
-              {ogPreview.title && <p className="text-xs font-semibold text-gray-700 line-clamp-2">{ogPreview.title}</p>}
-              {ogPreview.description && <p className="text-xs text-gray-500 line-clamp-2">{ogPreview.description}</p>}
-            </div>
-          </div>
-        )}
+        <input type="url" placeholder="Cole o link aqui" value={form.url} onChange={field("url")} className={inputClass} />
       </div>
 
       <div>
@@ -843,43 +755,30 @@ function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onA
           <textarea
             rows={3}
             placeholder="O que chama atenção neste conteúdo?"
-            value={form.annotation}
+            value={isListening ? form.annotation + (interimText ? " " + interimText : "") : form.annotation}
             onChange={field("annotation")}
             className={`${inputClass} resize-none pr-12`}
           />
           <button
             type="button"
-            onClick={isRecording ? stop : start}
-            disabled={isTranscribing}
-            className={`absolute bottom-2 right-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${isRecording ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-500 hover:bg-[#6A00FF]/10 hover:text-[#6A00FF]"}`}
-            aria-label={isRecording ? "Parar gravação" : "Gravar áudio"}
+            onClick={isListening ? stop : start}
+            className={`absolute bottom-2 right-2 p-2 rounded-lg transition-colors ${isListening ? "bg-red-100 text-red-600 animate-pulse" : "bg-gray-100 text-gray-500 hover:bg-[#6A00FF]/10 hover:text-[#6A00FF]"}`}
+            aria-label={isListening ? "Parar gravação" : "Gravar áudio"}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
           </button>
         </div>
-        {isRecording && (
+        {isListening && (
           <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block animate-pulse" />
-            Gravando… clique no mic para parar
+            Ouvindo…
           </p>
         )}
-        {isTranscribing && (
-          <p className="text-xs text-[#6A00FF] mt-1 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-[#6A00FF] rounded-full inline-block animate-pulse" />
-            Transcrevendo…
-          </p>
-        )}
-        {voiceError === "BLOCKED" ? (
-          <div className="mt-1 rounded-lg bg-orange-50 border border-orange-200 p-2 text-xs text-orange-700 space-y-1">
-            <p className="font-semibold">Microfone bloqueado para este site.</p>
-            <p>No Chrome: clique no 🔒 cadeado na barra de endereço → <strong>Microfone</strong> → <strong>Permitir</strong> → recarregue.</p>
-            <p>No macOS: <strong>Preferências do Sistema → Privacidade → Microfone</strong> → marque Google Chrome.</p>
-          </div>
-        ) : voiceError ? (
+        {voiceError && (
           <p className="text-xs text-orange-500 mt-1">{voiceError}</p>
-        ) : null}
+        )}
       </div>
 
       <div>
@@ -929,19 +828,9 @@ function NewEntryForm({ activeTab, onAdd, initialUrl }: { activeTab: Status; onA
 function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ViralVideo[]>([]);
-  const [newsResults, setNewsResults] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
-  const [trends, setTrends] = useState<TrendChip[]>([]);
-  const [searched, setSearched] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/pauta/trends")
-      .then((r) => r.json())
-      .then((data) => setTrends(data))
-      .catch(() => {});
-  }, []);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -949,27 +838,15 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
     setLoading(true);
     setError("");
     setResults([]);
-    setNewsResults([]);
-    setSearched(false);
     try {
-      const [viralRes, newsRes] = await Promise.allSettled([
-        fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`),
-        fetch(`/api/pauta/news?q=${encodeURIComponent(query)}`),
-      ]);
-      if (viralRes.status === "fulfilled") {
-        const data = await viralRes.value.json();
-        if (!viralRes.value.ok) throw new Error(data.error ?? "Erro na busca");
-        setResults(data);
-      }
-      if (newsRes.status === "fulfilled" && newsRes.value.ok) {
-        const data = await newsRes.value.json();
-        setNewsResults(data);
-      }
+      const res = await fetch(`/api/pauta/viral?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erro na busca");
+      setResults(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro na busca");
     } finally {
       setLoading(false);
-      setSearched(true);
     }
   }
 
@@ -1004,26 +881,6 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {trends.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {trends.map((chip) => (
-            <button
-              key={chip.term}
-              type="button"
-              onClick={() => setQuery(chip.term)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition ${
-                chip.trending
-                  ? "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
-                  : "border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {chip.trending && <span className="mr-1">🔥</span>}
-              {chip.term}
-            </button>
-          ))}
-        </div>
-      )}
-
       <form onSubmit={handleSearch} className="flex gap-2">
         <input
           type="text"
@@ -1040,7 +897,7 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
           {loading ? "…" : "Buscar"}
         </button>
       </form>
-      <p className="text-xs text-gray-400">Vídeos do YouTube dos últimos 30 dias + notícias de portais brasileiros.</p>
+      <p className="text-xs text-gray-400">Vídeos do YouTube dos últimos 30 dias, por relevância.</p>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -1097,208 +954,8 @@ function BuscaViral({ onSave }: { onSave: (entry: Entry) => void }) {
         </div>
       ))}
 
-      {!loading && searched && results.length === 0 && newsResults.length === 0 && !error && (
-        <p className="text-center text-sm text-gray-400 py-4">Nenhum vídeo encontrado no YouTube. Tente outro assunto.</p>
-      )}
-
-      {searched && !loading && (
-        <div className="flex flex-col gap-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notícias</p>
-          {newsResults.length === 0 && (
-            <p className="text-xs text-gray-400">Nenhuma notícia encontrada para este assunto nos portais (G1, Folha, UOL).</p>
-          )}
-          {newsResults.map((item) => (
-            <div key={item.url} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex gap-3 p-3">
-              {item.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.image} alt="" className="w-20 h-20 object-cover rounded-xl flex-shrink-0" />
-              )}
-              <div className="flex flex-col gap-1 min-w-0 flex-1">
-                <p className="text-xs text-gray-400">{item.source}</p>
-                <p className="text-sm font-semibold text-gray-800 line-clamp-2">{item.title}</p>
-                {item.description && <p className="text-xs text-gray-500 line-clamp-2">{item.description}</p>}
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-[#6A00FF] hover:underline mt-auto"
-                >
-                  Ler notícia ↗
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Analisar Tab ────────────────────────────────────────────────────────────
-
-type AnalyzeState = "idle" | "analyzing" | "done" | "error";
-
-function AnalisarTab({ entries, onUpdate, onAdd }: {
-  entries: Entry[];
-  onUpdate: (id: string, changes: Partial<Entry>) => void;
-  onAdd: (entry: Entry) => void;
-}) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [stateMap, setStateMap] = useState<Record<string, AnalyzeState>>({});
-  const [synthesizing, setSynthesizing] = useState(false);
-  const [synthDone, setSynthDone] = useState(false);
-
-  const allEntries = entries.filter((e) => e.status === "Referência" || e.status === "Para Fazer");
-
-  function toggleOne(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    if (selected.size === allEntries.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(allEntries.map((e) => e.id)));
-    }
-  }
-
-  async function handleSynthesize() {
-    const selectedEntries = allEntries.filter((e) => selected.has(e.id));
-    setSynthesizing(true);
-    setSynthDone(false);
-    Array.from(selected).forEach((id) =>
-      setStateMap((prev) => ({ ...prev, [id]: "analyzing" }))
-    );
-    try {
-      const res = await fetch("/api/pauta/synthesize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries: selectedEntries.map((e) => ({
-          id: e.id, url: e.url, annotation: e.annotation,
-          assunto: e.assunto, analise: e.analise, platform: e.platform,
-        })) }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Erro");
-      Array.from(selected).forEach((id) =>
-        setStateMap((prev) => ({ ...prev, [id]: "done" }))
-      );
-      onAdd(data as Entry);
-      setSynthDone(true);
-      setSelected(new Set());
-    } catch (err: unknown) {
-      Array.from(selected).forEach((id) =>
-        setStateMap((prev) => ({ ...prev, [id]: "error" }))
-      );
-      alert(err instanceof Error ? err.message : "Erro ao sintetizar");
-    } finally {
-      setSynthesizing(false);
-    }
-  }
-
-  const processing = synthesizing || Object.values(stateMap).some((s) => s === "analyzing");
-
-  return (
-    <div className="flex flex-col gap-3 pb-24">
-      {allEntries.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-4xl mb-3">🔬</p>
-          <p className="text-sm">Nenhuma entrada para analisar.</p>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-3 px-1">
-            <input
-              type="checkbox"
-              checked={selected.size === allEntries.length && allEntries.length > 0}
-              onChange={toggleAll}
-              className="w-4 h-4 accent-[#6A00FF] cursor-pointer"
-            />
-            <span className="text-xs text-gray-400">
-              {selected.size > 0 ? `${selected.size} selecionado${selected.size > 1 ? "s" : ""}` : "Selecionar todos"}
-            </span>
-          </div>
-
-          {allEntries.map((entry) => {
-            const state = stateMap[entry.id] ?? "idle";
-            const isSelected = selected.has(entry.id);
-            const ytThumb = getYouTubeThumbnail(entry.url);
-
-            return (
-              <div
-                key={entry.id}
-                onClick={() => state !== "analyzing" && toggleOne(entry.id)}
-                className={`bg-white rounded-2xl border transition cursor-pointer flex gap-3 p-3 ${
-                  isSelected ? "border-[#6A00FF] shadow-sm shadow-purple-100" : "border-gray-100"
-                } ${state === "analyzing" ? "opacity-60 cursor-wait" : ""}`}
-              >
-                <div className="flex items-start pt-0.5 flex-shrink-0">
-                  {state === "analyzing" ? (
-                    <span className="w-4 h-4 border-2 border-[#6A00FF] border-t-transparent rounded-full animate-spin inline-block" />
-                  ) : state === "done" ? (
-                    <span className="text-green-500 text-sm font-bold">✓</span>
-                  ) : state === "error" ? (
-                    <span className="text-red-400 text-sm">✕</span>
-                  ) : (
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleOne(entry.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 accent-[#6A00FF] cursor-pointer"
-                    />
-                  )}
-                </div>
-
-                {ytThumb && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={ytThumb} alt="" className="w-16 h-12 object-cover rounded-lg flex-shrink-0" />
-                )}
-
-                <div className="flex flex-col gap-1 min-w-0 flex-1">
-                  <div className="flex flex-wrap gap-1">
-                    <Badge label={entry.status} colorClass={entry.status === "Referência" ? "bg-blue-50 text-blue-600" : "bg-orange-50 text-orange-600"} />
-                    {entry.platform && <Badge label={entry.platform} colorClass={PLATFORM_COLORS[entry.platform] ?? PLATFORM_COLORS.Outro} />}
-                    {entry.analise && <Badge label="Analisado" colorClass="bg-green-50 text-green-600" />}
-                  </div>
-                  {(entry.annotation || entry.assunto) && (
-                    <p className="text-sm text-gray-700 line-clamp-2">{entry.annotation || entry.assunto}</p>
-                  )}
-                  {entry.assunto && entry.annotation && (
-                    <p className="text-xs text-[#6A00FF]/60 font-medium">#{entry.assunto}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </>
-      )}
-
-      {synthDone && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-green-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg">
-          ✓ Síntese criada na aba Referência!
-        </div>
-      )}
-
-      {selected.size > 0 && (
-        <button
-          onClick={handleSynthesize}
-          disabled={processing}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#6A00FF] text-white text-sm font-semibold px-6 py-3 rounded-full shadow-lg shadow-purple-300 hover:bg-[#5800d4] active:scale-95 transition disabled:opacity-50 flex items-center gap-2"
-        >
-          {processing ? (
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          )}
-          {processing ? "Sintetizando…" : `Sintetizar ${selected.size} referência${selected.size > 1 ? "s" : ""} → nova entrada`}
-        </button>
+      {!loading && results.length === 0 && query && !error && (
+        <p className="text-center text-sm text-gray-400 py-10">Nenhum resultado. Tente outro assunto.</p>
       )}
     </div>
   );
@@ -1498,16 +1155,7 @@ function LoginScreen() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PautaPage() {
-  return (
-    <Suspense>
-      <PautaPageContent />
-    </Suspense>
-  );
-}
-
-function PautaPageContent() {
   const { data: session, status } = useSession();
-  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<Tab>("Referência");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -1515,12 +1163,6 @@ function PautaPageContent() {
   const [loadingDrafts, setLoadingDrafts] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [last30, setLast30] = useState(false);
-
-  // Recebe links compartilhados via Web Share Target API (?url= ou ?text=)
-  const sharedUrl = searchParams.get("url") ?? searchParams.get("text") ?? undefined;
-  useEffect(() => {
-    if (sharedUrl) setShowForm(true);
-  }, [sharedUrl]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -1537,7 +1179,7 @@ function PautaPageContent() {
   }, [status]);
 
   const cutoff = last30 ? Date.now() - 30 * 24 * 60 * 60 * 1000 : 0;
-  const filtered = activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar"
+  const filtered = activeTab !== "Busca Viral" && activeTab !== "Rascunho"
     ? entries.filter((e: Entry) =>
         e.status === activeTab &&
         (!last30 || new Date(e.timestamp).getTime() >= cutoff)
@@ -1583,7 +1225,7 @@ function PautaPageContent() {
 
   if (!session) return <LoginScreen />;
 
-  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral", "Rascunho", "Analisar"];
+  const tabs: Tab[] = ["Referência", "Para Fazer", "Busca Viral", "Rascunho"];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -1629,7 +1271,7 @@ function PautaPageContent() {
                 }`}
               >
                 {tab}
-                {tab !== "Busca Viral" && tab !== "Analisar" && (
+                {tab !== "Busca Viral" && (
                   <span className="ml-1.5 text-xs font-normal opacity-60">
                     ({tab === "Rascunho"
                       ? drafts.length
@@ -1639,7 +1281,7 @@ function PautaPageContent() {
               </button>
             ))}
           </div>
-          {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar" && (
+          {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
             <button
               onClick={() => setLast30((v: boolean) => !v)}
               className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full transition ml-2 ${
@@ -1655,9 +1297,7 @@ function PautaPageContent() {
       </div>
 
       <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-4">
-        {activeTab === "Analisar" ? (
-          <AnalisarTab entries={entries} onUpdate={handleEntryUpdate} onAdd={handleAdd} />
-        ) : activeTab === "Busca Viral" ? (
+        {activeTab === "Busca Viral" ? (
           <BuscaViral onSave={handleAdd} />
         ) : activeTab === "Rascunho" ? (
           <>
@@ -1690,7 +1330,7 @@ function PautaPageContent() {
                   <span className="text-xs text-gray-400">Nova entrada</span>
                   <button onClick={() => setShowForm(false)} className="text-xs text-gray-400 hover:text-gray-600">cancelar</button>
                 </div>
-                <NewEntryForm activeTab={activeTab as Status} onAdd={handleAdd} initialUrl={sharedUrl} />
+                <NewEntryForm activeTab={activeTab as Status} onAdd={handleAdd} />
               </div>
             )}
 
@@ -1720,7 +1360,7 @@ function PautaPageContent() {
         )}
       </main>
 
-      {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && activeTab !== "Analisar" && (
+      {activeTab !== "Busca Viral" && activeTab !== "Rascunho" && (
         <button
           onClick={() => setShowForm((v) => !v)}
           aria-label="Adicionar entrada"
