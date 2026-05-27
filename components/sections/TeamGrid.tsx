@@ -37,34 +37,29 @@ function TeacherCard({ member }: { member: SanityProfessor }) {
           />
         )}
 
-        {/* Permanent dark gradient for name/role readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950/80 via-gray-950/15 to-transparent pointer-events-none" />
-
-        {/* Bio panel — slides up on hover, behind name/role */}
+        {/* Bio overlay — fades in on hover */}
         {member.bio && (
-          <div className="absolute inset-x-0 bottom-0 z-10 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0,0,0.2,1)] will-change-transform">
-            <div className="bg-gray-950/90 px-5 pt-5 pb-20">
-              <p className="text-white/85 text-sm leading-relaxed line-clamp-4">
-                {member.bio}
-              </p>
-            </div>
+          <div className="absolute inset-0 z-10 bg-gray-950/85 opacity-0 group-hover:opacity-100 transition-opacity duration-400 flex items-center justify-center p-6 pointer-events-none">
+            <p className="text-white/85 text-sm leading-relaxed line-clamp-6 text-center">
+              {member.bio}
+            </p>
           </div>
         )}
-
-        {/* Name + role — always visible at bottom */}
-        <div className="absolute inset-x-0 bottom-0 px-5 pb-5 z-20 pointer-events-none">
-          <h3 className="text-white text-xl font-bold leading-tight">
-            {member.name}
-          </h3>
-          <p className="text-brand-pink-500 text-sm font-semibold mt-1">
-            {member.role}
-          </p>
-        </div>
       </div>
 
-      {/* Specialties — always visible, below card */}
+      {/* Name + role — below photo */}
+      <div className="mt-3 px-1">
+        <h3 className="text-gray-900 text-lg font-bold leading-tight">
+          {member.name}
+        </h3>
+        <p className="text-brand-pink-500 text-sm font-semibold mt-0.5">
+          {member.role}
+        </p>
+      </div>
+
+      {/* Specialties */}
       {member.specialties && member.specialties.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-3 px-1">
+        <div className="flex flex-wrap gap-2 mt-2 px-1">
           {member.specialties.slice(0, 3).map((s) => (
             <span
               key={s}
@@ -105,7 +100,6 @@ function DirectorCard({ member }: { member: SanityProfessor }) {
             label={member.name}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950/30 to-transparent pointer-events-none" />
       </div>
 
       {/* Info */}
