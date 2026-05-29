@@ -79,6 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pt-BR" className={jakarta.variable}>
       <head>
+        <link rel="preconnect" href="https://cdn.sanity.io" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#6A00FF" />
       </head>

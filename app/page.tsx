@@ -103,7 +103,7 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="rounded-2xl overflow-hidden aspect-[4/3] shadow-lg">
                   {imagens?.homeHistoria ? (
-                    <Image src={urlFor(imagens.homeHistoria).width(800).height(600).url()} alt="Crianças em aula de dança" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                    <Image src={urlFor(imagens.homeHistoria).width(800).height(600).auto("format").quality(82).url()} alt="Crianças em aula de dança" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                   ) : (
                     <PlaceholderImage className="w-full h-full rounded-none border-none" label="Crianças em aula de dança" />
                   )}
@@ -216,7 +216,7 @@ export default async function HomePage() {
               <div className="relative">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-brand-md">
                   {imagens?.homeMissao ? (
-                    <Image src={urlFor(imagens.homeMissao).width(800).height(600).url()} alt="Alunos em espetáculo" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                    <Image src={urlFor(imagens.homeMissao).width(800).height(600).auto("format").quality(82).url()} alt="Alunos em espetáculo" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                   ) : (
                     <PlaceholderImage className="w-full h-full rounded-none border-none" label="Alunos em espetáculo" />
                   )}
@@ -298,7 +298,7 @@ export default async function HomePage() {
                 {galleryPhotos.map((photo, i) => (
                   <ScrollReveal key={i} delay={i * 0.04}>
                     <Link href="/galerias/fotos" className={`group relative overflow-hidden rounded-lg block ${i === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}>
-                      <Image src={urlFor(photo.img).width(600).height(600).url()} alt={photo.alt ?? ""} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
+                      <Image src={urlFor(photo.img).width(600).height(600).auto("format").quality(80).url()} alt={photo.alt ?? ""} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 25vw" />
                       <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/50 transition-all duration-300" />
                     </Link>
                   </ScrollReveal>
@@ -361,7 +361,7 @@ export default async function HomePage() {
             <ScrollReveal delay={0.2}>
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden">
                 {imagens?.homeMetodologia ? (
-                  <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).url()} alt="Aula de metodologia" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
+                  <Image src={urlFor(imagens.homeMetodologia).width(700).height(875).auto("format").quality(82).url()} alt="Aula de metodologia" fill className="object-cover" sizes="(max-width: 1024px) 100vw, 50vw" />
                 ) : (
                   <PlaceholderImage className="w-full h-full rounded-none border-none opacity-70" label="Aula de metodologia" />
                 )}
@@ -427,7 +427,7 @@ export default async function HomePage() {
                   <div className="aspect-[3/2] rounded-2xl overflow-hidden relative mb-6 bg-gray-100 shadow-sm">
                     {recentPosts[0].coverImage ? (
                       <Image
-                        src={urlFor(recentPosts[0].coverImage).width(900).height(600).url()}
+                        src={urlFor(recentPosts[0].coverImage).width(900).height(600).auto("format").quality(82).url()}
                         alt={recentPosts[0].title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -472,7 +472,7 @@ export default async function HomePage() {
                       <div className="aspect-[16/9] overflow-hidden relative bg-gray-100">
                         {post.coverImage ? (
                           <Image
-                            src={urlFor(post.coverImage).width(600).height(338).url()}
+                            src={urlFor(post.coverImage).width(600).height(338).auto("format").quality(80).url()}
                             alt={post.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-300"

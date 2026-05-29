@@ -169,7 +169,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
               priority={priority}
               sizes="100vw"
               className={`object-cover object-center block sm:hidden ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
-              quality={90}
+              quality={85}
               placeholder="blur"
               blurDataURL={BLUR_DATA_URL}
             />
