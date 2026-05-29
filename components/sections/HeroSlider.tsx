@@ -26,14 +26,16 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const goNext = useCallback(() => goTo(current + 1), [current, goTo]);
   const goPrev = useCallback(() => goTo(current - 1), [current, goTo]);
 
-  // Autoplay
+  // Autoplay — usa functional update pra não depender de goNext/current
   useEffect(() => {
     if (!isPlaying || slides.length <= 1) return;
-    timerRef.current = setInterval(goNext, AUTOPLAY_INTERVAL);
+    timerRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length);
+    }, AUTOPLAY_INTERVAL);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, goNext, slides.length]);
+  }, [isPlaying, slides.length]);
 
   // Touch swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -167,7 +169,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
               priority={priority}
               sizes="100vw"
               className={`object-cover object-center block sm:hidden ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
-              quality={85}
+              quality={90}
               placeholder="blur"
               blurDataURL={BLUR_DATA_URL}
             />
@@ -180,7 +182,7 @@ function SlideContent({ slide, priority }: { slide: HeroSlide; priority: boolean
             priority={priority}
             sizes="(max-width: 639px) 0vw, 100vw"
             className={`object-cover object-center ${slide.imageMobile ? "hidden sm:block" : "block"} ${hasLink ? "transition-transform duration-[8000ms] ease-linear group-hover:scale-[1.03]" : ""}`}
-            quality={85}
+            quality={90}
             placeholder="blur"
             blurDataURL={BLUR_DATA_URL}
           />
