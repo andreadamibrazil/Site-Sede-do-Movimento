@@ -39,7 +39,7 @@ export default function UsuariosClient({ usuarios: inicial }: { usuarios: Usuari
 
   async function mudarPerfil(id: string, perfil: string) {
     setSalvando(id)
-    await supabase.from('perfis_usuario').update({ perfil }).eq('id', id)
+    await supabase.from('perfis_usuario').update({ perfil: perfil as 'admin' | 'secretaria' | 'professor' }).eq('id', id)
     setUsuarios(u => u.map(x => x.id === id ? { ...x, perfil: perfil as any } : x))
     setSalvando(null)
   }

@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Para cada turma, conta alunos com mês completo
-  const turmaIds = [...new Set((aulas ?? []).map((a: any) => a.turma_id))]
+  const turmaIds = [...new Set((aulas ?? []).map((a: any) => a.turma_id as string))]
   const alunosPorTurma: Record<string, number> = {}
 
   for (const turmaId of turmaIds) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       .eq('turma_id', turmaId)
       .lte('data_entrada', inicioStr)      // entrou antes ou no início do mês
       .or(`data_saida.is.null,data_saida.gte.${fimStr}`) // ainda ativo no fim do mês
-    alunosPorTurma[turmaId] = count ?? 0
+    alunosPorTurma[turmaId as string] = count ?? 0
   }
 
   // Busca valor fixo do professor (coordenação etc)
