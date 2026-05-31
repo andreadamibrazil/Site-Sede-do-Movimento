@@ -1,8 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })
+  return null
+}
+
 // POST /api/experimentais — agenda experimental + notifica professor via WhatsApp
 export async function POST(req: NextRequest) {
+  const authErr = await checkAuth(req)
+  if (authErr) return authErr
   const { lead_id, aula_id } = await req.json()
   if (!lead_id || !aula_id) return NextResponse.json({ error: 'lead_id e aula_id obrigatórios' }, { status: 400 })
 
@@ -65,6 +74,8 @@ export async function POST(req: NextRequest) {
 // PATCH /api/experimentais — atualiza status (presente/nao_compareceu)
 // Se nao_compareceu → WhatsApp para o lead perguntando como foi
 export async function PATCH(req: NextRequest) {
+  const authErr = await checkAuth(req)
+  if (authErr) return authErr
   const { id, status } = await req.json()
   if (!id || !status) return NextResponse.json({ error: 'id e status obrigatórios' }, { status: 400 })
 

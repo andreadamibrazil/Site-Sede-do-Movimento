@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `${SHEET_NAME}!L${rowIndex + 1}:M${rowIndex + 1}`,
-        valueInputOption: "USER_ENTERED",
+        valueInputOption: "RAW",
         requestBody: { values: [[analysis, transcript]] },
       });
     }

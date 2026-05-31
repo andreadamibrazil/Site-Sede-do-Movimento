@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A:H`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: {
         values: [[id, timestamp, user, entry_id, assunto, negocio, content, "Rascunho"]],
       },
@@ -117,7 +117,7 @@ export async function PATCH(req: NextRequest) {
         sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${SHEET_NAME}!G${sheetRow}`,
-          valueInputOption: "USER_ENTERED",
+          valueInputOption: "RAW",
           requestBody: { values: [[content]] },
         })
       );
@@ -127,7 +127,7 @@ export async function PATCH(req: NextRequest) {
         sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${SHEET_NAME}!H${sheetRow}`,
-          valueInputOption: "USER_ENTERED",
+          valueInputOption: "RAW",
           requestBody: { values: [[status]] },
         })
       );

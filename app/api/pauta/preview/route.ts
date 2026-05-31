@@ -23,6 +23,18 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
   if (!url) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
+  // Bloqueia SSRF — só URLs externas públicas
+  try {
+    const u = new URL(url)
+    const host = u.hostname.toLowerCase()
+    if (!['https:', 'http:'].includes(u.protocol) ||
+        host === 'localhost' || host === '127.0.0.1' ||
+        /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+        host === '169.254.169.254') {
+      return NextResponse.json({ error: "URL não permitida" }, { status: 400 })
+    }
+  } catch { return NextResponse.json({ error: "URL inválida" }, { status: 400 }) }
+
   try {
     const res = await fetch(url, {
       headers: {

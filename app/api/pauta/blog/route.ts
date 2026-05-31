@@ -83,7 +83,7 @@ Escreva em português, com tom ${tomVoz || "próximo, inspirador e acessível"}.
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
             range: `${SHEET_NAME}!O${rowIndex + 1}`,
-            valueInputOption: "USER_ENTERED",
+            valueInputOption: "RAW",
             requestBody: { values: [[text]] },
           });
         }

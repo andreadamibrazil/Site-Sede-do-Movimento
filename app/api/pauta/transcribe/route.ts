@@ -13,6 +13,16 @@ export async function POST(req: NextRequest) {
     const audioFile = formData.get("audio") as File | null;
     if (!audioFile) return NextResponse.json({ error: "Nenhum áudio recebido." }, { status: 400 });
 
+    // Limite: 25MB
+    const MAX_SIZE = 25 * 1024 * 1024
+    if (audioFile.size > MAX_SIZE) {
+      return NextResponse.json({ error: "Áudio muito grande. Máximo 25MB." }, { status: 413 })
+    }
+    const ALLOWED_TYPES = ['audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/m4a']
+    if (audioFile.type && !ALLOWED_TYPES.some(t => audioFile.type.startsWith(t.split('/')[0]))) {
+      return NextResponse.json({ error: "Tipo de arquivo não suportado." }, { status: 415 })
+    }
+
     const arrayBuffer = await audioFile.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
     const mimeType = (audioFile.type || "audio/webm") as string;

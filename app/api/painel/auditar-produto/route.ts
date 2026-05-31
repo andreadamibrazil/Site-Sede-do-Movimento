@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { requireAdmin } from '@/lib/api-auth'
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAdmin()
+  if (!guard.ok) return guard.response
   try {
     const { prompt } = await request.json()
 

@@ -28,7 +28,8 @@ function extrairVariavel(variables: Record<string, string>, ...chaves: string[])
 export async function POST(req: NextRequest) {
   // Verificação de segurança
   const secret = req.headers.get('x-webhook-secret') ?? req.headers.get('authorization')?.replace('Bearer ', '')
-  if (process.env.WEBHOOK_SECRET && secret !== process.env.WEBHOOK_SECRET) {
+  const webhookSecret = process.env.WEBHOOK_SECRET
+  if (!webhookSecret || secret !== webhookSecret) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 

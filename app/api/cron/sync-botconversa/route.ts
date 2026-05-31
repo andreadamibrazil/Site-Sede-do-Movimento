@@ -25,7 +25,8 @@ async function buscarAssinantes(page = 1): Promise<any[]> {
 export async function GET(req: NextRequest) {
   // Vercel Cron autentica com CRON_SECRET no header Authorization
   const auth = req.headers.get('authorization')
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 

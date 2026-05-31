@@ -56,6 +56,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Restrict access to browser features
   { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+  // HSTS — força HTTPS por 2 anos
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   // Enable DNS prefetching for performance
   { key: "X-DNS-Prefetch-Control", value: "on" },
   // Full CSP
@@ -63,8 +65,8 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: false },
+  typescript: { ignoreBuildErrors: false },
   images: {
     remotePatterns: [
       {

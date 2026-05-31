@@ -185,7 +185,7 @@ export async function PATCH(req: NextRequest) {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!F${sheetRow}:K${sheetRow}`,
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: {
         values: [[
           annotation  ?? existing[COL.annotation]  ?? "",

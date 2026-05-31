@@ -91,7 +91,7 @@ Seja direto, criativo e focado no público da ${negocioNome}.`;
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
             range: `${SHEET_NAME}!N${rowIndex + 1}`,
-            valueInputOption: "USER_ENTERED",
+            valueInputOption: "RAW",
             requestBody: { values: [[text]] },
           });
         }

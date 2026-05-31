@@ -12,6 +12,20 @@ no Rio Comprido, Rio de Janeiro. A escola oferece dança, teatro, música e form
 Perfis sociais: Instagram @sededomovimento, YouTube @sededomovimento.
 `;
 
+// URLs permitidas para fetch server-side (evita SSRF)
+function isSafeUrl(url: string): boolean {
+  try {
+    const u = new URL(url)
+    if (!['https:', 'http:'].includes(u.protocol)) return false
+    const host = u.hostname.toLowerCase()
+    // Bloqueia localhost, IPs privados e link-local
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false
+    if (/^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false
+    if (host === '169.254.169.254') return false // AWS metadata
+    return true
+  } catch { return false }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const origin = req.headers.get("origin");
@@ -29,6 +43,10 @@ export async function POST(req: NextRequest) {
 
     if (!imageUrl) {
       return NextResponse.json({ error: "imageUrl é obrigatório" }, { status: 400 });
+    }
+
+    if (!isSafeUrl(imageUrl)) {
+      return NextResponse.json({ error: "URL de imagem não permitida" }, { status: 400 });
     }
 
     // Tenta API externa configurada via env (ex: planilha de pauta)

@@ -137,7 +137,7 @@ IDEIAS DE CONTEÚDO:
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A${nextRow}:R${nextRow}`,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     requestBody: {
       values: [[
         id, timestamp, user, platform, firstUrl, annotation,
