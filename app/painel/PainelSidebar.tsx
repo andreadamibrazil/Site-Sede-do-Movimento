@@ -123,12 +123,12 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         )}
       </nav>
 
-      <div className="px-3 py-3 border-t border-gray-100">
+      <div className="px-3 py-3 border-t border-gray-100 space-y-2">
         {!collapsed && (
           <>
             <p className="text-xs text-gray-400 truncate">{email}</p>
             {isAdmin && (
-              <span className="inline-block mt-1 text-[9px] font-light tracking-widest text-violet-400 uppercase">
+              <span className="inline-block text-[9px] font-light tracking-widest text-violet-400 uppercase">
                 administrador
               </span>
             )}
@@ -137,6 +137,14 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         {collapsed && isAdmin && (
           <div className="w-2 h-2 rounded-full bg-violet-400 mx-auto" title="administrador" />
         )}
+        <a
+          href="/api/auth/signout"
+          title="Sair"
+          className={`flex items-center gap-2 text-xs text-gray-400 hover:text-red-500 transition-colors ${collapsed ? 'justify-center' : ''}`}
+        >
+          <span>↩</span>
+          {!collapsed && <span>Sair</span>}
+        </a>
       </div>
     </aside>
   )
