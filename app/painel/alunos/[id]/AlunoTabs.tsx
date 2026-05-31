@@ -1,0 +1,746 @@
+'use client'
+
+import { useRouter, usePathname } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import imageCompression from 'browser-image-compression'
+
+const ABAS = [
+  { id: 'dados',       label: 'Dados pessoais' },
+  { id: 'matriculas',  label: 'Matrículas e turmas' },
+  { id: 'financeiro',  label: 'Financeiro' },
+  { id: 'cobrancas',   label: 'Cobranças avulsas' },
+  { id: 'presenca',    label: 'Presença' },
+  { id: 'documentos',  label: 'Documentos' },
+]
+
+export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos }: any) {
+  const router = useRouter()
+  const pathname = usePathname()
+
+  return (
+    <div>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200 mb-5">
+        {ABAS.map(aba => (
+          <button
+            key={aba.id}
+            onClick={() => router.push(`${pathname}?aba=${aba.id}`)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              abaAtiva === aba.id
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {aba.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Conteúdo */}
+      {abaAtiva === 'dados'       && <AbaDados aluno={aluno} />}
+      {abaAtiva === 'matriculas'  && <AbaMatriculas matriculas={matriculas} />}
+      {abaAtiva === 'financeiro'  && <AbaFinanceiro mensalidades={mensalidades} />}
+      {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
+      {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} />}
+      {abaAtiva === 'documentos'  && <AbaDocumentos documentos={documentos} alunoId={aluno.id} />}
+    </div>
+  )
+}
+
+// ── Aba: Dados pessoais ──────────────────────────────────────
+
+function AbaDados({ aluno }: { aluno: any }) {
+  function idade(nasc: string | null) {
+    if (!nasc) return null
+    const anos = Math.floor((Date.now() - new Date(nasc).getTime()) / (365.25 * 24 * 3600 * 1000))
+    return `${anos} anos`
+  }
+  function fmtData(iso: string | null) {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleDateString('pt-BR')
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do aluno</h2>
+        <Row label="Nome completo"     value={aluno.nome} />
+        {aluno.nome_social && <Row label="Nome social" value={aluno.nome_social} />}
+        <Row label="Nascimento"        value={aluno.data_nascimento ? `${fmtData(aluno.data_nascimento)} (${idade(aluno.data_nascimento)})` : '—'} />
+        <Row label="Sexo"              value={aluno.sexo ?? '—'} />
+        <Row label="CPF"               value={aluno.cpf ?? '—'} />
+        <Row label="RG"                value={aluno.rg ?? '—'} />
+        <Row label="Celular"           value={aluno.celular ? formatarCelular(aluno.celular) : '—'} />
+        <Row label="Email"             value={aluno.email ?? '—'} />
+        <Row label="Endereço"          value={[aluno.endereco, aluno.bairro].filter(Boolean).join(' — ') || '—'} />
+        <Row label="CEP"               value={aluno.cep ?? '—'} />
+        <Row label="Origem"            value={aluno.origem ?? '—'} />
+        {aluno.info_saude && <Row label="Saúde / acessibilidade" value={aluno.info_saude} />}
+        {aluno.observacoes && <Row label="Observações" value={aluno.observacoes} />}
+      </div>
+
+      {/* Responsáveis */}
+      <div className="space-y-4">
+        {aluno.responsavel_principal && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Responsável principal · {aluno.responsavel_principal.parentesco ?? ''}
+            </h2>
+            <Row label="Nome"    value={aluno.responsavel_principal.nome} />
+            <Row label="Celular" value={aluno.responsavel_principal.celular ? formatarCelular(aluno.responsavel_principal.celular) : '—'} />
+            <Row label="Email"   value={aluno.responsavel_principal.email ?? '—'} />
+            <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_principal.notificacao] ?? '—'} />
+          </div>
+        )}
+        {aluno.responsavel_secundario && (
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Responsável secundário · {aluno.responsavel_secundario.parentesco ?? ''}
+            </h2>
+            <Row label="Nome"    value={aluno.responsavel_secundario.nome} />
+            <Row label="Celular" value={aluno.responsavel_secundario.celular ? formatarCelular(aluno.responsavel_secundario.celular) : '—'} />
+            <Row label="Email"   value={aluno.responsavel_secundario.email ?? '—'} />
+            <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_secundario.notificacao] ?? '—'} />
+          </div>
+        )}
+        {!aluno.responsavel_principal && !aluno.responsavel_secundario && (
+          <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-5 text-center text-sm text-gray-400">
+            Sem responsável cadastrado
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Aba: Matrículas e turmas ─────────────────────────────────
+
+function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
+  if (!matriculas.length) return (
+    <p className="text-sm text-gray-400 text-center py-12">Nenhuma matrícula ainda.</p>
+  )
+  return (
+    <div className="space-y-4">
+      {matriculas.map((m: any) => {
+        const turmasAtivas = m.matricula_turmas?.filter((mt: any) => !mt.data_saida) ?? []
+        return (
+          <div key={m.id} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                  m.status === 'ativa' ? 'bg-green-100 text-green-700' :
+                  m.status === 'trancada' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-gray-100 text-gray-500'
+                }`}>{m.status}</span>
+                <span className="ml-2 text-xs text-gray-400">{PLANO_LABEL[m.plano] ?? m.plano}</span>
+              </div>
+              <p className="text-sm font-semibold text-gray-900">
+                R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+              </p>
+            </div>
+            {m.tipo_desconto && (
+              <p className="text-xs text-gray-500">
+                Desconto: {DESCONTO_LABEL[m.tipo_desconto] ?? m.tipo_desconto}
+                {m.percentual_desconto ? ` (${m.percentual_desconto}%)` : ''}
+              </p>
+            )}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">Turmas:</p>
+              {turmasAtivas.length ? turmasAtivas.map((mt: any) => (
+                <div key={mt.turma_id} className="text-sm text-gray-700">
+                  • {mt.turmas?.nome ?? '—'}
+                  <span className="text-xs text-gray-400 ml-1">
+                    ({mt.turmas?.modalidades?.nome}) · {mt.turmas?.professores?.nome ?? 'sem professor'}
+                  </span>
+                </div>
+              )) : <p className="text-xs text-gray-400">Sem turmas vinculadas</p>}
+            </div>
+            <p className="text-xs text-gray-400">
+              Vence dia {m.dia_vencimento} · desde {new Date(m.data_inicio).toLocaleDateString('pt-BR')}
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Aba: Financeiro ──────────────────────────────────────────
+
+function AbaFinanceiro({ mensalidades }: { mensalidades: any[] }) {
+  if (!mensalidades.length) return (
+    <p className="text-sm text-gray-400 text-center py-12">Nenhuma mensalidade gerada ainda.</p>
+  )
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Competência</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vencimento</th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Valor</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {mensalidades.map((m: any) => (
+            <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-4 py-3 text-gray-700">
+                {new Date(m.competencia).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </td>
+              <td className="px-4 py-3 text-gray-500 text-xs">
+                {new Date(m.vencimento).toLocaleDateString('pt-BR')}
+              </td>
+              <td className="px-4 py-3 text-right font-medium text-gray-900">
+                R$ {Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </td>
+              <td className="px-4 py-3">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${MENS_BADGE[m.status] ?? ''}`}>
+                  {MENS_LABEL[m.status] ?? m.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Aba: Presença ────────────────────────────────────────────
+
+function AbaPresenca({ presencas }: { presencas: any[] }) {
+  const supabase = createClient()
+  const router = useRouter()
+  const [justificando, setJustificando] = useState<string | null>(null)
+  const [obs, setObs] = useState('')
+  const [salvando, setSalvando] = useState(false)
+
+  if (!presencas.length) return (
+    <p className="text-sm text-gray-400 text-center py-12">Nenhuma chamada registrada ainda.</p>
+  )
+  const total = presencas.length
+  const presentes = presencas.filter(p => p.status === 'presente').length
+  const faltas = presencas.filter(p => p.status === 'falta').length
+  const pct = Math.round((presentes / total) * 100)
+
+  async function justificarFalta(presencaId: string) {
+    setSalvando(true)
+    await supabase.from('presencas').update({
+      status: 'falta_justificada' as any,
+      observacao: obs || 'Atestado entregue',
+    }).eq('id', presencaId)
+    setJustificando(null)
+    setObs('')
+    setSalvando(false)
+    router.refresh()
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-6">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-900">{pct}%</p>
+          <p className="text-xs text-gray-400">frequência</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-green-600">{presentes}</p>
+          <p className="text-xs text-gray-400">presenças</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-red-500">{faltas}</p>
+          <p className="text-xs text-gray-400">faltas</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-yellow-500">
+            {presencas.filter(p => p.status === 'falta_justificada').length}
+          </p>
+          <p className="text-xs text-gray-400">justificadas</p>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Turma</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {presencas.map((p: any) => (
+              <>
+                <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {p.aulas?.data ? new Date(p.aulas.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">{p.aulas?.turmas?.nome ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${PRES_BADGE[p.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                      {PRES_LABEL[p.status] ?? p.status}
+                    </span>
+                    {p.observacao && (
+                      <span className="ml-2 text-xs text-gray-400">{p.observacao}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {p.status === 'falta' && (
+                      <button
+                        onClick={() => setJustificando(justificando === p.id ? null : p.id)}
+                        className="text-xs text-yellow-600 hover:text-yellow-700 font-medium"
+                      >
+                        Justificar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+                {justificando === p.id && (
+                  <tr key={`${p.id}-just`}>
+                    <td colSpan={4} className="px-4 py-3 bg-yellow-50 border-t border-yellow-100">
+                      <div className="flex items-center gap-3">
+                        <input
+                          value={obs}
+                          onChange={e => setObs(e.target.value)}
+                          placeholder="Motivo (ex: atestado médico entregue em 30/05)"
+                          className="flex-1 border border-yellow-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                        <button
+                          onClick={() => justificarFalta(p.id)}
+                          disabled={salvando}
+                          className="bg-yellow-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-yellow-600 disabled:opacity-50"
+                        >
+                          {salvando ? '...' : 'Confirmar justificativa'}
+                        </button>
+                        <button onClick={() => setJustificando(null)} className="text-gray-400 text-xs">Cancelar</button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ── Aba: Documentos ──────────────────────────────────────────
+
+const TIPO_LABEL: Record<string, string> = {
+  atestado: 'Atestado', autorizacao: 'Autorização',
+  contrato: 'Contrato', rg: 'RG', cpf: 'CPF', outro: 'Outro',
+}
+
+function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: string }) {
+  const supabase = createClient()
+  const router = useRouter()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [tipo, setTipo] = useState('atestado')
+  const [obs, setObs] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  async function upload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setEnviando(true)
+    setErro('')
+
+    // Comprime imagens acima de 1MB antes de enviar
+    let fileParaEnviar: File = file
+    const ehImagem = file.type.startsWith('image/')
+    if (ehImagem && file.size > 1024 * 1024) {
+      fileParaEnviar = await imageCompression(file, {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      })
+    }
+
+    const ext = file.name.split('.').pop()
+    const path = `${alunoId}/${Date.now()}.${ext}`
+
+    const { error: upErr } = await supabase.storage
+      .from('documentos-alunos')
+      .upload(path, fileParaEnviar)
+
+    if (upErr) { setErro(upErr.message); setEnviando(false); return }
+
+    // Extrai dados automaticamente via Gemini (atestados e documentos com imagem)
+    let dadosExtraidos = null
+    let obsAutomatica = obs || null
+    const ehDocumentoAnalisavel = ['atestado', 'outro', 'autorizacao'].includes(tipo)
+    const ehArquivoLegivel = file.type.startsWith('image/') || file.type === 'application/pdf'
+
+    if (ehDocumentoAnalisavel && ehArquivoLegivel) {
+      try {
+        const form = new FormData()
+        form.append('file', fileParaEnviar, file.name)
+        const res = await fetch('/api/painel/analisar-documento', { method: 'POST', body: form })
+        const json = await res.json()
+        if (json.dados) {
+          dadosExtraidos = json.dados
+          // Monta descrição automática a partir dos dados extraídos
+          const d = json.dados
+          const partes = []
+          if (d.nome_medico) partes.push(`Médico: ${d.nome_medico}`)
+          if (d.crm) partes.push(`CRM: ${d.crm}`)
+          if (d.data_consulta) partes.push(`Consulta: ${new Date(d.data_consulta).toLocaleDateString('pt-BR')}`)
+          if (d.hora_consulta) partes.push(`às ${d.hora_consulta}`)
+          if (d.data_inicio_afastamento && d.data_fim_afastamento) {
+            partes.push(`Afastamento: ${new Date(d.data_inicio_afastamento).toLocaleDateString('pt-BR')} a ${new Date(d.data_fim_afastamento).toLocaleDateString('pt-BR')}`)
+          }
+          if (d.dias_afastamento) partes.push(`(${d.dias_afastamento} dias)`)
+          if (d.diagnostico) partes.push(`| ${d.diagnostico}`)
+          if (partes.length) obsAutomatica = (obs ? obs + ' — ' : '') + partes.join(' · ')
+        }
+      } catch (_) {
+        // Falha no Gemini não impede o upload
+      }
+    }
+
+    await supabase.from('documentos_aluno').insert({
+      aluno_id: alunoId,
+      tipo: tipo as any,
+      nome: file.name,
+      storage_path: path,
+      observacao: obsAutomatica,
+      dados_extraidos: dadosExtraidos as any,
+    })
+
+    setObs('')
+    setEnviando(false)
+    if (inputRef.current) inputRef.current.value = ''
+    router.refresh()
+  }
+
+  async function baixar(path: string, nome: string) {
+    const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(path, 60)
+    if (data?.signedUrl) {
+      const a = document.createElement('a')
+      a.href = data.signedUrl
+      a.download = nome
+      a.click()
+    }
+  }
+
+  async function excluir(id: string, path: string) {
+    if (!confirm('Excluir este documento?')) return
+    await supabase.storage.from('documentos-alunos').remove([path])
+    await supabase.from('documentos_aluno').delete().eq('id', id)
+    router.refresh()
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Upload */}
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-700">Adicionar documento</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+            <select
+              value={tipo}
+              onChange={e => setTipo(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Observação</label>
+            <input
+              value={obs}
+              onChange={e => setObs(e.target.value)}
+              placeholder="Ex: Atestado referente à falta de 28/05"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+        <div>
+          <input ref={inputRef} type="file" onChange={upload} disabled={enviando} className="hidden" id="doc-upload" />
+          <label
+            htmlFor="doc-upload"
+            className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-6 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${enviando ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <span className="text-2xl">📎</span>
+            <span className="text-sm text-gray-500">{enviando ? 'Enviando...' : 'Clique para selecionar o arquivo'}</span>
+          </label>
+        </div>
+        {erro && <p className="text-xs text-red-500">{erro}</p>}
+      </div>
+
+      {/* Lista de documentos */}
+      {documentos.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-8">Nenhum documento ainda.</p>
+      ) : (
+        <div className="space-y-2">
+          {documentos.map((doc: any) => (
+            <div key={doc.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    {TIPO_LABEL[doc.tipo] ?? doc.tipo}
+                  </span>
+                  <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
+                </div>
+                {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => baixar(doc.storage_path, doc.nome)}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Baixar
+                </button>
+                <button
+                  onClick={() => excluir(doc.id, doc.storage_path)}
+                  className="text-xs text-red-400 hover:text-red-600"
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Aba: Cobranças Avulsas ───────────────────────────────────
+
+const CAT_LABEL: Record<string, string> = {
+  taxa_matricula: 'Taxa de matrícula',
+  espetaculo_participacao: 'Espetáculo — participação',
+  espetaculo_figurino: 'Espetáculo — figurino',
+  espetaculo_foto: 'Espetáculo — foto',
+  espetaculo_programa: 'Espetáculo — programa',
+  pratica_montagem: 'Prática de Montagem',
+  workshop: 'Workshop',
+  aula_particular: 'Aula particular',
+  uniforme: 'Uniforme',
+  aluguel_sala: 'Aluguel de sala',
+  ensaio_extra: 'Ensaio extra',
+  outro: 'Outro',
+}
+
+const STATUS_COB: Record<string, { label: string; className: string }> = {
+  pendente:  { label: 'Pendente',  className: 'bg-gray-100 text-gray-600' },
+  pago:      { label: 'Pago',      className: 'bg-green-100 text-green-700' },
+  cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-500' },
+}
+
+function AbaCobrancas({ alunoId }: { alunoId: string }) {
+  const supabase = createClient()
+  const router = useRouter()
+  const [cobrancas, setCobrancas] = useState<any[]>([])
+  const [carregado, setCarregado] = useState(false)
+  const [adicionando, setAdicionando] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [form, setForm] = useState({
+    categoria: 'espetaculo_participacao',
+    descricao: '',
+    valor: '',
+    vencimento: '',
+  })
+
+  // Carrega ao montar
+  useState(() => {
+    supabase.from('cobrancas_avulsas')
+      .select('*')
+      .eq('aluno_id', alunoId)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setCobrancas(data ?? []); setCarregado(true) })
+  })
+
+  async function adicionar() {
+    if (!form.descricao || !form.valor) return
+    setSalvando(true)
+    await supabase.from('cobrancas_avulsas').insert({
+      aluno_id: alunoId,
+      categoria: form.categoria as any,
+      descricao: form.descricao,
+      valor: Number(form.valor.replace(',', '.')),
+      vencimento: form.vencimento || null,
+      status: 'pendente',
+    })
+    setSalvando(false)
+    setAdicionando(false)
+    setForm({ categoria: 'espetaculo_participacao', descricao: '', valor: '', vencimento: '' })
+    // Recarrega
+    const { data } = await supabase.from('cobrancas_avulsas').select('*').eq('aluno_id', alunoId).order('created_at', { ascending: false })
+    setCobrancas(data ?? [])
+  }
+
+  async function marcarPago(id: string) {
+    await supabase.from('cobrancas_avulsas').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id)
+    setCobrancas(c => c.map(x => x.id === id ? { ...x, status: 'pago' } : x))
+  }
+
+  const total = cobrancas.filter(c => c.status === 'pendente').reduce((a, c) => a + Number(c.valor), 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          {total > 0 && <p className="text-sm font-semibold text-orange-600">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pendente</p>}
+        </div>
+        <button onClick={() => setAdicionando(!adicionando)}
+          className="bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors">
+          + Nova cobrança
+        </button>
+      </div>
+
+      {adicionando && (
+        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-semibold text-indigo-700">Nova cobrança avulsa</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Categoria</label>
+              <select value={form.categoria} onChange={e => setForm(f => ({...f, categoria: e.target.value}))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {Object.entries(CAT_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Valor (R$)</label>
+              <input value={form.valor} onChange={e => setForm(f => ({...f, valor: e.target.value}))}
+                placeholder="Ex: 700,00"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+              <input value={form.descricao} onChange={e => setForm(f => ({...f, descricao: e.target.value}))}
+                placeholder="Ex: Taxa de participação Espetáculo 2026 — 1º lote"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Vencimento</label>
+              <input type="date" value={form.vencimento} onChange={e => setForm(f => ({...f, vencimento: e.target.value}))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setAdicionando(false)} className="text-xs text-gray-500 px-3 py-1.5">Cancelar</button>
+            <button onClick={adicionar} disabled={salvando || !form.descricao || !form.valor}
+              className="bg-indigo-600 text-white text-xs font-medium px-4 py-1.5 rounded-lg disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Adicionar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!carregado ? (
+        <p className="text-sm text-gray-400 text-center py-6">Carregando...</p>
+      ) : cobrancas.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-8">Nenhuma cobrança avulsa.</p>
+      ) : (
+        <div className="space-y-2">
+          {cobrancas.map((c: any) => {
+            const badge = STATUS_COB[c.status] ?? { label: c.status, className: 'bg-gray-100 text-gray-500' }
+            return (
+              <div key={c.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full shrink-0">
+                      {CAT_LABEL[c.categoria] ?? c.categoria}
+                    </span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mt-1">{c.descricao}</p>
+                  {c.vencimento && (
+                    <p className="text-xs text-gray-400">Vence {new Date(c.vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-gray-900">
+                    R$ {Number(c.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  {c.status === 'pendente' && (
+                    <button onClick={() => marcarPago(c.id)}
+                      className="text-xs text-green-600 hover:text-green-700 font-medium mt-0.5">
+                      Marcar pago
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="text-gray-400 shrink-0">{label}</span>
+      <span className="font-medium text-gray-900 text-right">{value}</span>
+    </div>
+  )
+}
+
+function formatarCelular(cel: string) {
+  const n = cel.replace(/\D/g, '')
+  if (n.length === 11) return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`
+  if (n.length === 10) return `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`
+  return cel
+}
+
+const NOTIF_LABEL: Record<string, string> = {
+  notificacao_e_cobranca: 'Notificações e cobranças',
+  so_notificacao: 'Só notificações',
+  so_cobranca: 'Só cobranças',
+  nenhum: 'Nenhum',
+}
+
+const PLANO_LABEL: Record<string, string> = {
+  mensal: 'Mensal', trimestral: 'Trimestral',
+  semestral: 'Semestral', anual: 'Anual',
+}
+
+const DESCONTO_LABEL: Record<string, string> = {
+  bairro: 'Bairro (Rio Comprido)', familia: 'Família',
+  all_dance: 'All Dance', vip: 'VIP', bolsa: 'Bolsa artística', outro: 'Outro',
+}
+
+const MENS_BADGE: Record<string, string> = {
+  aberta: 'bg-gray-100 text-gray-600',
+  recebida: 'bg-green-100 text-green-700',
+  em_atraso: 'bg-orange-100 text-orange-700',
+  renegociada: 'bg-blue-100 text-blue-700',
+  cancelada: 'bg-gray-100 text-gray-400',
+}
+
+const MENS_LABEL: Record<string, string> = {
+  aberta: 'Em aberto', recebida: 'Paga',
+  em_atraso: 'Em atraso', renegociada: 'Renegociada', cancelada: 'Cancelada',
+}
+
+const PRES_BADGE: Record<string, string> = {
+  presente: 'bg-green-100 text-green-700',
+  falta: 'bg-red-100 text-red-700',
+  falta_justificada: 'bg-yellow-100 text-yellow-700',
+  reposicao: 'bg-blue-100 text-blue-700',
+  experimental: 'bg-purple-100 text-purple-700',
+  professor_faltou: 'bg-gray-100 text-gray-500',
+}
+
+const PRES_LABEL: Record<string, string> = {
+  presente: 'Presente', falta: 'Falta',
+  falta_justificada: 'Justificada', reposicao: 'Reposição',
+  experimental: 'Experimental', professor_faltou: 'Prof. faltou',
+}

@@ -1,0 +1,96 @@
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
+import ChamadaClient from './ChamadaClient'
+
+// Minutos após o fim da aula que o professor ainda pode editar
+const TOLERANCIA_PROFESSOR_MINUTOS = 120
+
+export default async function ChamadaPage({
+  params,
+}: {
+  params: Promise<{ aulaId: string }>
+}) {
+  const { aulaId } = await params
+  const supabase = await createClient()
+
+  // Perfil do usuário logado
+  const { data: { user } } = await supabase.auth.getUser()
+  let perfilUsuario: 'admin' | 'secretaria' | 'professor' = 'professor'
+  if (user) {
+    const service = createServiceClient()
+    const { data: perfil } = await service
+      .from('perfis_usuario')
+      .select('perfil')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria') {
+      perfilUsuario = perfil.perfil
+    }
+  }
+
+  // Dados da aula
+  const { data: aula } = await supabase
+    .from('aulas')
+    .select(`*, turmas(nome, modalidades(nome)), professores(nome), salas(nome)`)
+    .eq('id', aulaId)
+    .single()
+
+  if (!aula) notFound()
+
+  // Alunos matriculados na turma (ativos)
+  const { data: matriculaTurmas } = await supabase
+    .from('matricula_turmas')
+    .select(`matriculas!inner(aluno_id, status, alunos(id, nome, nome_social, data_nascimento, status_pedagogico, status_financeiro))`)
+    .eq('turma_id', aula.turma_id)
+    .is('data_saida', null)
+
+  const alunos = matriculaTurmas
+    ?.map((mt: any) => mt.matriculas?.alunos)
+    .filter(Boolean)
+    .filter((a: any) => a.status_pedagogico === 'ativo')
+    .sort((a: any, b: any) => a.nome.localeCompare(b.nome)) ?? []
+
+  // Presenças já registradas
+  const { data: presencasExistentes } = await supabase
+    .from('presencas')
+    .select('aluno_id, status, observacao')
+    .eq('aula_id', aulaId)
+
+  const mapaPresencas = Object.fromEntries(
+    (presencasExistentes ?? []).map(p => [p.aluno_id, p])
+  )
+
+  // Experimentais agendados para esta aula
+  const { data: experimentaisData } = await (supabase as any)
+    .from('experimentais')
+    .select('id, status, leads(id, nome, celular, modalidade_interesse)')
+    .eq('aula_id', aulaId)
+    .neq('status', 'convertido')
+
+  const experimentais = (experimentaisData ?? []).map((e: any) => ({
+    id: e.id,
+    status: e.status as string,
+    lead: e.leads,
+  }))
+
+  // Calcula se professor ainda está dentro da janela de tolerância
+  const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
+  const agora = new Date()
+  const minutosDesdeOFim = (agora.getTime() - fimAula.getTime()) / 60000
+  const dentroTolerancia = minutosDesdeOFim <= TOLERANCIA_PROFESSOR_MINUTOS
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ChamadaClient
+        aula={aula as any}
+        alunos={alunos}
+        presencasIniciais={mapaPresencas}
+        aulaId={aulaId}
+        experimentais={experimentais}
+        perfilUsuario={perfilUsuario}
+        dentroTolerancia={dentroTolerancia}
+        toleranciaMinutos={TOLERANCIA_PROFESSOR_MINUTOS}
+      />
+    </div>
+  )
+}
