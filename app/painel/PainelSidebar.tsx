@@ -103,7 +103,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             {collapsed && <div className="h-px bg-gray-100 my-2 mx-1" />}
 
             <NavItem
-              href="http://172.202.26.166"
+              href="https://plane.sededomovimento.art"
               icon="✈️"
               label="Plane"
               admin
@@ -111,7 +111,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
               external
             />
             <NavItem
-              href="http://sede-n8n.brazilsouth.azurecontainer.io:5678"
+              href="https://n8n.sededomovimento.art"
               icon="⚡"
               label="n8n"
               admin
