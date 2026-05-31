@@ -44,12 +44,13 @@ async function buscarContexto(sb: any, pergunta: string, isAdmin: boolean) {
   ])
   dados.resumo = { total_alunos_ativos: ativos, total_inadimplentes: inadimplentes }
 
-  // Turmas e horários — disponível para todos
-  if (p.includes('turma') || p.includes('aula') || p.includes('horário') || p.includes('horario') || p.includes('professor') || p.includes('modalidade')) {
+  // Turmas ativas com faixa etária — fonte de verdade do sistema
+  if (p.includes('turma') || p.includes('aula') || p.includes('horário') || p.includes('horario') || p.includes('professor') || p.includes('modalidade') || p.includes('idade') || p.includes('anos') || p.includes('criança') || p.includes('adulto') || p.includes('infantil')) {
     const { data } = await sb.from('turmas')
-      .select('nome, modalidade_id, dia_semana, hora_inicio, hora_fim, professores(nome)')
-      .not('status', 'eq', 'encerrada').limit(30)
-    dados.turmas = data
+      .select('nome, modalidade_id, dia_semana, hora_inicio, hora_fim, faixa_etaria_min, faixa_etaria_max, nivel, capacidade, professores(nome)')
+      .not('status', 'eq', 'encerrada').limit(50)
+    dados.turmas_ativas = data
+    dados.nota_turmas = 'Use apenas estas turmas ativas como referência de idades e modalidades disponíveis. Não use dados externos.'
   }
 
   // Chamadas pendentes — todos
