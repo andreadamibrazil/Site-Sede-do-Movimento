@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import AssistenteIA from './AssistenteIA'
 
 type NavItemProps = {
   href: string
@@ -117,6 +118,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
               collapsed={collapsed}
               external
             />
+            <AssistenteIA collapsed={collapsed} />
           </div>
         )}
       </nav>
