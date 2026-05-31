@@ -129,24 +129,40 @@ export async function POST(req: NextRequest) {
   const { data: perfil } = await service.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle()
   const isAdmin = perfil?.perfil === 'admin'
 
-  const { pergunta } = await req.json()
+  const body = await req.json()
+  const pergunta: string = body.pergunta ?? ''
+  const historico: { role: string; text: string }[] = body.historico ?? []
   if (!pergunta?.trim()) return NextResponse.json({ error: 'pergunta vazia' }, { status: 400 })
 
-  const contexto = await buscarContexto(service, pergunta, isAdmin)
+  // Usa toda a conversa para contexto
+  const todasMensagens = historico.map((m: { text: string }) => m.text).join(' ') + ' ' + pergunta
+  const contexto = await buscarContexto(service, todasMensagens, isAdmin)
 
   const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+
+  const historicoFormatado = historico.length > 0
+    ? '\n\nHISTÓRICO DA CONVERSA:\n' + historico.map((m: { role: string; text: string }) =>
+        `${m.role === 'user' ? 'Usuário' : 'Assistente'}: ${m.text}`).join('\n')
+    : ''
 
   const prompt = `Você é o assistente interno da Sede do Movimento, escola de artes cênicas no Rio de Janeiro.
 Hoje é ${hoje}.
 Perfil do usuário: ${isAdmin ? 'Administrador (acesso completo)' : 'Secretaria (sem acesso financeiro)'}
 
+INSTRUÇÕES:
+- Se a pergunta envolver preço/mensalidade e o usuário NÃO especificou o plano, PERGUNTE: "Prefere Mensalidade (mensal) ou Plano Fidelidade (anual em 12x com desconto)?"
+- Se envolver múltiplas modalidades, pergunte se há irmãos também
+- Quando der um preço, verifique nas turmas ativas se há aulas da modalidade no mesmo dia — se sim, mencione que dá pra fazer as duas em sequência
+- Seja direto e prático
+${historicoFormatado}
+
 DADOS DO SISTEMA:
 ${JSON.stringify(contexto, null, 2)}
 
-PERGUNTA:
+PERGUNTA ATUAL:
 ${pergunta}
 
-Responda em português, de forma direta e objetiva. Use números concretos. Se não houver dados suficientes, diga o que falta.`
+Responda em português. Se precisar de mais informação, faça UMA pergunta por vez.`
 
   try {
     const resposta = await chamarGemini(prompt)

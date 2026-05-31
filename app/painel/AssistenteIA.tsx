@@ -5,10 +5,11 @@ import { useState, useRef, useEffect } from 'react'
 type Msg = { role: 'user' | 'assistant'; text: string }
 
 const SUGESTOES = [
-  'Quantos alunos ativos temos?',
+  'Quanto fica para uma criança de 4 anos fazer 2 modalidades?',
+  'Quais alunos estão inadimplentes?',
   'Quais leads estão quentes esta semana?',
-  'Quem está inadimplente?',
-  'Quais chamadas estão pendentes?',
+  'Quais chamadas estão pendentes hoje?',
+  'Quais turmas têm vaga disponível?',
 ]
 
 export default function AssistenteIA({ collapsed = false }: { collapsed?: boolean }) {
@@ -32,7 +33,7 @@ export default function AssistenteIA({ collapsed = false }: { collapsed?: boolea
       const res = await fetch('/api/painel/assistente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pergunta }),
+        body: JSON.stringify({ pergunta, historico: msgs }),
       })
       const data = await res.json()
       setMsgs(m => [...m, { role: 'assistant', text: data.resposta ?? data.error ?? 'Erro.' }])
