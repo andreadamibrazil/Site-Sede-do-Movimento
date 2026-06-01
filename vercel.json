@@ -1,5 +1,14 @@
 {
-  "crons": [],
+  "crons": [
+    {
+      "path": "/api/cron/sync-botconversa",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/chamada-lembretes",
+      "schedule": "0 * * * *"
+    }
+  ],
   "functions": {
     "app/api/pauta/transcribe/route.ts": { "maxDuration": 60 },
     "app/api/pauta/synthesize/route.ts": { "maxDuration": 60 },

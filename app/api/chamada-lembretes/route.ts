@@ -132,7 +132,7 @@ async function handler(req: NextRequest) {
   // Falta sem atestado + sem substituto = reposição obrigatória em 4 dias
   const { data: subsSemSubstituto } = await sb
     .from('substituicoes')
-    .select('id, professor_ausente_id, aula_id, tem_atestado, professores!professor_ausente_id(nome, celular), aulas(data, hora_inicio, hora_fim, turmas(nome))')
+    .select('id, professor_ausente_id, aula_id, tem_atestado, professores!professor_ausente_id(nome, celular), aulas(data, hora_inicio, hora_fim, turma_id, turmas(nome))')
     .is('professor_substituto_id', null)
     .eq('tem_atestado', false)
 
