@@ -130,8 +130,8 @@ export async function POST(req: NextRequest) {
   const isAdmin = perfil?.perfil === 'admin'
 
   const body = await req.json()
-  const pergunta: string = body.pergunta ?? ''
-  const historico: { role: string; text: string }[] = body.historico ?? []
+  const pergunta: string = (body.pergunta ?? '').slice(0, 1000) // max 1000 chars
+  const historico: { role: string; text: string }[] = (body.historico ?? []).slice(-8) // max 8 msgs
   if (!pergunta?.trim()) return NextResponse.json({ error: 'pergunta vazia' }, { status: 400 })
 
   // Usa toda a conversa para contexto

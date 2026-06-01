@@ -33,7 +33,8 @@ export default function AssistenteIA({ collapsed = false }: { collapsed?: boolea
       const res = await fetch('/api/painel/assistente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pergunta, historico: msgs }),
+        // Envia só as últimas 8 mensagens para não estourar o contexto do Gemini
+        body: JSON.stringify({ pergunta, historico: msgs.slice(-8) }),
       })
       const data = await res.json()
       setMsgs(m => [...m, { role: 'assistant', text: data.resposta ?? data.error ?? 'Erro.' }])
