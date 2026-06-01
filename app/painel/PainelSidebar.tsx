@@ -86,13 +86,13 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
       {/* Logo + toggle */}
       <div className="px-3 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
         {!collapsed && (
-          <Link href="/painel" prefetch>
+          <Link href="/painel" prefetch className="flex-1 min-w-0">
             <Image
               src="/logo-sede.png"
               alt="Sede do Movimento"
-              width={140}
-              height={40}
-              className="object-contain h-9 w-auto"
+              width={160}
+              height={48}
+              className="object-contain object-left h-10 w-auto max-w-[130px]"
               priority
             />
           </Link>
