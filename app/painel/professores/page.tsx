@@ -1,9 +1,11 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import ProfessoresClient from './ProfessoresClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProfessoresPage() {
+  await requireAdmin()
   const sb = createServiceClient()
   const { data: professores } = await sb
     .from('professores')

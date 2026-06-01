@@ -1,7 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import UsuariosClient from './UsuariosClient'
 
 export default async function UsuariosPage() {
+  await requireAdmin()
   const supabase = createServiceClient()
 
   // Busca perfis + dados de auth (último login)

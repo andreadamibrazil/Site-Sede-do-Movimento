@@ -168,6 +168,7 @@ Responda em português. Se precisar de mais informação, faça UMA pergunta por
     const resposta = await chamarGemini(prompt)
     return NextResponse.json({ resposta })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 503 })
+    console.error('[assistente]', e)
+    return NextResponse.json({ error: 'Serviço temporariamente indisponível' }, { status: 503 })
   }
 }

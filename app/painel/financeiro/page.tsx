@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import { Suspense } from 'react'
 import FinanceiroClient from './FinanceiroClient'
 
@@ -9,6 +10,7 @@ export default async function FinanceiroPage({
 }: {
   searchParams: Promise<{ filtro?: string; busca?: string }>
 }) {
+  await requireAdmin()
   const { filtro = 'aberta,em_atraso', busca } = await searchParams
   const supabase = await createClient()
 
