@@ -140,8 +140,10 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             )}
             {collapsed && <div className="h-px bg-gray-100 my-2 mx-1" />}
 
-            <NavItem href="https://plane.sededomovimento.art" icon="✈️" label="Plane" admin collapsed={collapsed} external />
-            <NavItem href="https://n8n.sededomovimento.art"   icon="⚡" label="n8n"   admin collapsed={collapsed} external />
+            <NavItem href="https://plane.sededomovimento.art"     icon="✈️" label="Plane"      admin collapsed={collapsed} external />
+            <NavItem href="https://n8n.sededomovimento.art"     icon="⚡" label="n8n"        admin collapsed={collapsed} external />
+            <NavItem href="https://evolution.sededomovimento.art" icon="📱" label="WhatsApp"  admin collapsed={collapsed} external />
+            <NavItem href="https://crm.sededomovimento.art"     icon="💬" label="CRM"        admin collapsed={collapsed} external />
             <AssistenteIA collapsed={collapsed} />
           </div>
         )}
