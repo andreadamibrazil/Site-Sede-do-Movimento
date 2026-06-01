@@ -1,6 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error("NEXTAUTH_SECRET não configurado — obrigatório em produção");
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -9,9 +13,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account, profile }) {
       const email = user.email ?? "";
-      if (!email.endsWith("@sededomovimento.art")) {
+      if (!email.endsWith("@sededomovimento.art")) return false;
+      // Garante que o email foi verificado pelo Google
+      if (account?.provider === "google" && profile && !(profile as { email_verified?: boolean }).email_verified) {
         return false;
       }
       return true;

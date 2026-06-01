@@ -78,6 +78,10 @@ export async function PATCH(req: NextRequest) {
   if (authErr) return authErr
   const { id, status } = await req.json()
   if (!id || !status) return NextResponse.json({ error: 'id e status obrigatórios' }, { status: 400 })
+  const STATUS_VALIDOS = ['agendado', 'presente', 'nao_compareceu', 'cancelado']
+  if (!STATUS_VALIDOS.includes(status)) {
+    return NextResponse.json({ error: `status inválido. Valores aceitos: ${STATUS_VALIDOS.join(', ')}` }, { status: 400 })
+  }
 
   const supabase = await createClient()
 

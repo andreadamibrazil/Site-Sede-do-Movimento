@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 // Reject emails longer than the RFC 5321 maximum
 const MAX_EMAIL_LENGTH = 254;
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+  if (!rateLimit(`newsletter:${ip}`, 3, 60_000)) return rateLimitResponse()
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { email } = await req.json();

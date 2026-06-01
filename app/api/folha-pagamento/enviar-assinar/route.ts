@@ -3,8 +3,8 @@ import { requireAdmin } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarPDFFolha } from '@/lib/folha-pdf'
 
-const DOCUSEAL_URL = process.env.DOCUSEAL_URL!
-const DOCUSEAL_KEY = process.env.DOCUSEAL_API_KEY!
+const DOCUSEAL_URL = process.env.DOCUSEAL_URL
+const DOCUSEAL_KEY = process.env.DOCUSEAL_API_KEY
 
 async function criarSubmissaoDocuSeal(
   pdfBytes: Uint8Array,
@@ -20,7 +20,7 @@ async function criarSubmissaoDocuSeal(
 
     const tplRes = await fetch(`${DOCUSEAL_URL}/api/templates/pdf`, {
       method: 'POST',
-      headers: { 'X-Auth-Token': DOCUSEAL_KEY },
+      headers: { 'X-Auth-Token': DOCUSEAL_KEY ?? '' },
       body: form,
     })
     if (!tplRes.ok) {
@@ -33,7 +33,7 @@ async function criarSubmissaoDocuSeal(
     // 2. Cria submissão com os dois assinantes
     const subRes = await fetch(`${DOCUSEAL_URL}/api/submissions`, {
       method: 'POST',
-      headers: { 'X-Auth-Token': DOCUSEAL_KEY, 'Content-Type': 'application/json' },
+      headers: { 'X-Auth-Token': DOCUSEAL_KEY ?? '', 'Content-Type': 'application/json' },
       body: JSON.stringify({
         template_id: templateId,
         send_email: true,
@@ -66,6 +66,10 @@ async function criarSubmissaoDocuSeal(
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
   if (!guard.ok) return guard.response
+
+  if (!DOCUSEAL_URL || !DOCUSEAL_KEY) {
+    return NextResponse.json({ error: 'DocuSeal não configurado' }, { status: 503 })
+  }
 
   const sb = createServiceClient() as any
   const { folha_id, professor_email, admin_email } = await req.json()

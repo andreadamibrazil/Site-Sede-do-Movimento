@@ -34,10 +34,14 @@ export async function POST(req: NextRequest) {
   const concluido = evento === 'form.completed' || evento === 'document.signed' || evento === 'signed'
 
   if (concluido) {
-    await sb.from('folhas_pagamento')
+    const { error: updateErr } = await sb.from('folhas_pagamento')
       .update({ status: 'assinado', assinado_em: new Date().toISOString() })
       .eq('autentique_doc_id', String(submissionId))
       .eq('status', 'enviado')
+    if (updateErr) {
+      console.error('webhook autentique: falha ao atualizar folha', updateErr.message)
+      return NextResponse.json({ error: 'falha ao atualizar' }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ ok: true })

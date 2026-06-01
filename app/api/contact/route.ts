@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const FORM_LABELS: Record<string, string> = {
   general: "Contato Geral",
@@ -38,6 +39,8 @@ function isSafeUrl(str: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+  if (!rateLimit(`contact:${ip}`, 5, 60_000)) return rateLimitResponse()
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     const body = await req.json();

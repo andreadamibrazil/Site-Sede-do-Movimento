@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
 
   if (existente) {
     // Atualiza dados sem sobrescrever status se já progrediu
-    await sb.from('leads').update({
+    const { error: updateErr } = await sb.from('leads').update({
       nome: nome !== 'Sem nome' ? nome : existente.nome,
       modalidade_interesse: modalidade,
       como_conheceu: comoConheceu,
@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }).eq('id', existente.id)
 
+    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
     return NextResponse.json({ ok: true, action: 'updated', lead_id: existente.id })
   }
 
