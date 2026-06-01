@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import AssistenteIA from './AssistenteIA'
 
 type NavItemProps = {
@@ -14,23 +16,46 @@ type NavItemProps = {
 }
 
 function NavItem({ href, icon, label, admin = false, collapsed = false, external = false }: NavItemProps) {
-  const baseClass = `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-    admin
-      ? 'text-violet-500 hover:bg-violet-50 hover:text-violet-700'
-      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-  } ${collapsed ? 'justify-center px-2' : ''}`
+  const pathname = usePathname()
+  const active = pathname === href || (href !== '/painel' && pathname.startsWith(href))
+
+  const baseClass = `flex items-center gap-3 py-2 rounded-lg text-sm transition-colors ${
+    collapsed ? 'justify-center px-2' : 'px-3'
+  } ${
+    active
+      ? admin
+        ? 'bg-violet-50 text-violet-700 font-medium'
+        : 'bg-gray-100 text-gray-900 font-medium'
+      : admin
+        ? 'text-violet-500 hover:bg-violet-50 hover:text-violet-700'
+        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+  }`
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={collapsed ? label : undefined}
+        className={baseClass}
+      >
+        <span className="shrink-0 text-base">{icon}</span>
+        {!collapsed && <span className="truncate">{label}</span>}
+      </a>
+    )
+  }
 
   return (
-    <a
+    <Link
       href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
+      prefetch={true}
       title={collapsed ? label : undefined}
       className={baseClass}
     >
       <span className="shrink-0 text-base">{icon}</span>
       {!collapsed && <span className="truncate">{label}</span>}
-    </a>
+    </Link>
   )
 }
 
@@ -42,6 +67,18 @@ type Props = {
 export default function PainelSidebar({ email, isAdmin }: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
+  // Persiste estado colapsado no localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-collapsed')
+    if (saved === 'true') setCollapsed(true)
+  }, [])
+
+  function toggleCollapse() {
+    const next = !collapsed
+    setCollapsed(next)
+    localStorage.setItem('sidebar-collapsed', String(next))
+  }
+
   return (
     <aside
       className={`${collapsed ? 'w-14' : 'w-56'} bg-white border-r border-gray-200 flex flex-col transition-all duration-200 shrink-0`}
@@ -49,17 +86,19 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
       {/* Logo + toggle */}
       <div className="px-3 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
         {!collapsed && (
-          <Image
-            src="/logo-sede.png"
-            alt="Sede do Movimento"
-            width={140}
-            height={40}
-            className="object-contain h-9 w-auto"
-            priority
-          />
+          <Link href="/painel" prefetch>
+            <Image
+              src="/logo-sede.png"
+              alt="Sede do Movimento"
+              width={140}
+              height={40}
+              className="object-contain h-9 w-auto"
+              priority
+            />
+          </Link>
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleCollapse}
           title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           className={`shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors ${collapsed ? 'mx-auto' : 'ml-auto'}`}
         >
@@ -92,7 +131,6 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             <NavItem href="/painel/usuarios"        icon="🔑" label="Usuários"    admin collapsed={collapsed} />
             <NavItem href="/painel/historico"       icon="🕐" label="Histórico"   admin collapsed={collapsed} />
 
-            {/* Ferramentas externas */}
             {!collapsed && (
               <div className="flex items-center gap-2 px-3 mt-4 mb-2">
                 <div className="flex-1 h-px bg-gray-100" />
@@ -102,22 +140,8 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             )}
             {collapsed && <div className="h-px bg-gray-100 my-2 mx-1" />}
 
-            <NavItem
-              href="https://plane.sededomovimento.art"
-              icon="✈️"
-              label="Plane"
-              admin
-              collapsed={collapsed}
-              external
-            />
-            <NavItem
-              href="https://n8n.sededomovimento.art"
-              icon="⚡"
-              label="n8n"
-              admin
-              collapsed={collapsed}
-              external
-            />
+            <NavItem href="https://plane.sededomovimento.art" icon="✈️" label="Plane" admin collapsed={collapsed} external />
+            <NavItem href="https://n8n.sededomovimento.art"   icon="⚡" label="n8n"   admin collapsed={collapsed} external />
             <AssistenteIA collapsed={collapsed} />
           </div>
         )}
@@ -137,6 +161,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         {collapsed && isAdmin && (
           <div className="w-2 h-2 rounded-full bg-violet-400 mx-auto" title="administrador" />
         )}
+        {/* Logout precisa de <a> para forçar reload e limpar sessão */}
         <a
           href="/api/auth/signout"
           title="Sair"
