@@ -475,8 +475,17 @@ function AbaPresenca({ presencas }: { presencas: any[] }) {
 // ── Aba: Documentos ──────────────────────────────────────────
 
 const TIPO_LABEL: Record<string, string> = {
-  atestado: 'Atestado', autorizacao: 'Autorização',
-  contrato: 'Contrato', rg: 'RG', cpf: 'CPF', outro: 'Outro',
+  atestado: 'Atestado médico',
+  autorizacao: 'Autorização',
+  autorizacao_evento: 'Autorização para Evento',
+  contrato: 'Contrato',
+  uniforme: 'Retirada de Uniforme',
+  rg: 'RG',
+  cpf: 'CPF',
+  certidao: 'Certidão de Nascimento',
+  foto: 'Foto 3x4',
+  declaracao_matricula: 'Declaração de Matrícula',
+  outro: 'Outro',
 }
 
 function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: string }) {

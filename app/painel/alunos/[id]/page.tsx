@@ -78,6 +78,15 @@ export default async function AlunoPage({
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
           <ContratoBadge status={(aluno as any).contrato_status ?? 'sem_contrato'} />
+          <a
+            href={`/api/alunos/${id}/declaracao`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+            title="Emitir Declaração de Matrícula"
+          >
+            📄 Declaração
+          </a>
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
             href={`/painel/alunos/${id}/matricula`}
