@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Atualiza status do lead
+  await supabase.from('leads').update({ status: 'experimental_agendada' }).eq('id', lead_id)
+
   // Notifica professor via WhatsApp (BotConversa)
   const professor = aula.professores as any
   const turma = aula.turmas as any
