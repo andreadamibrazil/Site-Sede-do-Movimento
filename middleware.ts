@@ -53,6 +53,42 @@ async function painelMiddleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/painel/login', request.url));
   }
 
+  // Professor logado — redireciona para portal restrito
+  if (user) {
+    const isProfessorArea = request.nextUrl.pathname.startsWith('/painel/professor')
+    const isAdminArea = !isProfessorArea && !isPublic
+
+    if (isAdminArea) {
+      // Verifica se é só professor (sem perfil admin)
+      const sb = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { cookies: { getAll: () => [], setAll: () => {} } }
+      )
+      const { data: perfil } = await sb
+        .from('perfis_usuario')
+        .select('perfil')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!perfil) {
+        // Sem perfil admin — verifica se é professor
+        const { data: prof } = await sb
+          .from('professores')
+          .select('id')
+          .eq('email', user.email ?? '')
+          .eq('ativo', true)
+          .maybeSingle()
+
+        if (prof) {
+          return NextResponse.redirect(new URL('/painel/professor', request.url))
+        }
+        // Nem admin nem professor — bloqueia
+        return NextResponse.redirect(new URL('/painel/login', request.url))
+      }
+    }
+  }
+
   return response;
 }
 
