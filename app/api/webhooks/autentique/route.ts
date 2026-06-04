@@ -3,8 +3,19 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Webhook chamado pelo DocuSeal quando documento é totalmente assinado
 // URL: https://sededomovimento.art/api/webhooks/autentique
-// Evento: form.completed
+// Configurar no DocuSeal: Configurações → Webhooks → token = DOCUSEAL_WEBHOOK_SECRET
 export async function POST(req: NextRequest) {
+  // Verifica token de segurança — aceita via header X-Auth-Token OU query ?secret=
+  const secret = process.env.DOCUSEAL_WEBHOOK_SECRET
+  if (secret) {
+    const headerToken = req.headers.get('x-auth-token') ?? req.headers.get('authorization')?.replace('Bearer ', '')
+    const queryToken = req.nextUrl.searchParams.get('secret')
+    const tokenRecebido = headerToken ?? queryToken
+    if (tokenRecebido !== secret) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+  }
+
   let body: any
   try { body = await req.json() }
   catch { return NextResponse.json({ error: 'invalid json' }, { status: 400 }) }
@@ -24,15 +35,12 @@ export async function POST(req: NextRequest) {
 
   if (!concluido) return NextResponse.json({ ok: true })
 
-  // 1. Atualiza contrato de aluno (se tiver docuseal_id vinculado)
+  // 1. Atualiza contrato de aluno
   await sb.from('alunos')
-    .update({
-      contrato_status: 'assinado',
-      contrato_assinado_em: new Date().toISOString(),
-    })
+    .update({ contrato_status: 'assinado', contrato_assinado_em: new Date().toISOString() })
     .eq('contrato_docuseal_id', submissionId)
 
-  // 2. Atualiza folha de pagamento (folha do professor)
+  // 2. Atualiza folha de pagamento do professor
   await sb.from('folhas_pagamento')
     .update({ status: 'assinado', assinado_em: new Date().toISOString() })
     .eq('autentique_doc_id', submissionId)
