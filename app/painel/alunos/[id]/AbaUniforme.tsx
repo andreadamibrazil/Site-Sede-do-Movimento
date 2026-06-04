@@ -41,7 +41,7 @@ export default function AbaUniforme({ alunoId, retiradas: inicial }: { alunoId: 
 
   async function salvar() {
     setSalvando(true)
-    const { data, error } = await (supabase as any).from('uniforme_retiradas').insert({
+    const { data, error } = await supabase.from('uniforme_retiradas').insert({
       aluno_id: alunoId,
       item: form.item,
       tamanho: form.tamanho,

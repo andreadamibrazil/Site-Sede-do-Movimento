@@ -66,7 +66,7 @@ export default async function AlunoPage({
 
   const service = createServiceClient()
   const { data: uniforme } = await service
-    .from('uniforme_retiradas' as any)
+    .from('uniforme_retiradas')
     .select('*')
     .eq('aluno_id', id)
     .order('created_at', { ascending: false })

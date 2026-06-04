@@ -65,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // Registra no audit_log
-  await (sb as any).from('audit_log').insert({
+  await sb.from('audit_log').insert({
     tabela: 'declaracao_matricula',
     operacao: 'EMITIDA',
     registro_id: id,

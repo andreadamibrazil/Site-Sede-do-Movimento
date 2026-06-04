@@ -137,7 +137,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
     setSelecionada(null)
     if (termo.length < 2) { setSugestoes([]); return }
     const { data } = await supabase
-      .from('familias' as any)
+      .from('familias')
       .select('id, nome')
       .ilike('nome', `%${termo}%`)
       .limit(5)
@@ -157,7 +157,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
       // Cria nova família
       const nome = (nomeNovo ?? busca).trim()
       if (!nome) { setSalvando(false); return }
-      const { data: raw } = await supabase.from('familias' as any).insert({ nome }).select('id').single()
+      const { data: raw } = await supabase.from('familias').insert({ nome }).select('id').single()
       const criada = raw as { id: string } | null
       if (!criada) { setSalvando(false); return }
       fId = criada.id
@@ -165,7 +165,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
     }
 
     await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
-    await supabase.from('familia_membros' as any).insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
+    await supabase.from('familia_membros').insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
 
     setSalvando(false)
     setVinculado(true)
