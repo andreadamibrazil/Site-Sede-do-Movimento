@@ -22,7 +22,11 @@ const pautaMiddleware = auth((req: NextRequest & { auth: { user?: { email?: stri
 
 // Middleware para /painel (Supabase Auth)
 async function painelMiddleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Injeta pathname nos request headers para que Server Components possam ler via headers()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', request.nextUrl.pathname)
+
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,8 +36,11 @@ async function painelMiddleware(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           // Atualiza cookies no request e na response — necessário para renovar o token
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value)
+            requestHeaders.set('cookie', request.cookies.toString())
+          })
+          response = NextResponse.next({ request: { headers: requestHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )

@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import PainelSidebar from './PainelSidebar'
 
@@ -6,6 +7,14 @@ export default async function PainelLayout({
 }: {
   children: React.ReactNode
 }) {
+  const headersList = await headers()
+  const pathname = headersList.get('x-pathname') ?? ''
+
+  // Rotas de professor e públicas não recebem o shell admin
+  if (pathname.startsWith('/painel/professor') || pathname.startsWith('/painel/login') || pathname.startsWith('/painel/auth')) {
+    return <>{children}</>
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
