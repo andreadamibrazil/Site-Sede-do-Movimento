@@ -110,7 +110,91 @@ function AbaDados({ aluno }: { aluno: any }) {
           </div>
         )}
       </div>
+
+      {/* Família */}
+      <VincularFamilia alunoId={aluno.id} familiaId={aluno.familia_id ?? null} familiaNome={aluno.familias?.nome ?? null} />
     </div>
+  )
+}
+
+function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string; familiaId: string | null; familiaNome: string | null }) {
+  const [modal, setModal] = useState(false)
+  const [nomeFamilia, setNomeFamilia] = useState(familiaNome ?? '')
+  const [salvando, setSalvando] = useState(false)
+  const [vinculado, setVinculado] = useState(!!familiaId)
+  const [nomeAtual, setNomeAtual] = useState(familiaNome)
+  const supabase = createClient()
+
+  async function criarEVincular() {
+    if (!nomeFamilia.trim()) return
+    setSalvando(true)
+    // Cria família
+    const { data: familiaRaw } = await supabase
+      .from('familias' as any)
+      .insert({ nome: nomeFamilia.trim() })
+      .select('id')
+      .single()
+    const familia = familiaRaw as { id: string } | null
+    if (!familia) { setSalvando(false); return }
+    // Vincula aluno
+    await (supabase.from('alunos') as any).update({ familia_id: familia.id }).eq('id', alunoId)
+    // Cria membro
+    await supabase.from('familia_membros' as any).insert({
+      familia_id: familia.id,
+      aluno_id: alunoId,
+      papeis: ['aluno'],
+    })
+    setSalvando(false)
+    setVinculado(true)
+    setNomeAtual(nomeFamilia.trim())
+    setModal(false)
+  }
+
+  if (vinculado) {
+    return (
+      <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Família</p>
+          <p className="text-sm font-medium text-gray-900 mt-0.5">👨‍👧 {nomeAtual}</p>
+        </div>
+        <a href={`/painel/alunos?familia=${familiaId}`} className="text-xs text-purple-600 hover:text-purple-700">Ver membros →</a>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setModal(true)}
+        className="w-full border border-dashed border-purple-300 rounded-xl p-4 text-sm text-purple-600 hover:bg-purple-50 transition-colors text-center"
+      >
+        + Vincular a uma família
+      </button>
+
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <h2 className="text-base font-semibold text-gray-900">Vincular família</h2>
+            <p className="text-xs text-gray-500">Crie uma família para agrupar responsáveis e alunos que compartilham plano.</p>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nome da família</label>
+              <input
+                value={nomeFamilia}
+                onChange={e => setNomeFamilia(e.target.value)}
+                placeholder="Ex: Família Silva"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50">Cancelar</button>
+              <button onClick={criarEVincular} disabled={salvando || !nomeFamilia.trim()} className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-40">
+                {salvando ? 'Salvando...' : 'Criar e vincular'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

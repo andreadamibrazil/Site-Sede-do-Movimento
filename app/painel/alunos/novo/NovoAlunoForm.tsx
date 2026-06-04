@@ -11,8 +11,9 @@ const ORIGENS = [
 
 type Etapa = 'dados' | 'responsavel' | 'saude'
 type RespEncontrado = { id: string; nome: string; celular: string } | null
+type LeadResponsavel = { id: string; nome: string; celular: string; email: string | null; como_conheceu: string | null } | null
 
-export default function NovoAlunoForm() {
+export default function NovoAlunoForm({ leadResponsavel }: { leadResponsavel?: LeadResponsavel }) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -29,13 +30,19 @@ export default function NovoAlunoForm() {
   })
 
   const [responsavel, setResponsavel] = useState({
-    tem_responsavel: false,
-    nome: '', cpf: '', celular: '', email: '', parentesco: '',
+    tem_responsavel: !!leadResponsavel,
+    nome: leadResponsavel?.nome ?? '',
+    cpf: '',
+    celular: leadResponsavel?.celular ?? '',
+    email: leadResponsavel?.email ?? '',
+    parentesco: '',
     notificacao: 'notificacao_e_cobranca',
     nome2: '', cpf2: '', celular2: '', email2: '', parentesco2: '',
     tem_segundo: false,
     notificacao2: 'notificacao_e_cobranca',
   })
+  // ID do lead para marcar como convertido após salvar
+  const leadId = leadResponsavel?.id ?? null
 
   const [resp1Encontrado, setResp1Encontrado] = useState<RespEncontrado>(null)
   const [resp2Encontrado, setResp2Encontrado] = useState<RespEncontrado>(null)
@@ -161,6 +168,12 @@ export default function NovoAlunoForm() {
     }).select('id').single()
 
     if (error) { setErro(error.message); setSalvando(false); return }
+
+    // Marca lead como convertido se veio de um lead responsável
+    if (leadId) {
+      await supabase.from('leads').update({ status: 'convertido' }).eq('id', leadId)
+    }
+
     router.push(`/painel/alunos/${aluno.id}`)
   }
 
