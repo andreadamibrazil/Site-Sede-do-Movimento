@@ -309,7 +309,7 @@ export default function ChamadaClient({
       </div>
 
       {/* Professor faltou */}
-      <div className="mx-4 mt-4">
+      <div className="mx-4 mt-4 pb-36">
         <button
           onClick={() => setProfessorFaltou(!professsorFaltou)}
           className={`w-full py-3 rounded-xl text-sm font-medium border-2 transition-colors ${
