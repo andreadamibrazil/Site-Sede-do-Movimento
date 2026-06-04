@@ -6,6 +6,7 @@ const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
   process.env.GOOGLE_AI_KEY_2,
   process.env.GOOGLE_AI_KEY_3,
+  process.env.GOOGLE_AI_KEY_4,
 ].filter(Boolean) as string[]
 
 async function chamarGemini(prompt: string): Promise<string> {
