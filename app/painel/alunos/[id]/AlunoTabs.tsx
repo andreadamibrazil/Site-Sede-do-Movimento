@@ -233,7 +233,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
             )}
             {busca.length >= 2 && !selecionada && sugestoes.length === 0 && (
               <div className="text-xs text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2">
-                Nova família "<strong>{busca}</strong>" será criada
+                Nova família &ldquo;<strong>{busca}</strong>&rdquo; será criada
               </div>
             )}
             <div className="flex gap-2">
