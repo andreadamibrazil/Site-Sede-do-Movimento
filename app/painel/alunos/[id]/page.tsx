@@ -77,6 +77,7 @@ export default async function AlunoPage({
         <div className="flex items-center gap-2">
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
+          <ContratoBadge status={(aluno as any).contrato_status ?? 'sem_contrato'} />
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
             href={`/painel/alunos/${id}/matricula`}
@@ -134,6 +135,24 @@ function StatusFinBadge({ status }: { status: string }) {
   }
   return (
     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${map[status] ?? ''}`}>
+      {label[status] ?? status}
+    </span>
+  )
+}
+
+function ContratoBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    sem_contrato:           'bg-red-50 text-red-600 border border-red-200',
+    aguardando_assinatura:  'bg-yellow-50 text-yellow-700 border border-yellow-200',
+    assinado:               'bg-green-50 text-green-600 border border-green-200',
+  }
+  const label: Record<string, string> = {
+    sem_contrato:           '⚠ Sem contrato',
+    aguardando_assinatura:  '✉ Aguardando assinatura',
+    assinado:               '✓ Contrato assinado',
+  }
+  return (
+    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${map[status] ?? 'bg-gray-100 text-gray-500'}`}>
       {label[status] ?? status}
     </span>
   )
