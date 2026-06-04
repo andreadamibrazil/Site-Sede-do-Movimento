@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
   const {
     aulaId, presencas, profFaltou, atestado, substituto, concluir,
-    cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos,
+    cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos, atestadoUrl,
   } = await req.json()
   if (!aulaId) return NextResponse.json({ error: 'aulaId obrigatório' }, { status: 400 })
 
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       termos_aceitos: termosAceitos ?? false,
       termos_aceitos_em: termosAceitos ? new Date().toISOString() : null,
       registrado_por: user.id,
+      atestado_url: atestadoUrl || null,
     } as any, { onConflict: 'aula_id' })
   }
 

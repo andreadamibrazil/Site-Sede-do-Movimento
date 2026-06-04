@@ -61,6 +61,11 @@ export default function ChamadaClient({
   const [celularSubstituto, setCelularSubstituto] = useState('')
   const [motivoAusencia, setMotivoAusencia] = useState('')
   const [termosAceitos, setTermosAceitos] = useState(false)
+  const [atestadoFile, setAtestadoFile] = useState<File | null>(null)
+  const [atestadoUrl, setAtestadoUrl] = useState<string | null>(null)
+  const [atestadoDados, setAtestadoDados] = useState<Record<string, string | null> | null>(null)
+  const [atestadoErro, setAtestadoErro] = useState<string | null>(null)
+  const [uploadandoAtestado, setUploadandoAtestado] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [salvoLocalmente, setSalvoLocalmente] = useState(false)
   const [online, setOnline] = useState(true)
@@ -122,6 +127,23 @@ export default function ChamadaClient({
     })
   }
 
+  async function uploadAtestado(file: File): Promise<string | null> {
+    setUploadandoAtestado(true)
+    setAtestadoErro(null)
+    const form = new FormData()
+    form.append('file', file)
+    form.append('aulaId', aulaId)
+    const res = await fetch('/api/chamada/upload-atestado', { method: 'POST', body: form })
+    setUploadandoAtestado(false)
+    const data = await res.json()
+    if (!res.ok) {
+      setAtestadoErro(data.error ?? 'Erro ao enviar atestado')
+      return null
+    }
+    if (data.dados) setAtestadoDados(data.dados)
+    return data.url as string
+  }
+
   async function salvarNoBanco(
     regs: Record<string, RegistroLocal>,
     profFaltou: boolean,
@@ -132,8 +154,16 @@ export default function ChamadaClient({
     celularSub = celularSubstituto,
     motivo = motivoAusencia,
     termos = termosAceitos,
+    urlAtestado = atestadoUrl,
   ) {
     if (!silencioso) setSalvando(true)
+
+    // Faz upload do atestado se houver arquivo novo ainda não enviado
+    let urlFinal = urlAtestado
+    if (atestado && atestadoFile && !urlFinal) {
+      urlFinal = await uploadAtestado(atestadoFile)
+      if (urlFinal) setAtestadoUrl(urlFinal)
+    }
 
     const presencas = profFaltou
       ? alunos.map(a => ({ aula_id: aulaId, aluno_id: a.id, status: 'presente' as const }))
@@ -144,14 +174,13 @@ export default function ChamadaClient({
           observacao: regs[a.id]?.observacao || null,
         }))
 
-    // Usa API route server-side para garantir funcionamento para admin, secretaria e professor
     await fetch('/api/chamada/salvar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         aulaId, presencas, profFaltou, atestado, substituto,
         cpfSubstituto: cpfSub, celularSubstituto: celularSub,
-        motivoAusencia: motivo, termosAceitos: termos,
+        motivoAusencia: motivo, termosAceitos: termos, atestadoUrl: urlFinal,
       }),
     })
 
@@ -336,10 +365,59 @@ export default function ChamadaClient({
                 rows={2}
                 className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
               />
-              <label className="flex items-center gap-2 text-sm text-red-700">
-                <input type="checkbox" checked={temAtestado} onChange={e => setTemAtestado(e.target.checked)} className="rounded" />
-                Possui atestado médico
-              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm text-red-700">
+                  <input type="checkbox" checked={temAtestado} onChange={e => { setTemAtestado(e.target.checked); if (!e.target.checked) { setAtestadoFile(null); setAtestadoUrl(null) } }} className="rounded" />
+                  Possui atestado médico
+                </label>
+                {temAtestado && (
+                  <div className="space-y-2">
+                    <label className="block">
+                      <span className="text-xs text-red-600 font-medium">Anexar atestado (foto ou PDF)</span>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        capture="environment"
+                        onChange={e => {
+                          const f = e.target.files?.[0] ?? null
+                          setAtestadoFile(f)
+                          setAtestadoUrl(null)
+                          setAtestadoDados(null)
+                          setAtestadoErro(null)
+                        }}
+                        className="mt-1 block w-full text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-red-100 file:text-red-700 hover:file:bg-red-200 cursor-pointer"
+                      />
+                    </label>
+
+                    {uploadandoAtestado && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                        <p className="text-xs text-blue-600">🔍 Verificando legibilidade com IA...</p>
+                      </div>
+                    )}
+
+                    {atestadoErro && (
+                      <div className="bg-red-50 border border-red-300 rounded-lg px-3 py-2 space-y-1">
+                        <p className="text-xs text-red-700 font-medium">⚠ {atestadoErro}</p>
+                        <p className="text-xs text-red-500">Tire uma nova foto com boa iluminação e foco.</p>
+                      </div>
+                    )}
+
+                    {atestadoUrl && atestadoDados && (
+                      <div className="bg-green-50 border border-green-300 rounded-lg px-3 py-2 space-y-1">
+                        <p className="text-xs text-green-700 font-medium">✓ Atestado verificado pela IA</p>
+                        {atestadoDados.nome_paciente && <p className="text-xs text-gray-600">Paciente: {atestadoDados.nome_paciente}</p>}
+                        {atestadoDados.data_atestado && <p className="text-xs text-gray-600">Data: {atestadoDados.data_atestado}</p>}
+                        {atestadoDados.dias_afastamento && <p className="text-xs text-gray-600">Afastamento: {atestadoDados.dias_afastamento}</p>}
+                        {atestadoDados.nome_medico && <p className="text-xs text-gray-600">Médico: {atestadoDados.nome_medico}{atestadoDados.crm ? ` · ${atestadoDados.crm}` : ''}</p>}
+                      </div>
+                    )}
+
+                    {atestadoFile && !atestadoUrl && !uploadandoAtestado && !atestadoErro && (
+                      <p className="text-xs text-gray-500">📎 {atestadoFile.name} — será verificado ao salvar</p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -537,11 +615,17 @@ export default function ChamadaClient({
           </button>
           <button
             onClick={concluir}
-            disabled={salvando || (professsorFaltou && !termosAceitos)}
-            title={professsorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' : undefined}
+            disabled={salvando || uploadandoAtestado || (professsorFaltou && !termosAceitos) || (temAtestado && !!atestadoErro)}
+            title={
+              professsorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' :
+              temAtestado && atestadoErro ? 'Corrija o atestado antes de concluir' : undefined
+            }
             className="flex-1 bg-indigo-600 text-white text-sm font-medium py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {professsorFaltou && !termosAceitos ? '⚠ Aceite os termos' : 'Concluir chamada ✓'}
+            {uploadandoAtestado ? 'Verificando atestado...' :
+             professsorFaltou && !termosAceitos ? '⚠ Aceite os termos' :
+             temAtestado && atestadoErro ? '⚠ Atestado inválido' :
+             'Concluir chamada ✓'}
           </button>
         </div>
         <p className="text-center text-xs text-gray-400 mt-2">
