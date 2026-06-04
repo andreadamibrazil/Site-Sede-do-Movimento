@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import PlanoAula from './PlanoAula'
 
 const DIAS_LABEL: Record<string, string> = {
   segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta',
@@ -126,6 +127,16 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* Plano de aula */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Plano de aula</h2>
+        <PlanoAula
+          turmaId={id}
+          dataInicio={(turma as any).data_inicio}
+          dataFim={(turma as any).data_fim}
+        />
       </div>
     </div>
   )
