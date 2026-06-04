@@ -6,6 +6,7 @@ import BotaoExperimental from './BotaoExperimental'
 import BotaoConverter from './BotaoConverter'
 import BotaoNovoLead from './BotaoNovoLead'
 import PainelExperimentais from './PainelExperimentais'
+import BotaoReabrirLead from './BotaoReabrirLead'
 
 function parseCRM(obs: string | null): { temperatura?: string; oportunidade?: string; resumo?: string } {
   if (!obs) return {}
@@ -183,11 +184,13 @@ export default async function LeadsPage({
                         <div className="flex items-center gap-2">
                           {isExperimental && <span className="text-sm" title="Experimental agendada">🎭</span>}
                           <p className="font-medium text-gray-900">{lead.nome}</p>
-                          {lead.status !== 'convertido' && (
+                          {lead.status !== 'convertido' ? (
                             <>
                               <BotaoExperimental leadId={lead.id} leadNome={lead.nome} />
                               <BotaoConverter leadId={lead.id} leadNome={lead.nome} />
                             </>
+                          ) : (
+                            <BotaoReabrirLead leadId={lead.id} />
                           )}
                         </div>
                         {lead.email && <p className="text-xs text-gray-400 truncate max-w-[200px]">{lead.email}</p>}
