@@ -11,8 +11,9 @@ export default function SiteShell({ children, settings }: { children: React.Reac
   const isLegal = pathname === "/politica-de-privacidade" || pathname === "/termos-de-uso";
   const isPauta = pathname?.startsWith("/pauta");
   const isPainel = pathname?.startsWith("/painel");
+  const isProfessor = pathname?.startsWith("/professor");
 
-  if (isStudio || isLegal || isPauta || isPainel) {
+  if (isStudio || isLegal || isPauta || isPainel || isProfessor) {
     return <>{children}</>;
   }
 

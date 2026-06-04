@@ -278,7 +278,7 @@ export default function ChamadaClient({
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between mb-1">
-          <a href="/painel" className="text-gray-400 text-sm">← Painel</a>
+          <a href={perfilUsuario === 'professor' ? '/professor' : '/painel'} className="text-gray-400 text-sm">← {perfilUsuario === 'professor' ? 'Início' : 'Painel'}</a>
           <div className="flex items-center gap-2">
             {!online && (
               <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
