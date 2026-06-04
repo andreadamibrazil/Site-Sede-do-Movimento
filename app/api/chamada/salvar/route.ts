@@ -9,7 +9,10 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })
 
-  const { aulaId, presencas, profFaltou, atestado, substituto, concluir } = await req.json()
+  const {
+    aulaId, presencas, profFaltou, atestado, substituto, concluir,
+    cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos,
+  } = await req.json()
   if (!aulaId) return NextResponse.json({ error: 'aulaId obrigatório' }, { status: 400 })
 
   const sb = createServiceClient()
@@ -61,8 +64,14 @@ export async function POST(req: NextRequest) {
       professor_ausente_id: aula.professor_id,
       professor_substituto_id: null,
       tem_atestado: atestado ?? false,
-      motivo: substituto ? `Substituto: ${substituto}` : null,
-    }, { onConflict: 'aula_id' })
+      motivo: motivoAusencia || (substituto ? `Substituto: ${substituto}` : null),
+      substituto_nome: substituto || null,
+      substituto_cpf: cpfSubstituto || null,
+      substituto_celular: celularSubstituto || null,
+      termos_aceitos: termosAceitos ?? false,
+      termos_aceitos_em: termosAceitos ? new Date().toISOString() : null,
+      registrado_por: user.id,
+    } as any, { onConflict: 'aula_id' })
   }
 
   // Conclui a aula se pedido

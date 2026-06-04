@@ -57,6 +57,10 @@ export default function ChamadaClient({
   const [professsorFaltou, setProfessorFaltou] = useState(false)
   const [temAtestado, setTemAtestado] = useState(false)
   const [nomeSubstituto, setNomeSubstituto] = useState('')
+  const [cpfSubstituto, setCpfSubstituto] = useState('')
+  const [celularSubstituto, setCelularSubstituto] = useState('')
+  const [motivoAusencia, setMotivoAusencia] = useState('')
+  const [termosAceitos, setTermosAceitos] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [salvoLocalmente, setSalvoLocalmente] = useState(false)
   const [online, setOnline] = useState(true)
@@ -123,7 +127,11 @@ export default function ChamadaClient({
     profFaltou: boolean,
     atestado: boolean,
     substituto: string,
-    silencioso = false
+    silencioso = false,
+    cpfSub = cpfSubstituto,
+    celularSub = celularSubstituto,
+    motivo = motivoAusencia,
+    termos = termosAceitos,
   ) {
     if (!silencioso) setSalvando(true)
 
@@ -140,7 +148,11 @@ export default function ChamadaClient({
     await fetch('/api/chamada/salvar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aulaId, presencas, profFaltou, atestado, substituto }),
+      body: JSON.stringify({
+        aulaId, presencas, profFaltou, atestado, substituto,
+        cpfSubstituto: cpfSub, celularSubstituto: celularSub,
+        motivoAusencia: motivo, termosAceitos: termos,
+      }),
     })
 
     if (!silencioso) setSalvando(false)
@@ -310,20 +322,70 @@ export default function ChamadaClient({
         </button>
 
         {professsorFaltou && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-2 space-y-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-2 space-y-4">
             <p className="text-xs text-red-600 font-medium">
-              Todos os alunos serão marcados como presentes. Só o professor não recebe.
+              Todos os alunos serão marcados como presentes. O professor cadastrado nesta turma será remunerado normalmente pela escola.
             </p>
-            <label className="flex items-center gap-2 text-sm text-red-700">
-              <input type="checkbox" checked={temAtestado} onChange={e => setTemAtestado(e.target.checked)} className="rounded" />
-              Tem atestado médico
-            </label>
-            <input
-              value={nomeSubstituto}
-              onChange={e => setNomeSubstituto(e.target.value)}
-              placeholder="Nome do substituto (se houver)"
-              className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-            />
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Motivo da ausência</p>
+              <textarea
+                value={motivoAusencia}
+                onChange={e => setMotivoAusencia(e.target.value)}
+                placeholder="Descreva o motivo (ex: problema de saúde, emergência familiar...)"
+                rows={2}
+                className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none resize-none"
+              />
+              <label className="flex items-center gap-2 text-sm text-red-700">
+                <input type="checkbox" checked={temAtestado} onChange={e => setTemAtestado(e.target.checked)} className="rounded" />
+                Possui atestado médico
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Professor substituto (se houver)</p>
+              <input
+                value={nomeSubstituto}
+                onChange={e => setNomeSubstituto(e.target.value)}
+                placeholder="Nome completo do substituto"
+                className="w-full border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  value={cpfSubstituto}
+                  onChange={e => setCpfSubstituto(e.target.value)}
+                  placeholder="CPF"
+                  className="border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                />
+                <input
+                  value={celularSubstituto}
+                  onChange={e => setCelularSubstituto(e.target.value)}
+                  placeholder="Celular"
+                  className="border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {nomeSubstituto.trim() && (
+              <div className="bg-white border border-red-300 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-700">📋 Termos de substituição</p>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Ao confirmar, declaro que: <strong>{nomeSubstituto}</strong> ministrará esta aula como substituto(a).
+                  A Sede do Movimento se compromete a remunerar o professor <strong>cadastrado</strong> desta turma por esta aula.
+                  Qualquer negociação de repasse entre professores é de responsabilidade exclusiva das partes envolvidas,
+                  sendo a escola eximida de qualquer responsabilidade por acordos financeiros entre professores.
+                </p>
+                <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={termosAceitos}
+                    onChange={e => setTermosAceitos(e.target.checked)}
+                    className="rounded mt-0.5 flex-shrink-0"
+                  />
+                  <span>Li e concordo com os termos acima. Confirmo os dados do substituto.</span>
+                </label>
+              </div>
+            )}
           </div>
         )}
       </div>
