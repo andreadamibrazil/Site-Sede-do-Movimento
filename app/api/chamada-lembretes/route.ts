@@ -51,7 +51,7 @@ async function whatsapp(celular: string, mensagem: string) {
   try {
     const res = await fetch(`https://backend.botconversa.com.br/api/v1/subscriber/${num}/send-message/`, {
       method: 'POST',
-      headers: { 'API-KEY': process.env.BOTCONVERSA_API_KEY!, 'Content-Type': 'application/json' },
+      headers: { 'API-KEY': process.env.BOTCONVERSA_API_KEY ?? '', 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'text', message: mensagem }),
     })
     return res.ok
