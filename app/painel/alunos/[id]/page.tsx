@@ -19,7 +19,8 @@ export default async function AlunoPage({
     .select(`
       *,
       responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(*),
-      responsavel_secundario:responsaveis!alunos_responsavel_secundario_id_fkey(*)
+      responsavel_secundario:responsaveis!alunos_responsavel_secundario_id_fkey(*),
+      familias(id, nome)
     `)
     .eq('id', id)
     .single()

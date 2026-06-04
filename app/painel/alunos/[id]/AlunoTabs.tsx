@@ -124,6 +124,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
   const [salvando, setSalvando] = useState(false)
   const [vinculado, setVinculado] = useState(!!familiaId)
   const [nomeAtual, setNomeAtual] = useState(familiaNome)
+  const [familiaIdAtual, setFamiliaIdAtual] = useState(familiaId)
   const supabase = createClient()
 
   async function criarEVincular() {
@@ -148,6 +149,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
     setSalvando(false)
     setVinculado(true)
     setNomeAtual(nomeFamilia.trim())
+    setFamiliaIdAtual(familia.id)
     setModal(false)
   }
 
@@ -158,7 +160,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
           <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Família</p>
           <p className="text-sm font-medium text-gray-900 mt-0.5">👨‍👧 {nomeAtual}</p>
         </div>
-        <a href={`/painel/alunos?familia=${familiaId}`} className="text-xs text-purple-600 hover:text-purple-700">Ver membros →</a>
+        <a href={`/painel/alunos?familia=${familiaIdAtual}`} className="text-xs text-purple-600 hover:text-purple-700">Ver membros →</a>
       </div>
     )
   }
