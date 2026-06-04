@@ -10,6 +10,7 @@ const ORIGENS = [
 ]
 
 type Etapa = 'dados' | 'responsavel' | 'saude'
+type RespEncontrado = { id: string; nome: string; celular: string } | null
 
 export default function NovoAlunoForm() {
   const supabase = createClient()
@@ -36,43 +37,107 @@ export default function NovoAlunoForm() {
     notificacao2: 'notificacao_e_cobranca',
   })
 
+  const [resp1Encontrado, setResp1Encontrado] = useState<RespEncontrado>(null)
+  const [resp2Encontrado, setResp2Encontrado] = useState<RespEncontrado>(null)
+  const [buscando1, setBuscando1] = useState(false)
+  const [buscando2, setBuscando2] = useState(false)
+
   const [saude, setSaude] = useState({ info_saude: '', observacoes: '' })
 
   function setD(campo: string, v: string) { setDados(f => ({ ...f, [campo]: v })) }
   function setR(campo: string, v: any) { setResponsavel(f => ({ ...f, [campo]: v })) }
 
+  async function buscarResponsavelPorCPF(cpf: string, num: 1 | 2) {
+    const cpfLimpo = cpf.replace(/\D/g, '')
+    if (cpfLimpo.length < 11) return
+    if (num === 1) setBuscando1(true); else setBuscando2(true)
+
+    const { data } = await supabase
+      .from('responsaveis')
+      .select('id, nome, celular')
+      .eq('cpf', cpfLimpo)
+      .maybeSingle()
+
+    if (num === 1) {
+      setBuscando1(false)
+      if (data) {
+        setResp1Encontrado(data)
+        setR('nome', data.nome)
+        setR('celular', data.celular ?? '')
+      } else {
+        setResp1Encontrado(null)
+      }
+    } else {
+      setBuscando2(false)
+      if (data) {
+        setResp2Encontrado(data)
+        setR('nome2', data.nome)
+        setR('celular2', data.celular ?? '')
+      } else {
+        setResp2Encontrado(null)
+      }
+    }
+  }
+
+  async function obterOuCriarResponsavel(
+    cpf: string, nome: string, celular: string, email: string,
+    parentesco: string, notificacao: string, encontrado: RespEncontrado
+  ): Promise<string | null> {
+    if (!nome.trim()) return null
+
+    // Reutiliza se já encontrou pelo CPF
+    if (encontrado) return encontrado.id
+
+    // Tenta buscar pelo CPF antes de criar (fallback)
+    const cpfLimpo = cpf.replace(/\D/g, '')
+    if (cpfLimpo.length === 11) {
+      const { data: existente } = await supabase
+        .from('responsaveis')
+        .select('id')
+        .eq('cpf', cpfLimpo)
+        .maybeSingle()
+      if (existente) return existente.id
+    }
+
+    // Cria novo
+    const { data } = await supabase
+      .from('responsaveis')
+      .insert({
+        nome: nome.trim(),
+        cpf: cpfLimpo.length === 11 ? cpfLimpo : null,
+        celular: celular || 'não informado',
+        email: email || null,
+        parentesco: parentesco || null,
+        notificacao: notificacao as any,
+      })
+      .select('id')
+      .single()
+
+    return data?.id ?? null
+  }
+
   async function salvar() {
     if (!dados.nome.trim()) { setErro('Nome é obrigatório.'); return }
     setSalvando(true); setErro('')
 
-    // Cria responsável principal se menor
     let resp1Id = null, resp2Id = null
-    if (responsavel.tem_responsavel && responsavel.nome) {
-      const r1 = await supabase.from('responsaveis').insert({
-        nome: responsavel.nome,
-        cpf: responsavel.cpf || null,
-        celular: responsavel.celular || 'não informado',
-        email: responsavel.email || null,
-        parentesco: responsavel.parentesco || null,
-        notificacao: responsavel.notificacao as any,
-      }).select('id').single()
-      if (r1.data) resp1Id = r1.data.id
 
-      // Segundo responsável
+    if (responsavel.tem_responsavel && responsavel.nome) {
+      resp1Id = await obterOuCriarResponsavel(
+        responsavel.cpf, responsavel.nome, responsavel.celular,
+        responsavel.email, responsavel.parentesco, responsavel.notificacao,
+        resp1Encontrado
+      )
+
       if (responsavel.tem_segundo && responsavel.nome2) {
-        const r2 = await supabase.from('responsaveis').insert({
-          nome: responsavel.nome2,
-          cpf: responsavel.cpf2 || null,
-          celular: responsavel.celular2 || 'não informado',
-          email: responsavel.email2 || null,
-          parentesco: responsavel.parentesco2 || null,
-          notificacao: responsavel.notificacao2 as any,
-        }).select('id').single()
-        if (r2.data) resp2Id = r2.data.id
+        resp2Id = await obterOuCriarResponsavel(
+          responsavel.cpf2, responsavel.nome2, responsavel.celular2,
+          responsavel.email2, responsavel.parentesco2, responsavel.notificacao2,
+          resp2Encontrado
+        )
       }
     }
 
-    // Cria aluno
     const { data: aluno, error } = await supabase.from('alunos').insert({
       nome: dados.nome.trim(),
       nome_social: dados.nome_social || null,
@@ -185,14 +250,14 @@ export default function NovoAlunoForm() {
                 {ORIGENS.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
-            {dados.origem === 'Indicação de aluno' || dados.origem === 'Indicação de familiar' ? (
+            {(dados.origem === 'Indicação de aluno' || dados.origem === 'Indicação de familiar') && (
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Nome de quem indicou</label>
                 <input value={dados.como_conheceu} onChange={e => setD('como_conheceu', e.target.value)}
                   placeholder="Nome do aluno ou familiar que indicou"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
-            ) : null}
+            )}
           </div>
           <div className="flex justify-end">
             <button onClick={() => setEtapa('responsavel')} disabled={!dados.nome}
@@ -219,20 +284,54 @@ export default function NovoAlunoForm() {
             {responsavel.tem_responsavel && (
               <div className="space-y-4">
                 <p className="text-xs text-gray-400">Responsável principal</p>
+
+                {/* CPF com busca automática */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">CPF do responsável</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={responsavel.cpf}
+                      onChange={e => { setR('cpf', e.target.value); setResp1Encontrado(null) }}
+                      onBlur={() => buscarResponsavelPorCPF(responsavel.cpf, 1)}
+                      placeholder="000.000.000-00"
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => buscarResponsavelPorCPF(responsavel.cpf, 1)}
+                      disabled={buscando1}
+                      className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 disabled:opacity-40"
+                    >
+                      {buscando1 ? '...' : 'Buscar'}
+                    </button>
+                  </div>
+                  {resp1Encontrado && (
+                    <div className="mt-1.5 flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                      <span>✓</span>
+                      <span>Responsável encontrado: <strong>{resp1Encontrado.nome}</strong> — será reutilizado automaticamente</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     ['nome', 'Nome completo *', 'text', 'Nome do responsável'],
                     ['parentesco', 'Parentesco', 'text', 'mãe, pai, avó...'],
                     ['celular', 'Celular *', 'text', '(21) 99999-9999'],
                     ['email', 'Email', 'email', 'email@exemplo.com'],
-                    ['cpf', 'CPF', 'text', '000.000.000-00'],
                   ].map(([campo, label, type, ph]) => (
                     <div key={campo as string} className={campo === 'nome' ? 'col-span-2' : ''}>
                       <label className="block text-xs font-medium text-gray-600 mb-1">{label as string}</label>
-                      <input type={type as string} value={(responsavel as any)[campo as string]}
+                      <input
+                        type={type as string}
+                        value={(responsavel as any)[campo as string]}
                         onChange={e => setR(campo as string, e.target.value)}
                         placeholder={ph as string}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                        readOnly={!!resp1Encontrado && (campo === 'nome' || campo === 'celular')}
+                        className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                          resp1Encontrado && (campo === 'nome' || campo === 'celular') ? 'bg-gray-50 text-gray-500' : ''
+                        }`}
+                      />
                     </div>
                   ))}
                   <div>
@@ -257,6 +356,34 @@ export default function NovoAlunoForm() {
                 {responsavel.tem_segundo && (
                   <div className="border-t border-gray-100 pt-4 space-y-3">
                     <p className="text-xs text-gray-400">Responsável secundário</p>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">CPF do 2º responsável</label>
+                      <div className="flex gap-2">
+                        <input
+                          value={responsavel.cpf2}
+                          onChange={e => { setR('cpf2', e.target.value); setResp2Encontrado(null) }}
+                          onBlur={() => buscarResponsavelPorCPF(responsavel.cpf2, 2)}
+                          placeholder="000.000.000-00"
+                          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => buscarResponsavelPorCPF(responsavel.cpf2, 2)}
+                          disabled={buscando2}
+                          className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 disabled:opacity-40"
+                        >
+                          {buscando2 ? '...' : 'Buscar'}
+                        </button>
+                      </div>
+                      {resp2Encontrado && (
+                        <div className="mt-1.5 flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                          <span>✓</span>
+                          <span>Responsável encontrado: <strong>{resp2Encontrado.nome}</strong> — será reutilizado</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         ['nome2', 'Nome completo', 'text', 'Nome'],
@@ -266,10 +393,16 @@ export default function NovoAlunoForm() {
                       ].map(([campo, label, type, ph]) => (
                         <div key={campo as string}>
                           <label className="block text-xs font-medium text-gray-600 mb-1">{label as string}</label>
-                          <input type={type as string} value={(responsavel as any)[campo as string]}
+                          <input
+                            type={type as string}
+                            value={(responsavel as any)[campo as string]}
                             onChange={e => setR(campo as string, e.target.value)}
                             placeholder={ph as string}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            readOnly={!!resp2Encontrado && (campo === 'nome2' || campo === 'celular2')}
+                            className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                              resp2Encontrado && (campo === 'nome2' || campo === 'celular2') ? 'bg-gray-50 text-gray-500' : ''
+                            }`}
+                          />
                         </div>
                       ))}
                       <div>
@@ -304,9 +437,7 @@ export default function NovoAlunoForm() {
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700">Saúde e informações adicionais</h2>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Saúde / acessibilidade
-              </label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Saúde / acessibilidade</label>
               <textarea value={saude.info_saude}
                 onChange={e => setSaude(f => ({ ...f, info_saude: e.target.value }))}
                 rows={3} placeholder="Alergias, condições médicas, necessidades especiais, limitações físicas..."
@@ -329,7 +460,16 @@ export default function NovoAlunoForm() {
               {dados.celular || 'sem celular'} · {dados.origem || 'origem não informada'}
             </p>
             {responsavel.tem_responsavel && responsavel.nome && (
-              <p className="text-xs opacity-70 mt-0.5">Resp.: {responsavel.nome} ({responsavel.parentesco})</p>
+              <p className="text-xs opacity-70 mt-0.5">
+                Resp.: {responsavel.nome} ({responsavel.parentesco})
+                {resp1Encontrado ? ' — já cadastrado ✓' : ' — será criado'}
+              </p>
+            )}
+            {responsavel.tem_segundo && responsavel.nome2 && (
+              <p className="text-xs opacity-70 mt-0.5">
+                2º Resp.: {responsavel.nome2}
+                {resp2Encontrado ? ' — já cadastrado ✓' : ' — será criado'}
+              </p>
             )}
           </div>
 
