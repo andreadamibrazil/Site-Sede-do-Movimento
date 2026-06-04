@@ -1,7 +1,10 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })
   const turmaId = req.nextUrl.searchParams.get('turma_id')
   if (!turmaId) return NextResponse.json([], { status: 200 })
 
