@@ -73,7 +73,7 @@ export default async function ProfessorPage() {
           <p className="text-xs opacity-75">Portal do Professor</p>
           <h1 className="text-base font-semibold">{professor.nome}</h1>
         </div>
-        <a href="/api/painel/logout" className="text-xs opacity-75 hover:opacity-100 px-2 py-1 border border-white/30 rounded-lg">Sair</a>
+        <a href="/api/professor/signout" className="text-xs opacity-75 hover:opacity-100 px-2 py-1 border border-white/30 rounded-lg">Sair</a>
       </div>
 
       <div className="px-4 py-5 space-y-6 max-w-lg mx-auto">
