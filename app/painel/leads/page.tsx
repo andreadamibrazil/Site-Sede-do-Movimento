@@ -4,6 +4,7 @@ import FiltroLeads from './FiltroLeads'
 import BuscaLead from './BuscaLead'
 import BotaoExperimental from './BotaoExperimental'
 import BotaoConverter from './BotaoConverter'
+import BotaoNovoLead from './BotaoNovoLead'
 
 function parseCRM(obs: string | null): { temperatura?: string; oportunidade?: string; resumo?: string } {
   if (!obs) return {}
@@ -103,9 +104,12 @@ export default async function LeadsPage({
           <h1 className="text-xl font-semibold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-500 mt-0.5">Pipeline de captação — do primeiro contato à matrícula</p>
         </div>
-        <Suspense>
-          <BuscaLead />
-        </Suspense>
+        <div className="flex items-center gap-2">
+          <Suspense>
+            <BuscaLead />
+          </Suspense>
+          <BotaoNovoLead />
+        </div>
       </div>
 
       {/* Stats */}
