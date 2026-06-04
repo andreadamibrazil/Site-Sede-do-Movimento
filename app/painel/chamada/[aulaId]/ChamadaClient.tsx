@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 type StatusPresenca = 'presente' | 'falta' | 'falta_justificada' | 'reposicao' | 'experimental' | 'professor_faltou'
 type StatusExperimental = 'agendado' | 'presente' | 'nao_compareceu'
@@ -46,8 +45,6 @@ export default function ChamadaClient({
   dentroTolerancia?: boolean
   toleranciaMinutos?: number
 }) {
-  const supabase = createClient()
-
   const [registros, setRegistros] = useState<Record<string, RegistroLocal>>(() => {
     const inicial: Record<string, RegistroLocal> = {}
     for (const [id, p] of Object.entries(presencasIniciais)) {
@@ -139,17 +136,12 @@ export default function ChamadaClient({
           observacao: regs[a.id]?.observacao || null,
         }))
 
-    await supabase.from('presencas').upsert(presencas, { onConflict: 'aula_id,aluno_id' })
-
-    if (profFaltou) {
-      await supabase.from('substituicoes').upsert({
-        aula_id: aulaId,
-        professor_ausente_id: aula.professor_id,
-        professor_substituto_id: null,
-        tem_atestado: atestado,
-        motivo: substituto ? `Substituto: ${substituto}` : null,
-      }, { onConflict: 'aula_id' })
-    }
+    // Usa API route server-side para garantir funcionamento para admin, secretaria e professor
+    await fetch('/api/chamada/salvar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aulaId, presencas, profFaltou, atestado, substituto }),
+    })
 
     if (!silencioso) setSalvando(false)
     setSalvoLocalmente(true)
@@ -168,7 +160,11 @@ export default function ChamadaClient({
 
   async function concluir() {
     await salvar()
-    await supabase.from('aulas').update({ status: 'concluida', chamada_concluida_em: new Date().toISOString() }).eq('id', aulaId)
+    await fetch('/api/chamada/salvar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aulaId, presencas: [], profFaltou: false, concluir: true }),
+    })
     localStorage.removeItem(STORAGE_KEY(aulaId))
     localStorage.removeItem(`pendente_${aulaId}`)
     setConcluida(true)
