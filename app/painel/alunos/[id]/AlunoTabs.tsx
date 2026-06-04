@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
+import { PDFDocument } from 'pdf-lib'
 
 const ABAS = [
   { id: 'dados',       label: 'Dados pessoais' },
@@ -434,15 +435,28 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
     setEnviando(true)
     setErro('')
 
-    // Comprime imagens acima de 1MB antes de enviar
+    // Comprime antes de enviar
     let fileParaEnviar: File = file
     const ehImagem = file.type.startsWith('image/')
+    const ehPDF = file.type === 'application/pdf'
+
     if (ehImagem && file.size > 1024 * 1024) {
       fileParaEnviar = await imageCompression(file, {
         maxSizeMB: 0.8,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       })
+    } else if (ehPDF && file.size > 512 * 1024) {
+      try {
+        const bytes = await file.arrayBuffer()
+        const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+        const compressed = await pdfDoc.save({ useObjectStreams: true, addDefaultPage: false })
+        if (compressed.byteLength < file.size) {
+          fileParaEnviar = new File([compressed.buffer as ArrayBuffer], file.name, { type: 'application/pdf' })
+        }
+      } catch (_) {
+        // Se falhar compressão, usa o original
+      }
     }
 
     const ext = file.name.split('.').pop()
