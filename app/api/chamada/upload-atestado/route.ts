@@ -118,7 +118,7 @@ Regras:
 - Preencha só campos que consiga ler com certeza; coloque null nos demais`
 
   for (const key of keys) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
     try {
       const res = await fetch(url, {
         method: 'POST',

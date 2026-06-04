@@ -31,7 +31,7 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
   for (const key of GEMINI_KEYS) {
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
