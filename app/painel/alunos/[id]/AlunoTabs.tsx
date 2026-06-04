@@ -120,37 +120,58 @@ function AbaDados({ aluno }: { aluno: any }) {
 
 function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string; familiaId: string | null; familiaNome: string | null }) {
   const [modal, setModal] = useState(false)
-  const [nomeFamilia, setNomeFamilia] = useState(familiaNome ?? '')
+  const [busca, setBusca] = useState('')
+  const [sugestoes, setSugestoes] = useState<{ id: string; nome: string }[]>([])
+  const [selecionada, setSelecionada] = useState<{ id: string; nome: string } | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [vinculado, setVinculado] = useState(!!familiaId)
   const [nomeAtual, setNomeAtual] = useState(familiaNome)
   const [familiaIdAtual, setFamiliaIdAtual] = useState(familiaId)
   const supabase = createClient()
 
-  async function criarEVincular() {
-    if (!nomeFamilia.trim()) return
-    setSalvando(true)
-    // Cria família
-    const { data: familiaRaw } = await supabase
+  async function pesquisar(termo: string) {
+    setBusca(termo)
+    setSelecionada(null)
+    if (termo.length < 2) { setSugestoes([]); return }
+    const { data } = await supabase
       .from('familias' as any)
-      .insert({ nome: nomeFamilia.trim() })
-      .select('id')
-      .single()
-    const familia = familiaRaw as { id: string } | null
-    if (!familia) { setSalvando(false); return }
-    // Vincula aluno
-    await (supabase.from('alunos') as any).update({ familia_id: familia.id }).eq('id', alunoId)
-    // Cria membro
-    await supabase.from('familia_membros' as any).insert({
-      familia_id: familia.id,
-      aluno_id: alunoId,
-      papeis: ['aluno'],
-    })
+      .select('id, nome')
+      .ilike('nome', `%${termo}%`)
+      .limit(5)
+    setSugestoes((data as any[]) ?? [])
+  }
+
+  async function vincular(familiaAlvo: { id: string; nome: string } | null, nomeNovo?: string) {
+    setSalvando(true)
+    let fId: string
+    let fNome: string
+
+    if (familiaAlvo) {
+      // Usa família existente
+      fId = familiaAlvo.id
+      fNome = familiaAlvo.nome
+    } else {
+      // Cria nova família
+      const nome = (nomeNovo ?? busca).trim()
+      if (!nome) { setSalvando(false); return }
+      const { data: raw } = await supabase.from('familias' as any).insert({ nome }).select('id').single()
+      const criada = raw as { id: string } | null
+      if (!criada) { setSalvando(false); return }
+      fId = criada.id
+      fNome = nome
+    }
+
+    await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
+    await supabase.from('familia_membros' as any).insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
+
     setSalvando(false)
     setVinculado(true)
-    setNomeAtual(nomeFamilia.trim())
-    setFamiliaIdAtual(familia.id)
+    setNomeAtual(fNome)
+    setFamiliaIdAtual(fId)
     setModal(false)
+    setBusca('')
+    setSugestoes([])
+    setSelecionada(null)
   }
 
   if (vinculado) {
@@ -178,20 +199,56 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <h2 className="text-base font-semibold text-gray-900">Vincular família</h2>
-            <p className="text-xs text-gray-500">Crie uma família para agrupar responsáveis e alunos que compartilham plano.</p>
-            <div>
+            <p className="text-xs text-gray-500">Digite o nome para buscar uma família existente ou criar uma nova.</p>
+            <div className="relative">
               <label className="block text-xs font-medium text-gray-600 mb-1">Nome da família</label>
               <input
-                value={nomeFamilia}
-                onChange={e => setNomeFamilia(e.target.value)}
+                value={busca}
+                onChange={e => pesquisar(e.target.value)}
                 placeholder="Ex: Família Silva"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                autoFocus
               />
+              {sugestoes.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                  {sugestoes.map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => { setSelecionada(f); setBusca(f.nome); setSugestoes([]) }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-purple-50 flex items-center gap-2"
+                    >
+                      <span className="text-purple-500">👨‍👧</span>
+                      <span>{f.nome}</span>
+                      <span className="ml-auto text-xs text-purple-400">usar esta</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {selecionada && (
+              <div className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                ✓ Família encontrada: <strong>{selecionada.nome}</strong> — será vinculada a este aluno
+              </div>
+            )}
+            {busca.length >= 2 && !selecionada && sugestoes.length === 0 && (
+              <div className="text-xs text-indigo-700 bg-indigo-50 rounded-lg px-3 py-2">
+                Nova família "<strong>{busca}</strong>" será criada
+              </div>
+            )}
             <div className="flex gap-2">
-              <button onClick={() => setModal(false)} className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50">Cancelar</button>
-              <button onClick={criarEVincular} disabled={salvando || !nomeFamilia.trim()} className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-40">
-                {salvando ? 'Salvando...' : 'Criar e vincular'}
+              <button
+                onClick={() => { setModal(false); setBusca(''); setSugestoes([]); setSelecionada(null) }}
+                className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => vincular(selecionada)}
+                disabled={salvando || busca.length < 2}
+                className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-40"
+              >
+                {salvando ? 'Salvando...' : selecionada ? 'Vincular' : 'Criar e vincular'}
               </button>
             </div>
           </div>
