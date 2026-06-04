@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_KEYS = [
-  'AIzaSyCb3KseTy1xboh1OYypLeI5MRZL0yugTdc',
+  process.env.GOOGLE_AI_KEY,
   process.env.GOOGLE_AI_API_KEY_2,
   process.env.GOOGLE_AI_API_KEY_3,
 ].filter(Boolean)
