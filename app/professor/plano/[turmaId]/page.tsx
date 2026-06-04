@@ -22,7 +22,7 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
   const { data: turma } = await sb
     .from('turmas')
-    .select('id, nome, data_inicio, data_fim')
+    .select('id, nome')
     .eq('id', turmaId)
     .eq('professor_id', professor.id)
     .single()
@@ -47,8 +47,6 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
         <PlanoAula
           turmaId={turmaId}
-          dataInicio={(turma as any).data_inicio}
-          dataFim={(turma as any).data_fim}
         />
       </div>
     </div>

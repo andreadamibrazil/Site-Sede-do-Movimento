@@ -51,7 +51,7 @@ export default async function ProfessorPage() {
   const { data: turmas } = await sb
     .from('turmas')
     .select(`
-      id, nome, nivel, capacidade, data_inicio, data_fim,
+      id, nome, nivel, capacidade,
       modalidades(nome),
       turma_horarios(dia_semana, hora_inicio, hora_fim),
       matricula_turmas(
@@ -191,12 +191,6 @@ export default async function ProfessorPage() {
                       <p className="text-xs text-gray-400">
                         {(turma.modalidades as any)?.nome}{turma.nivel ? ` · ${turma.nivel}` : ''}
                       </p>
-                      {(turma as any).data_inicio && (
-                        <p className="text-xs text-gray-300 mt-0.5">
-                          {new Date((turma as any).data_inicio + 'T12:00:00').toLocaleDateString('pt-BR', {month:'short',year:'numeric'})}
-                          {(turma as any).data_fim ? ` → ${new Date((turma as any).data_fim + 'T12:00:00').toLocaleDateString('pt-BR', {month:'short',year:'numeric'})}` : ''}
-                        </p>
-                      )}
                     </div>
                     <span className="text-xs text-gray-400">{alunosAtivos.length}/{turma.capacidade}</span>
                   </div>
