@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { requireAdmin } from '@/lib/api-auth'
+import { requireStaff } from '@/lib/api-auth'
 
 const PROMPT = `Você é um sistema especializado em extrair dados de documentos médicos brasileiros.
 
@@ -24,7 +24,7 @@ Se o documento não for um atestado médico (por exemplo, RG, CPF, autorização
 { "tipo_detectado": "nome do tipo de documento detectado" }`
 
 export async function POST(request: NextRequest) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   if (!guard.ok) return guard.response
   try {
     const formData = await request.formData()

@@ -1,9 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/api-auth'
+import { requireStaff } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   if (!guard.ok) return guard.response
 
   const body = await req.json()
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   if (!guard.ok) return guard.response
 
   const { lead_id, status } = await req.json()

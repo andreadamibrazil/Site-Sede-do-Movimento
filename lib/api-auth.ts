@@ -25,3 +25,26 @@ export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
 
   return { ok: true, userId: user.id }
 }
+
+// Permite admin E secretaria (operações do dia-a-dia)
+export async function requireStaff(): Promise<AdminGuardOk | AdminGuardFail> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { ok: false, response: NextResponse.json({ error: 'não autenticado' }, { status: 401 }) }
+  }
+
+  const service = createServiceClient()
+  const { data: perfil } = await service
+    .from('perfis_usuario')
+    .select('perfil')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (perfil?.perfil !== 'admin' && perfil?.perfil !== 'secretaria') {
+    return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
+  }
+
+  return { ok: true, userId: user.id }
+}

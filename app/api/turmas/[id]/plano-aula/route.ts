@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireAdmin } from '@/lib/api-auth'
+import { requireStaff } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_KEYS = [
@@ -50,7 +50,7 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdmin()
+  const guard = await requireStaff()
   if (!guard.ok) return guard.response
 
   const { id: turma_id } = await params
