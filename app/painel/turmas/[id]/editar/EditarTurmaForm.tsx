@@ -32,6 +32,8 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
     preco_padrao: turma.preco_padrao?.toString().replace('.', ',') ?? '',
     status: turma.status ?? 'ativa',
     observacoes: turma.observacoes ?? '',
+    data_inicio: turma.data_inicio ?? '',
+    data_fim: turma.data_fim ?? '',
   })
 
   const [horarios, setHorarios] = useState<Horario[]>(horariosIniciais)
@@ -64,7 +66,7 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
     }
     setSalvando(true)
 
-    const { error } = await supabase.from('turmas').update({
+    const payload: any = {
       nome: form.nome,
       descricao: form.descricao || null,
       modalidade_id: form.modalidade_id,
@@ -77,7 +79,10 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
       preco_padrao: Number(form.preco_padrao.replace(',', '.')),
       status: form.status,
       observacoes: form.observacoes || null,
-    }).eq('id', turma.id)
+      data_inicio: form.data_inicio || null,
+      data_fim: form.data_fim || null,
+    }
+    const { error } = await supabase.from('turmas').update(payload).eq('id', turma.id)
 
     if (error) { setErro(error.message); setSalvando(false); return }
 
@@ -163,6 +168,15 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
               <option value="suspensa">Suspensa</option>
               <option value="encerrada">Encerrada</option>
             </select></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className="block text-xs font-medium text-gray-600 mb-1">Início do ciclo</label>
+            <input type="date" value={form.data_inicio} onChange={e => set('data_inicio', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+          <div><label className="block text-xs font-medium text-gray-600 mb-1">Fim previsto</label>
+            <input type="date" value={form.data_fim} onChange={e => set('data_fim', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
         </div>
       </section>
 

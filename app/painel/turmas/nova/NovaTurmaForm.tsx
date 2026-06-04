@@ -44,6 +44,8 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
     faixa_etaria_max: '',
     preco_padrao: '',
     observacoes: '',
+    data_inicio: '',
+    data_fim: '',
   })
 
   const [horarios, setHorarios] = useState<Horario[]>([
@@ -89,22 +91,25 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
     }
     setSalvando(true)
 
+    const payload: any = {
+      nome: form.nome,
+      descricao: form.descricao || null,
+      modalidade_id: form.modalidade_id,
+      professor_id: form.professor_id || null,
+      sala_id: form.sala_id || null,
+      capacidade: Number(form.capacidade),
+      nivel: form.nivel || null,
+      faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
+      faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
+      preco_padrao: Number(form.preco_padrao.replace(',', '.')),
+      observacoes: form.observacoes || null,
+      status: 'ativa',
+      data_inicio: form.data_inicio || null,
+      data_fim: form.data_fim || null,
+    }
     const { data: turma, error } = await supabase
       .from('turmas')
-      .insert({
-        nome: form.nome,
-        descricao: form.descricao || null,
-        modalidade_id: form.modalidade_id,
-        professor_id: form.professor_id || null,
-        sala_id: form.sala_id || null,
-        capacidade: Number(form.capacidade),
-        nivel: form.nivel || null,
-        faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
-        faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
-        preco_padrao: Number(form.preco_padrao.replace(',', '.')),
-        observacoes: form.observacoes || null,
-        status: 'ativa',
-      })
+      .insert(payload)
       .select('id')
       .single()
 
@@ -248,6 +253,27 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
             placeholder="Ex: Básico, Intermediário, Avançado"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Início do ciclo</label>
+            <input
+              type="date"
+              value={form.data_inicio}
+              onChange={e => set('data_inicio', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Fim previsto</label>
+            <input
+              type="date"
+              value={form.data_fim}
+              onChange={e => set('data_fim', e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
       </section>
 
