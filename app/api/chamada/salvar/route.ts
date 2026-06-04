@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Substituto (professor faltou)
-  if (profFaltou) {
+  if (profFaltou && aula.professor_id) {
     await sb.from('substituicoes').upsert({
       aula_id: aulaId,
       professor_ausente_id: aula.professor_id,
