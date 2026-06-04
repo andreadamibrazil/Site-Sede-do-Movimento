@@ -366,26 +366,26 @@ export default function ChamadaClient({
               </div>
             </div>
 
-            {nomeSubstituto.trim() && (
-              <div className="bg-white border border-red-300 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-semibold text-gray-700">📋 Termos de substituição</p>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Ao confirmar, declaro que: <strong>{nomeSubstituto}</strong> ministrará esta aula como substituto(a).
-                  A Sede do Movimento se compromete a remunerar o professor <strong>cadastrado</strong> desta turma por esta aula.
-                  Qualquer negociação de repasse entre professores é de responsabilidade exclusiva das partes envolvidas,
-                  sendo a escola eximida de qualquer responsabilidade por acordos financeiros entre professores.
-                </p>
-                <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termosAceitos}
-                    onChange={e => setTermosAceitos(e.target.checked)}
-                    className="rounded mt-0.5 flex-shrink-0"
-                  />
-                  <span>Li e concordo com os termos acima. Confirmo os dados do substituto.</span>
-                </label>
+            <div className="bg-white border border-red-300 rounded-xl p-4 space-y-3">
+              <p className="text-xs font-semibold text-gray-700">📋 Política de ausência e substituição</p>
+              <div className="text-xs text-gray-600 leading-relaxed space-y-2">
+                <p><strong>1. Falta sem atestado:</strong> A Sede do Movimento <strong>não remunerará</strong> aulas não ministradas sem apresentação de atestado médico válido, correspondente ao período da falta.</p>
+                <p><strong>2. Falta com atestado médico válido:</strong> O professor cadastrado nesta turma <strong>será remunerado</strong> normalmente pela escola. Caso haja professor substituto, este também será remunerado. O pagamento ao substituto é de responsabilidade da escola, independente de acordos particulares entre os professores.</p>
+                <p><strong>3. Reposição obrigatória:</strong> O professor ausente <strong>tem até 30 dias</strong> a partir desta falta para repor a aula perdida, dentro do mês em que a ausência ocorreu. A data de reposição deverá ser acordada com a secretaria.</p>
+                {nomeSubstituto.trim() && (
+                  <p><strong>4. Substituto:</strong> <strong>{nomeSubstituto}</strong> ministrará esta aula como substituto(a). Qualquer negociação de repasse financeiro entre professores é de exclusiva responsabilidade das partes — a escola se exime de qualquer disputa ou obrigação decorrente de acordos particulares entre professores.</p>
+                )}
               </div>
-            )}
+              <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={termosAceitos}
+                  onChange={e => setTermosAceitos(e.target.checked)}
+                  className="rounded mt-0.5 flex-shrink-0"
+                />
+                <span className="font-medium">Li, compreendi e concordo com a política acima. Confirmo os dados informados.</span>
+              </label>
+            </div>
           </div>
         )}
       </div>
