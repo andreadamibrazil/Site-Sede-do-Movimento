@@ -19,9 +19,6 @@ export default async function ProfessorPage() {
   if (!professor) redirect('/painel/login')
 
   const hoje = new Date().toISOString().split('T')[0]
-  const diasSemana = ['domingo','segunda','terca','quarta','quinta','sexta','sabado']
-  const diaSemanaHoje = diasSemana[new Date().getDay()]
-
   // Busca turmas do professor com alunos
   const { data: turmas } = await sb
     .from('turmas')
@@ -97,10 +94,6 @@ export default async function ProfessorPage() {
           </h2>
           <div className="space-y-3">
             {(turmas ?? []).map(turma => {
-              const alunos = (turma.matricula_turmas ?? [])
-                .map((mt: any) => mt.matriculas?.alunos)
-                .filter((a: any) => a && mt?.matriculas?.status === 'ativa')
-
               const alunosAtivos = (turma.matricula_turmas ?? [])
                 .filter((mt: any) => mt.matriculas?.status === 'ativa')
                 .map((mt: any) => mt.matriculas?.alunos)
