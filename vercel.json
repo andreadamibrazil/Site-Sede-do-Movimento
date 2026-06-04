@@ -3,10 +3,6 @@
     {
       "path": "/api/cron/sync-botconversa",
       "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/chamada-lembretes",
-      "schedule": "0 8 * * *"
     }
   ],
   "functions": {
