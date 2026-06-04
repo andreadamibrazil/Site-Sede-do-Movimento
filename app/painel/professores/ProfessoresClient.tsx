@@ -143,6 +143,7 @@ function CardProfessor({ p, onToggle, onEdit }: { p: Professor; onToggle: (id: s
         {FORMAS.find(f => f.id === p.forma_pagamento)?.label ?? p.forma_pagamento}
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        <a href={`/painel/professores/${p.id}`} className="text-xs text-indigo-500 hover:text-indigo-700">Perfil</a>
         <button onClick={() => onEdit(p)} className="text-xs text-gray-400 hover:text-gray-600">✎</button>
         <button
           onClick={() => onToggle(p.id, p.ativo)}
