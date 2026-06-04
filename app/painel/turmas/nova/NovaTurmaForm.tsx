@@ -52,6 +52,28 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
     { dia_semana: 'segunda', hora_inicio: '18:00', hora_fim: '19:00' }
   ])
 
+  // Tabela de preços 2026 — Mensal
+  const TABELA_MENSAL: Record<string, Record<string, number>> = {
+    '1': { '60': 166, '90': 190 },
+    '2': { '60': 290, '90': 330 },
+    '3': { '60': 330, '90': 305 },
+    '4': { '60': 305, '90': 415 },
+    '5': { '60': 416, '90': 485 },
+  }
+
+  function sugerirPreco(hs: Horario[]): number | null {
+    if (hs.length === 0) return null
+    const totalMin = hs.reduce((acc, h) => {
+      const [hi, mi] = h.hora_inicio.split(':').map(Number)
+      const [hf, mf] = h.hora_fim.split(':').map(Number)
+      return acc + (hf * 60 + mf) - (hi * 60 + mi)
+    }, 0)
+    const minPorDia = Math.round(totalMin / hs.length)
+    const durKey = minPorDia <= 60 ? '60' : '90'
+    const diasKey = String(Math.min(hs.length, 5))
+    return TABELA_MENSAL[diasKey]?.[durKey] ?? null
+  }
+
   // Calcula carga horária a partir dos horários
   function calcularCarga(hs: Horario[]) {
     const totalMin = hs.reduce((acc, h) => {
@@ -172,11 +194,25 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Preço mensal (R$) *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-gray-600">Preço mensal (R$) *</label>
+              {(() => {
+                const sugerido = sugerirPreco(horarios)
+                return sugerido ? (
+                  <button
+                    type="button"
+                    onClick={() => set('preco_padrao', String(sugerido).replace('.', ','))}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Tabela: R$ {sugerido.toLocaleString('pt-BR')} →
+                  </button>
+                ) : null
+              })()}
+            </div>
             <input
               value={form.preco_padrao}
               onChange={e => set('preco_padrao', e.target.value)}
-              placeholder="280,00"
+              placeholder="Defina os horários para sugerir"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>

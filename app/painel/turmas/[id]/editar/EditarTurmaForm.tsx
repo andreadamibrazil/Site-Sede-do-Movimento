@@ -52,6 +52,25 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
     return { dias, durStr: m > 0 ? `${h}h${m}min` : `${h}h`, totalMin }
   }
 
+  const TABELA_MENSAL: Record<string, Record<string, number>> = {
+    '1': { '60': 166, '90': 190 },
+    '2': { '60': 290, '90': 330 },
+    '3': { '60': 330, '90': 305 },
+    '4': { '60': 305, '90': 415 },
+    '5': { '60': 416, '90': 485 },
+  }
+  function sugerirPreco(hs: Horario[]): number | null {
+    if (hs.length === 0) return null
+    const totalMin = hs.reduce((acc, h) => {
+      const [hi, mi] = h.hora_inicio.split(':').map(Number)
+      const [hf, mf] = h.hora_fim.split(':').map(Number)
+      return acc + (hf * 60 + mf) - (hi * 60 + mi)
+    }, 0)
+    const minPorDia = Math.round(totalMin / hs.length)
+    const durKey = minPorDia <= 60 ? '60' : '90'
+    return TABELA_MENSAL[String(Math.min(hs.length, 5))]?.[durKey] ?? null
+  }
+
   function addHorario() { setHorarios(h => [...h, { dia_semana: 'segunda', hora_inicio: '18:00', hora_fim: '19:00' }]) }
   function removeHorario(i: number) { setHorarios(h => h.filter((_, idx) => idx !== i)) }
   function setHorario(i: number, campo: keyof Horario, valor: string) {
@@ -125,9 +144,14 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
               {modalidades.map((m: any) => <option key={m.id} value={m.id}>{m.nome}</option>)}
             </select></div>
-          <div><label className="block text-xs font-medium text-gray-600 mb-1">Preço mensal (R$) *</label>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-gray-600">Preço mensal (R$) *</label>
+              {(() => { const s = sugerirPreco(horarios); return s ? <button type="button" onClick={() => set('preco_padrao', String(s).replace('.', ','))} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium">Tabela: R$ {s.toLocaleString('pt-BR')} →</button> : null })()}
+            </div>
             <input value={form.preco_padrao} onChange={e => set('preco_padrao', e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
