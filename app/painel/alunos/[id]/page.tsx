@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import AlunoTabs from './AlunoTabs'
+import BotaoExcluirAluno from './BotaoExcluirAluno'
 
 export default async function AlunoPage({
   params,
@@ -75,6 +76,7 @@ export default async function AlunoPage({
         <div className="flex items-center gap-2">
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
+          <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
             href={`/painel/alunos/${id}/matricula`}
             className="bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
