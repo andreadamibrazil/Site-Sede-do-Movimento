@@ -53,7 +53,7 @@ export default function AbaUniforme({ alunoId, retiradas: inicial }: { alunoId: 
 
     setSalvando(false)
     if (!error && data) {
-      setLista(l => [data, ...l])
+      setLista(l => [data as any, ...l])
       setMostrarForm(false)
       setForm({ item: 'camisa', tamanho: 'M', quantidade: 1, valor: '', observacao: '', responsavel_nome: '' })
       router.refresh()
