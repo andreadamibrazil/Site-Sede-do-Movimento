@@ -1,10 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { Suspense } from 'react'
 import FiltroLeads from './FiltroLeads'
 import BuscaLead from './BuscaLead'
 import BotaoExperimental from './BotaoExperimental'
 import BotaoConverter from './BotaoConverter'
 import BotaoNovoLead from './BotaoNovoLead'
+import PainelExperimentais from './PainelExperimentais'
 
 function parseCRM(obs: string | null): { temperatura?: string; oportunidade?: string; resumo?: string } {
   if (!obs) return {}
@@ -97,161 +98,149 @@ export default async function LeadsPage({
 
   const totalPaginas = Math.ceil((count ?? 0) / PAGE_SIZE)
 
+  // Experimentais do mês para o painel lateral
+  const service = createServiceClient()
+  const { data: experimentaisData } = await service
+    .from('experimentais')
+    .select('id, status, leads(nome), aulas(data, hora_inicio, turmas(nome))')
+    .order('id')
+  const hoje = new Date().toISOString().split('T')[0]
+  const inicioMes = hoje.slice(0, 7) + '-01'
+  const experimentais = ((experimentaisData ?? []) as any[]).filter(
+    e => (e.aulas as any)?.data >= inicioMes
+  )
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Pipeline de captação — do primeiro contato à matrícula</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="p-6 max-w-[1500px] mx-auto">
+      <div className="flex gap-5 items-start">
+        {/* Coluna principal */}
+        <div className="flex-1 min-w-0 space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Leads</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Pipeline de captação — do primeiro contato à matrícula</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Suspense><BuscaLead /></Suspense>
+              <BotaoNovoLead />
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Total', value: Object.values(qtdStatus).reduce((a,b)=>a+b,0), color: 'text-gray-900' },
+              { label: '🔥 Quentes', value: qtdTemperatura['quente'] ?? 0, color: 'text-red-600' },
+              { label: '☀️ Mornos', value: qtdTemperatura['morno'] ?? 0, color: 'text-orange-600' },
+              { label: 'Experimentais', value: qtdStatus['experimental_agendada'] ?? 0, color: 'text-purple-600' },
+            ].map(s => (
+              <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500">{s.label}</p>
+                <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value.toLocaleString('pt-BR')}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Filtros */}
           <Suspense>
-            <BuscaLead />
+            <FiltroLeads
+              statusAtual={status ?? 'todos'}
+              temperaturaAtual={temperatura ?? 'todos'}
+              modalidadeAtual={modalidade ?? ''}
+              qtdStatus={qtdStatus}
+              qtdTemperatura={qtdTemperatura}
+              modalidades={modalidades}
+            />
           </Suspense>
-          <BotaoNovoLead />
-        </div>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total', value: Object.values(qtdStatus).reduce((a,b)=>a+b,0), color: 'text-gray-900' },
-          { label: '🔥 Quentes', value: qtdTemperatura['quente'] ?? 0, color: 'text-red-600' },
-          { label: '☀️ Mornos', value: qtdTemperatura['morno'] ?? 0, color: 'text-orange-600' },
-          { label: 'Experimentais', value: qtdStatus['experimental_agendada'] ?? 0, color: 'text-purple-600' },
-        ].map(s => (
-          <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4">
-            <p className="text-xs text-gray-500">{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value.toLocaleString('pt-BR')}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Filtros */}
-      <Suspense>
-        <FiltroLeads
-          statusAtual={status ?? 'todos'}
-          temperaturaAtual={temperatura ?? 'todos'}
-          modalidadeAtual={modalidade ?? ''}
-          qtdStatus={qtdStatus}
-          qtdTemperatura={qtdTemperatura}
-          modalidades={modalidades}
-        />
-      </Suspense>
-
-      {/* Tabela */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Celular</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Modalidade</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origem</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Temperatura</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Oportunidade</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entrada</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {leadsFiltrados.map(lead => {
-              const temp = lead.crm.temperatura ? TEMP_BADGE[lead.crm.temperatura] : null
-              const stat = STATUS_BADGE[lead.status] ?? { label: lead.status, className: 'bg-gray-100 text-gray-500' }
-              const opor = lead.crm.oportunidade ? (OPOR_LABEL[lead.crm.oportunidade] ?? lead.crm.oportunidade) : null
-              const data = lead.created_at
-                ? new Date(lead.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
-                : '—'
-              return (
-                <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900">{lead.nome}</p>
-                      {lead.status !== 'convertido' && (
-                        <>
-                          <BotaoExperimental leadId={lead.id} leadNome={lead.nome} />
-                          <BotaoConverter leadId={lead.id} leadNome={lead.nome} />
-                        </>
-                      )}
-                    </div>
-                    {lead.email && <p className="text-xs text-gray-400 truncate max-w-[200px]">{lead.email}</p>}
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {lead.celular ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500">{formatarCelular(lead.celular)}</span>
-                        <a
-                          href={`https://wa.me/55${lead.celular.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Abrir no WhatsApp"
-                          className="text-emerald-500 hover:text-emerald-600 text-base leading-none"
-                        >
-                          📱
-                        </a>
-                      </div>
-                    ) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {lead.modalidade_interesse ?? <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {lead.como_conheceu ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {temp ? (
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${temp.className}`}>
-                        {temp.label}
-                      </span>
-                    ) : <span className="text-gray-300 text-xs">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {opor ? (
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                        {opor}
-                      </span>
-                    ) : <span className="text-gray-300 text-xs">—</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${stat.className}`}>
-                      {stat.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-400 text-xs tabular-nums">{data}</td>
+          {/* Tabela */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nome</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Celular</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Modalidade</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Origem</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Temperatura</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Oportunidade</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Entrada</th>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        {!leadsFiltrados.length && (
-          <p className="text-center text-gray-400 text-sm py-12">Nenhum lead encontrado.</p>
-        )}
-      </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {leadsFiltrados.map(lead => {
+                  const temp = lead.crm.temperatura ? TEMP_BADGE[lead.crm.temperatura] : null
+                  const stat = STATUS_BADGE[lead.status] ?? { label: lead.status, className: 'bg-gray-100 text-gray-500' }
+                  const opor = lead.crm.oportunidade ? (OPOR_LABEL[lead.crm.oportunidade] ?? lead.crm.oportunidade) : null
+                  const dataEntrada = lead.created_at
+                    ? new Date(lead.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                    : '—'
+                  const isExperimental = lead.status === 'experimental_agendada'
+                  return (
+                    <tr key={lead.id} className={`transition-colors ${isExperimental ? 'bg-yellow-50 hover:bg-yellow-100' : 'hover:bg-gray-50'}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {isExperimental && <span className="text-sm" title="Experimental agendada">🎭</span>}
+                          <p className="font-medium text-gray-900">{lead.nome}</p>
+                          {lead.status !== 'convertido' && (
+                            <>
+                              <BotaoExperimental leadId={lead.id} leadNome={lead.nome} />
+                              <BotaoConverter leadId={lead.id} leadNome={lead.nome} />
+                            </>
+                          )}
+                        </div>
+                        {lead.email && <p className="text-xs text-gray-400 truncate max-w-[200px]">{lead.email}</p>}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {lead.celular ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">{fmtCelular(lead.celular)}</span>
+                            <a href={`https://wa.me/55${lead.celular.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" title="Abrir no WhatsApp" className="text-emerald-500 hover:text-emerald-600 text-base leading-none">📱</a>
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{lead.modalidade_interesse ?? <span className="text-gray-300">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{lead.como_conheceu ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        {temp ? <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${temp.className}`}>{temp.label}</span> : <span className="text-gray-300 text-xs">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {opor ? <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">{opor}</span> : <span className="text-gray-300 text-xs">—</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${stat.className}`}>{stat.label}</span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs tabular-nums">{dataEntrada}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {!leadsFiltrados.length && <p className="text-center text-gray-400 text-sm py-12">Nenhum lead encontrado.</p>}
+          </div>
 
-      {/* Rodapé */}
-      <div className="flex items-center justify-between text-xs text-gray-400">
-        <p>{(count ?? 0).toLocaleString('pt-BR')} leads totais</p>
-        {totalPaginas > 1 && (
-          <div className="flex gap-2">
-            {parseInt(pagina) > 1 && (
-              <a href={`/painel/leads?pagina=${parseInt(pagina)-1}`} className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">
-                ← Anterior
-              </a>
-            )}
-            <span className="px-3 py-1">Página {pagina} de {totalPaginas}</span>
-            {parseInt(pagina) < totalPaginas && (
-              <a href={`/painel/leads?pagina=${parseInt(pagina)+1}`} className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">
-                Próxima →
-              </a>
+          {/* Rodapé */}
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <p>{(count ?? 0).toLocaleString('pt-BR')} leads totais</p>
+            {totalPaginas > 1 && (
+              <div className="flex gap-2">
+                {parseInt(pagina) > 1 && <a href={`/painel/leads?pagina=${parseInt(pagina)-1}`} className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">← Anterior</a>}
+                <span className="px-3 py-1">Página {pagina} de {totalPaginas}</span>
+                {parseInt(pagina) < totalPaginas && <a href={`/painel/leads?pagina=${parseInt(pagina)+1}`} className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">Próxima →</a>}
+              </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Painel lateral — experimentais do mês */}
+        <PainelExperimentais experimentais={experimentais} />
       </div>
     </div>
   )
 }
 
-function formatarCelular(cel: string) {
+function fmtCelular(cel: string) {
   const n = cel.replace(/\D/g, '')
   if (n.length === 11) return `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`
   if (n.length === 10) return `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`

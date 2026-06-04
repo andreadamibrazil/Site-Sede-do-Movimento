@@ -49,6 +49,16 @@ export default async function DashboardPage() {
       : Promise.resolve({ data: [] }),
   ])
 
+  // Experimentais futuros (query separada por limitação do Supabase com filtro em relação)
+  const { data: expRaw } = await service
+    .from('experimentais')
+    .select('id, leads(nome), aulas(data, hora_inicio, turmas(nome))')
+    .eq('status', 'agendado')
+  const experimentaisFuturos = (expRaw ?? []).filter(e => {
+    const aula = e.aulas as any
+    return aula?.data >= hoje.toISOString().split('T')[0]
+  }).sort((a, b) => ((a.aulas as any)?.data ?? '').localeCompare((b.aulas as any)?.data ?? ''))
+
   const meses = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() - (5 - i), 1)
     return { ano: d.getFullYear(), mes: d.getMonth() + 1 }
@@ -77,11 +87,12 @@ export default async function DashboardPage() {
       )}
 
       {/* Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <StatCard label="Alunos ativos" value={totalAtivos ?? 0} color="blue" />
         <StatCard label="Inadimplentes" value={totalInadimplentes ?? 0} color="red" />
         <StatCard label="Aulas hoje" value={aulasHoje?.length ?? 0} color="gray" />
         <StatCard label="Chamadas em aberto" value={chamadasPendentes?.length ?? 0} color="orange" />
+        <StatCard label="Experimentais" value={experimentaisFuturos.length} color="purple" />
       </div>
 
       {/* Meta */}
@@ -136,6 +147,28 @@ export default async function DashboardPage() {
         </section>
       )}
 
+      {/* Experimentais agendados */}
+      {experimentaisFuturos.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">🎭 Experimentais agendados</h2>
+          <div className="space-y-2">
+            {experimentaisFuturos.map((e: any) => {
+              const aula = e.aulas as any
+              const data = aula?.data ? new Date(aula.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '—'
+              return (
+                <div key={e.id} className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{(e.leads as any)?.nome ?? '—'}</p>
+                    <p className="text-xs text-purple-700">{(aula?.turmas as any)?.nome ?? '—'} · {data} às {aula?.hora_inicio?.slice(0,5)}</p>
+                  </div>
+                  <a href="/painel/leads" className="text-xs font-medium text-purple-600 hover:text-purple-700">Ver lead →</a>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Admin only — Inadimplência */}
       {isAdmin && (
         <section>
@@ -149,8 +182,8 @@ export default async function DashboardPage() {
   )
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color: 'blue' | 'red' | 'gray' | 'orange' }) {
-  const colors = { blue: 'bg-blue-50 text-blue-700', red: 'bg-red-50 text-red-700', gray: 'bg-gray-50 text-gray-700', orange: 'bg-orange-50 text-orange-700' }
+function StatCard({ label, value, color }: { label: string; value: number; color: 'blue' | 'red' | 'gray' | 'orange' | 'purple' }) {
+  const colors = { blue: 'bg-blue-50 text-blue-700', red: 'bg-red-50 text-red-700', gray: 'bg-gray-50 text-gray-700', orange: 'bg-orange-50 text-orange-700', purple: 'bg-purple-50 text-purple-700' }
   return (
     <div className={`rounded-xl p-4 ${colors[color]}`}>
       <p className="text-[11px] font-medium opacity-70 leading-tight">{label}</p>
