@@ -370,10 +370,10 @@ export default function ChamadaClient({
               <p className="text-xs font-semibold text-gray-700">📋 Política de ausência e substituição</p>
               <div className="text-xs text-gray-600 leading-relaxed space-y-2">
                 <p><strong>1. Falta sem atestado:</strong> A Sede do Movimento <strong>não remunerará</strong> aulas não ministradas sem apresentação de atestado médico válido, correspondente ao período da falta.</p>
-                <p><strong>2. Falta com atestado médico válido:</strong> O professor cadastrado nesta turma <strong>será remunerado</strong> normalmente pela escola. Caso haja professor substituto, este também será remunerado. O pagamento ao substituto é de responsabilidade da escola, independente de acordos particulares entre os professores.</p>
+                <p><strong>2. Falta com atestado médico válido:</strong> A Sede do Movimento <strong>remunerará o professor cadastrado</strong> nesta turma normalmente. Caso haja substituto, o <strong>repasse ao substituto é de responsabilidade exclusiva do professor cadastrado</strong> — a escola não realiza pagamento direto ao substituto nem se envolve neste acerto financeiro.</p>
                 <p><strong>3. Reposição obrigatória:</strong> O professor ausente <strong>tem até 30 dias</strong> a partir desta falta para repor a aula perdida, dentro do mês em que a ausência ocorreu. A data de reposição deverá ser acordada com a secretaria.</p>
                 {nomeSubstituto.trim() && (
-                  <p><strong>4. Substituto:</strong> <strong>{nomeSubstituto}</strong> ministrará esta aula como substituto(a). Qualquer negociação de repasse financeiro entre professores é de exclusiva responsabilidade das partes — a escola se exime de qualquer disputa ou obrigação decorrente de acordos particulares entre professores.</p>
+                  <p><strong>4. Substituto:</strong> Ao informar <strong>{nomeSubstituto}</strong> como substituto(a), você declara ciência de que o acerto financeiro com o(a) substituto(a) é de sua exclusiva responsabilidade. A escola se exime de qualquer obrigação decorrente deste acordo particular.</p>
                 )}
               </div>
               <label className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer">
