@@ -25,6 +25,18 @@ export default async function ProfessorPage() {
   const hoje = new Date().toISOString().split('T')[0]
   const em7dias = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
 
+  // Aulas pendentes (sem chamada, passadas)
+  const em7diasAtras = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+  const { data: aulasPendentes } = await sb
+    .from('aulas')
+    .select('id, data, hora_inicio, hora_fim, turmas(nome)')
+    .eq('professor_id', professor.id)
+    .is('chamada_concluida_em', null)
+    .in('status', ['aberta', 'concluida'])
+    .gte('data', em7diasAtras)
+    .lt('data', hoje)
+    .order('data', { ascending: false })
+
   // Aulas dos próximos 7 dias
   const { data: aulasProximas } = await sb
     .from('aulas')
@@ -65,6 +77,41 @@ export default async function ProfessorPage() {
       </div>
 
       <div className="px-4 py-5 space-y-6 max-w-lg mx-auto">
+
+        {/* Chamadas pendentes */}
+        {aulasPendentes && aulasPendentes.length > 0 && (
+          <section>
+            <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">⚠️ Chamadas pendentes ({aulasPendentes.length})</h2>
+            <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-red-100">
+                <p className="text-xs text-red-600">Aulas sem chamada registrada. <strong>É importante fazer a chamada</strong> para que os alunos não sejam penalizados com faltas indevidas.</p>
+              </div>
+              <div className="divide-y divide-red-100">
+                {aulasPendentes.map(aula => {
+                  const d = new Date(aula.data + 'T12:00:00')
+                  const diasAtras = Math.floor((Date.now() - d.getTime()) / 86400000)
+                  return (
+                    <a key={aula.id} href={`/professor/chamada/${aula.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-red-100 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{(aula.turmas as any)?.nome}</p>
+                        <p className="text-xs text-gray-500">
+                          {d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'})} · {aula.hora_inicio?.slice(0,5)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-600 font-medium">
+                          {diasAtras === 0 ? 'hoje' : `${diasAtras}d atrás`}
+                        </span>
+                        <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-lg">Fazer →</span>
+                      </div>
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Aulas de hoje */}
         {aulasHoje.length > 0 ? (
