@@ -537,10 +537,11 @@ export default function ChamadaClient({
           </button>
           <button
             onClick={concluir}
-            disabled={salvando}
-            className="flex-1 bg-indigo-600 text-white text-sm font-medium py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            disabled={salvando || (professsorFaltou && !termosAceitos)}
+            title={professsorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' : undefined}
+            className="flex-1 bg-indigo-600 text-white text-sm font-medium py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Concluir chamada ✓
+            {professsorFaltou && !termosAceitos ? '⚠ Aceite os termos' : 'Concluir chamada ✓'}
           </button>
         </div>
         <p className="text-center text-xs text-gray-400 mt-2">
