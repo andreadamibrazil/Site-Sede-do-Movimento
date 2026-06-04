@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   leadId: string
@@ -12,8 +11,17 @@ interface Props {
 type Turma = { id: string; nome: string }
 type Aula = { id: string; data: string; hora_inicio: string; hora_fim: string; professores: { nome: string } | null }
 
+const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
+
+function formatarAula(aula: Aula) {
+  const d = new Date(aula.data + 'T12:00:00')
+  const dia = DIAS[d.getDay()]
+  const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const prof = aula.professores?.nome ? ` · ${aula.professores.nome}` : ''
+  return `${dia} ${data} · ${aula.hora_inicio?.slice(0,5)}${prof}`
+}
+
 export default function AgendarExperimental({ leadId, leadNome, onClose }: Props) {
-  const supabase = createClient()
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [turmaId, setTurmaId] = useState('')
   const [aulas, setAulas] = useState<Aula[]>([])
@@ -21,26 +29,28 @@ export default function AgendarExperimental({ leadId, leadNome, onClose }: Props
   const [salvando, setSalvando] = useState(false)
   const [feito, setFeito] = useState(false)
   const [notificou, setNotificou] = useState<boolean | null>(null)
+  const [erroTurmas, setErroTurmas] = useState('')
 
   useEffect(() => {
-    supabase.from('turmas').select('id, nome').not('status', 'eq', 'encerrada').order('nome').then(({ data }) => setTurmas(data ?? []))
+    fetch('/api/experimentais/turmas')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setTurmas(data)
+        else setErroTurmas('Erro ao carregar turmas')
+      })
+      .catch(() => setErroTurmas('Erro de conexão'))
   }, [])
 
   useEffect(() => {
     if (!turmaId) { setAulas([]); setAulaId(''); return }
-    const hoje = new Date().toISOString().slice(0, 10)
-    supabase
-      .from('aulas')
-      .select('id, data, hora_inicio, hora_fim, professores(nome)')
-      .eq('turma_id', turmaId)
-      .gte('data', hoje)
-      .in('status', ['agendada', 'aberta'])
-      .order('data')
-      .limit(10)
-      .then(({ data }) => {
-        setAulas((data ?? []) as Aula[])
+    fetch(`/api/experimentais/aulas?turma_id=${turmaId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setAulas(data)
+        else setAulas([])
         setAulaId('')
       })
+      .catch(() => setAulas([]))
   }, [turmaId])
 
   async function agendar() {
@@ -59,16 +69,6 @@ export default function AgendarExperimental({ leadId, leadNome, onClose }: Props
     }
   }
 
-  const DIAS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
-
-  function formatarAula(aula: Aula) {
-    const d = new Date(aula.data + 'T12:00:00')
-    const dia = DIAS[d.getDay()]
-    const data = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-    const prof = aula.professores?.nome ? ` · ${aula.professores.nome}` : ''
-    return `${dia} ${data} · ${aula.hora_inicio?.slice(0,5)}${prof}`
-  }
-
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
@@ -78,14 +78,10 @@ export default function AgendarExperimental({ leadId, leadNome, onClose }: Props
             <h2 className="text-base font-semibold text-gray-900">Experimental agendado!</h2>
             <p className="text-sm text-gray-500">{leadNome}</p>
             {notificou === true && (
-              <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
-                ✓ Professor notificado via WhatsApp
-              </p>
+              <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">✓ Professor notificado via WhatsApp</p>
             )}
             {notificou === false && (
-              <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">
-                ⚠ Notificação não enviada — verifique o celular do professor
-              </p>
+              <p className="text-xs text-orange-600 bg-orange-50 rounded-lg px-3 py-2">⚠ Notificação não enviada — verifique o celular do professor</p>
             )}
             <button onClick={onClose} className="w-full mt-2 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700">
               Fechar
@@ -101,14 +97,20 @@ export default function AgendarExperimental({ leadId, leadNome, onClose }: Props
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-medium text-gray-700 mb-1 block">Turma</label>
-                <select
-                  value={turmaId}
-                  onChange={e => setTurmaId(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="">Selecionar turma...</option>
-                  {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
-                </select>
+                {erroTurmas ? (
+                  <p className="text-xs text-red-600">{erroTurmas}</p>
+                ) : turmas.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-2">Carregando turmas...</p>
+                ) : (
+                  <select
+                    value={turmaId}
+                    onChange={e => setTurmaId(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <option value="">Selecionar turma...</option>
+                    {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                  </select>
+                )}
               </div>
 
               {turmaId && (
@@ -131,10 +133,7 @@ export default function AgendarExperimental({ leadId, leadNome, onClose }: Props
             </div>
 
             <div className="flex gap-2 pt-1">
-              <button
-                onClick={onClose}
-                className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50"
-              >
+              <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50">
                 Cancelar
               </button>
               <button
