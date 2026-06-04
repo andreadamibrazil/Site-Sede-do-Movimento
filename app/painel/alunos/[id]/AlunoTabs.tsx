@@ -5,6 +5,7 @@ import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { PDFDocument } from 'pdf-lib'
+import AbaUniforme from './AbaUniforme'
 
 const ABAS = [
   { id: 'dados',       label: 'Dados pessoais' },
@@ -13,9 +14,10 @@ const ABAS = [
   { id: 'cobrancas',   label: 'Cobranças avulsas' },
   { id: 'presenca',    label: 'Presença' },
   { id: 'documentos',  label: 'Documentos' },
+  { id: 'uniforme',    label: 'Uniforme' },
 ]
 
-export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos }: any) {
+export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos, uniforme }: any) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -45,6 +47,7 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
       {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
       {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} />}
       {abaAtiva === 'documentos'  && <AbaDocumentos documentos={documentos} alunoId={aluno.id} />}
+      {abaAtiva === 'uniforme'    && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
     </div>
   )
 }

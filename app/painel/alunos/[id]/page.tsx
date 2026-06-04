@@ -1,7 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import AlunoTabs from './AlunoTabs'
 import BotaoExcluirAluno from './BotaoExcluirAluno'
+import BotaoDeclaracao from './BotaoDeclaracao'
 
 export default async function AlunoPage({
   params,
@@ -63,6 +64,13 @@ export default async function AlunoPage({
   const presencas = presencasRes.data
   const documentos = documentosRes.data
 
+  const service = createServiceClient()
+  const { data: uniforme } = await service
+    .from('uniforme_retiradas' as any)
+    .select('*')
+    .eq('aluno_id', id)
+    .order('created_at', { ascending: false })
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       {/* Header do aluno */}
@@ -78,15 +86,7 @@ export default async function AlunoPage({
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
           <ContratoBadge status={(aluno as any).contrato_status ?? 'sem_contrato'} />
-          <a
-            href={`/api/alunos/${id}/declaracao`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-            title="Emitir Declaração de Matrícula"
-          >
-            📄 Declaração
-          </a>
+          <BotaoDeclaracao alunoId={id} />
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
             href={`/painel/alunos/${id}/matricula`}
@@ -105,6 +105,7 @@ export default async function AlunoPage({
         mensalidades={mensalidades as any ?? []}
         presencas={presencas as any ?? []}
         documentos={documentos as any ?? []}
+        uniforme={uniforme as any ?? []}
       />
     </div>
   )
