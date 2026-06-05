@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireStaff } from '@/lib/api-auth'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const GEMINI_KEYS = [
@@ -8,13 +8,41 @@ const GEMINI_KEYS = [
   process.env.GOOGLE_AI_API_KEY_3,
 ].filter(Boolean)
 
-async function chamarGemini(texto: string): Promise<{ resumo: string; conteudo: any }> {
-  const prompt = `Você é um assistente pedagógico de uma escola de dança.
+const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
 
-Analise o plano de aula abaixo e extraia as informações em formato JSON estruturado.
+// Aceita: admin, secretaria OU professor com acesso à turma
+async function verificarAcesso(turmaId: string): Promise<{ ok: boolean; response?: NextResponse }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false, response: NextResponse.json({ error: 'não autenticado' }, { status: 401 }) }
 
-PLANO:
-${texto}
+  const sb = createServiceClient()
+
+  // Staff (admin/secretaria)?
+  const { data: perfil } = await sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle()
+  if (perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria') return { ok: true }
+
+  // Professor ativo?
+  const { data: professor } = await sb
+    .from('professores').select('id')
+    .eq('email', user.email ?? '').eq('ativo', true).maybeSingle()
+  if (!professor) return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
+
+  // Admin professor: acessa qualquer turma
+  if (ADMIN_EMAILS.includes(user.email ?? '')) return { ok: true }
+
+  // Professor comum: só acessa turmas dele
+  const { data: turma } = await sb
+    .from('turmas').select('id')
+    .eq('id', turmaId).eq('professor_id', professor.id).maybeSingle()
+  if (!turma) return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
+
+  return { ok: true }
+}
+
+const PROMPT_EXTRACAO = `Você é um assistente pedagógico de uma escola de dança.
+
+Analise o plano de aula e extraia as informações em formato JSON estruturado.
 
 Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicações):
 {
@@ -28,6 +56,7 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
   "avaliacao": "como o professor vai avaliar o progresso"
 }`
 
+async function chamarGemini(parts: object[]): Promise<{ resumo: string; conteudo: any }> {
   for (const key of GEMINI_KEYS) {
     try {
       const res = await fetch(
@@ -35,7 +64,7 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          body: JSON.stringify({ contents: [{ parts }] }),
         }
       )
       if (!res.ok) continue
@@ -50,26 +79,62 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const guard = await requireStaff()
-  if (!guard.ok) return guard.response
-
   const { id: turma_id } = await params
-  const { texto, data_inicio, data_fim } = await req.json()
 
-  if (!texto?.trim()) return NextResponse.json({ error: 'Texto do plano é obrigatório' }, { status: 400 })
-
-  const { resumo, conteudo } = await chamarGemini(texto)
+  const guard = await verificarAcesso(turma_id)
+  if (!guard.ok) return guard.response!
 
   const sb = createServiceClient() as any
+  let resumo: string
+  let conteudo: any
+  let textoOriginal = ''
+  let dataInicio: string | null = null
+  let dataFim: string | null = null
+
+  const contentType = req.headers.get('content-type') ?? ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData()
+    const arquivo = formData.get('arquivo') as File | null
+    dataInicio = formData.get('data_inicio') as string | null
+    dataFim = formData.get('data_fim') as string | null
+
+    if (!arquivo) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+    // 5MB — PDF típico de plano de aula fica bem abaixo disso
+    if (arquivo.size > 5 * 1024 * 1024) return NextResponse.json({ error: 'Arquivo muito grande (máx 5MB). Comprima o PDF antes de enviar.' }, { status: 400 })
+
+    const buffer = await arquivo.arrayBuffer()
+    const base64 = Buffer.from(buffer).toString('base64')
+
+    // PDF é processado em memória pelo Gemini e descartado — não vai para o Supabase Storage
+    const resultado = await chamarGemini([
+      { inline_data: { mime_type: 'application/pdf', data: base64 } },
+      { text: PROMPT_EXTRACAO },
+    ])
+    resumo = resultado.resumo
+    conteudo = resultado.conteudo
+    textoOriginal = `[PDF: ${arquivo.name}]`
+  } else {
+    const body = await req.json()
+    textoOriginal = body.texto
+    dataInicio = body.data_inicio ?? null
+    dataFim = body.data_fim ?? null
+    if (!textoOriginal?.trim()) return NextResponse.json({ error: 'Texto do plano é obrigatório' }, { status: 400 })
+
+    const resultado = await chamarGemini([{ text: `${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}` }])
+    resumo = resultado.resumo
+    conteudo = resultado.conteudo
+  }
+
   const { data, error } = await sb
     .from('planos_aula')
     .upsert({
       turma_id,
-      texto_original: texto,
+      texto_original: textoOriginal,
       gemini_resumo: resumo,
       gemini_conteudo: conteudo,
-      data_inicio: data_inicio || null,
-      data_fim: data_fim || null,
+      data_inicio: dataInicio || null,
+      data_fim: dataFim || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'turma_id' })
     .select('id')
