@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Busca novos assinantes no BotConversa desde a última sync e insere no Supabase
 
 const BOTCONVERSA_URL = 'https://backend.botconversa.com.br/api/v1'
-if (!process.env.BOTCONVERSA_API_KEY) { return NextResponse.json({ ok: true, skip: "BOTCONVERSA_API_KEY não configurada" }) }
-const BOTCONVERSA_KEY = process.env.BOTCONVERSA_API_KEY
+const BOTCONVERSA_KEY = process.env.BOTCONVERSA_API_KEY ?? ''
 
 function normalizarCelular(phone: string) {
   const n = phone.replace(/\D/g, '')
