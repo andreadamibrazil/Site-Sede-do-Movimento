@@ -27,6 +27,9 @@ export default async function ProfessorChamadaPage({
 
   if (!professor) redirect('/professor/login')
 
+  const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
+  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+
   // Dados da aula — verifica se é do professor
   const { data: aula } = await service
     .from('aulas')
@@ -36,8 +39,8 @@ export default async function ProfessorChamadaPage({
 
   if (!aula) notFound()
 
-  // Segurança: professor só acessa chamada das suas aulas
-  if (aula.professor_id !== professor.id) {
+  // Admin vê qualquer aula; professor só acessa as suas
+  if (!isAdmin && aula.professor_id !== professor.id) {
     redirect('/professor')
   }
 

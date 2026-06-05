@@ -20,12 +20,15 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
   if (!professor) redirect('/professor/login')
 
-  const { data: turma } = await sb
+  const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
+  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+
+  const turmaQuery = sb
     .from('turmas')
-    .select('id, nome')
+    .select('id, nome, professores(nome)')
     .eq('id', turmaId)
-    .eq('professor_id', professor.id)
-    .single()
+  if (!isAdmin) turmaQuery.eq('professor_id', professor.id)
+  const { data: turma } = await turmaQuery.single()
 
   if (!turma) notFound()
 
@@ -34,7 +37,7 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
       <div className="bg-indigo-600 text-white px-4 py-4 flex items-center gap-3">
         <a href="/professor" className="text-white/70 hover:text-white">← Voltar</a>
         <div>
-          <p className="text-xs opacity-75">Plano de aula</p>
+          <p className="text-xs opacity-75">Plano de aula{isAdmin && (turma as any).professores?.nome ? ` · ${(turma as any).professores.nome}` : ''}</p>
           <h1 className="text-base font-semibold">{turma.nome}</h1>
         </div>
       </div>

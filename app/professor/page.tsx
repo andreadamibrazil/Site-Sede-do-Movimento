@@ -6,6 +6,8 @@ const DIAS: Record<string, string> = {
   quinta: 'Qui', sexta: 'Sex', sabado: 'Sáb', domingo: 'Dom'
 }
 
+const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
+
 export default async function ProfessorPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,45 +24,51 @@ export default async function ProfessorPage() {
 
   if (!professor) redirect('/professor/login')
 
+  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+
   const hoje = new Date().toISOString().split('T')[0]
   const em7dias = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
 
   // Aulas pendentes (sem chamada, passadas)
   const em7diasAtras = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
-  const { data: aulasPendentes } = await sb
+  const aulasPendentesQuery = sb
     .from('aulas')
-    .select('id, data, hora_inicio, hora_fim, turmas(nome)')
-    .eq('professor_id', professor.id)
+    .select('id, data, hora_inicio, hora_fim, turmas(nome), professores(nome)')
     .is('chamada_concluida_em', null)
     .in('status', ['aberta', 'concluida'])
     .gte('data', em7diasAtras)
     .lt('data', hoje)
     .order('data', { ascending: false })
+  if (!isAdmin) aulasPendentesQuery.eq('professor_id', professor.id)
+  const { data: aulasPendentes } = await aulasPendentesQuery
 
   // Aulas dos próximos 7 dias
-  const { data: aulasProximas } = await sb
+  const aulasProximasQuery = sb
     .from('aulas')
-    .select('id, data, hora_inicio, hora_fim, status, turmas(nome)')
-    .eq('professor_id', professor.id)
+    .select('id, data, hora_inicio, hora_fim, status, turmas(nome), professores(nome)')
     .gte('data', hoje)
     .lte('data', em7dias)
     .order('data')
     .order('hora_inicio')
+  if (!isAdmin) aulasProximasQuery.eq('professor_id', professor.id)
+  const { data: aulasProximas } = await aulasProximasQuery
 
-  // Turmas do professor
-  const { data: turmas } = await sb
+  // Turmas
+  const turmasQuery = sb
     .from('turmas')
     .select(`
       id, nome, nivel, capacidade,
       modalidades(nome),
+      professores(nome),
       turma_horarios(dia_semana, hora_inicio, hora_fim),
       matricula_turmas(
         matriculas(status, alunos(id, nome, status_financeiro))
       )
     `)
-    .eq('professor_id', professor.id)
     .not('status', 'eq', 'encerrada')
     .order('nome')
+  if (!isAdmin) turmasQuery.eq('professor_id', professor.id)
+  const { data: turmas } = await turmasQuery
 
   const aulasHoje = (aulasProximas ?? []).filter(a => a.data === hoje)
   const aulasSemana = (aulasProximas ?? []).filter(a => a.data > hoje)
@@ -70,7 +78,7 @@ export default async function ProfessorPage() {
       {/* Header */}
       <div className="bg-indigo-600 text-white px-4 py-4 flex items-center justify-between">
         <div>
-          <p className="text-xs opacity-75">Portal do Professor</p>
+          <p className="text-xs opacity-75">{isAdmin ? 'Visão Geral — Todas as Turmas' : 'Portal do Professor'}</p>
           <h1 className="text-base font-semibold">{professor.nome}</h1>
         </div>
         <a href="/api/professor/signout" className="text-xs opacity-75 hover:opacity-100 px-2 py-1 border border-white/30 rounded-lg">Sair</a>
@@ -97,6 +105,7 @@ export default async function ProfessorPage() {
                         <p className="text-sm font-medium text-gray-900">{(aula.turmas as any)?.nome}</p>
                         <p className="text-xs text-gray-500">
                           {d.toLocaleDateString('pt-BR', {weekday:'short', day:'2-digit', month:'2-digit'})} · {aula.hora_inicio?.slice(0,5)}
+                          {isAdmin && (aula.professores as any)?.nome && <span className="text-indigo-400"> · {(aula.professores as any).nome}</span>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -124,7 +133,9 @@ export default async function ProfessorPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold text-gray-900">{(aula.turmas as any)?.nome}</p>
-                      <p className="text-xs text-gray-500">{aula.hora_inicio?.slice(0,5)} – {aula.hora_fim?.slice(0,5)}</p>
+                      <p className="text-xs text-gray-500">{aula.hora_inicio?.slice(0,5)} – {aula.hora_fim?.slice(0,5)}
+                        {isAdmin && (aula.professores as any)?.nome && <span className="text-indigo-400"> · {(aula.professores as any).nome}</span>}
+                      </p>
                     </div>
                     <div>
                       {aula.status === 'aberta' && (
@@ -190,6 +201,7 @@ export default async function ProfessorPage() {
                       <p className="text-sm font-semibold text-gray-900">{turma.nome}</p>
                       <p className="text-xs text-gray-400">
                         {(turma.modalidades as any)?.nome}{turma.nivel ? ` · ${turma.nivel}` : ''}
+                        {isAdmin && (turma as any).professores?.nome && <span className="text-indigo-400"> · {(turma as any).professores.nome}</span>}
                       </p>
                     </div>
                     <span className="text-xs text-gray-400">{alunosAtivos.length}/{turma.capacidade}</span>
