@@ -12,7 +12,11 @@ function parseCRM(obs: string | null): { temperatura?: string; oportunidade?: st
   if (!obs) return {}
   try {
     const j = JSON.parse(obs)
-    return { temperatura: j.temperatura, oportunidade: j.oportunidade, resumo: j.resumo }
+    return {
+      temperatura: j.temperatura ?? (j.temperatura_orig ? String(j.temperatura_orig).toLowerCase() : undefined),
+      oportunidade: j.oportunidade ?? undefined,
+      resumo: j.resumo ?? j.resumo_ia_orig ?? undefined,
+    }
   } catch {
     return {}
   }
