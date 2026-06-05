@@ -173,7 +173,17 @@ export default function PlanoAula({ turmaId, dataInicio, dataFim }: {
           {plano.texto_original?.startsWith('[PDF:') && (
             <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
               <span>📄</span>
-              <span>{plano.texto_original.replace('[PDF: ', '').replace(']', '')}</span>
+              <span className="flex-1">{plano.texto_original.replace('[PDF: ', '').replace(']', '')}</span>
+              {plano.drive_url && (
+                <a
+                  href={plano.drive_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:text-indigo-700 font-medium whitespace-nowrap"
+                >
+                  Ver original
+                </a>
+              )}
             </div>
           )}
 

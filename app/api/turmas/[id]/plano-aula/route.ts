@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { uploadParaDrive, DRIVE_FOLDERS } from '@/lib/google-drive'
 
 const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
@@ -90,6 +91,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let textoOriginal = ''
   let dataInicio: string | null = null
   let dataFim: string | null = null
+  let driveFileId: string | null = null
+  let driveUrl: string | null = null
 
   const contentType = req.headers.get('content-type') ?? ''
 
@@ -114,6 +117,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     resumo = resultado.resumo
     conteudo = resultado.conteudo
     textoOriginal = `[PDF: ${arquivo.name}]`
+
+    // Upload para o Drive: Sites/Sede do Movimento/Planos de Aula/{turma}/
+    try {
+      const { data: turmaInfo } = await sb.from('turmas').select('nome').eq('id', turma_id).maybeSingle()
+      const nomeTurma = turmaInfo?.nome ?? turma_id
+      const driveResult = await uploadParaDrive(buffer, arquivo.name, 'application/pdf', DRIVE_FOLDERS.sedePlanos, nomeTurma)
+      driveFileId = driveResult.fileId
+      driveUrl = driveResult.viewUrl
+    } catch (driveErr) {
+      console.error('Drive upload falhou (continuando sem Drive):', driveErr)
+    }
   } else {
     const body = await req.json()
     textoOriginal = body.texto
@@ -135,6 +149,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       gemini_conteudo: conteudo,
       data_inicio: dataInicio || null,
       data_fim: dataFim || null,
+      drive_file_id: driveFileId,
+      drive_url: driveUrl,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'turma_id' })
     .select('id')
