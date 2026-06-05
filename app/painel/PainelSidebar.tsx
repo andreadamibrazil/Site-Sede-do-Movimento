@@ -131,6 +131,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             <NavItem href="/painel/folha-pagamento" icon="💵" label="Folha Pgto"  admin collapsed={collapsed} />
             <NavItem href="/painel/usuarios"        icon="🔑" label="Usuários"    admin collapsed={collapsed} />
             <NavItem href="/painel/historico"       icon="🕐" label="Histórico"   admin collapsed={collapsed} />
+            <NavItem href="/painel/auditoria"       icon="🔍" label="Auditoria"   admin collapsed={collapsed} />
 
             {!collapsed && (
               <div className="flex items-center gap-2 px-3 mt-4 mb-2">
