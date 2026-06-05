@@ -2,14 +2,13 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadParaDrive, DRIVE_FOLDERS } from '@/lib/google-drive'
+import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
   process.env.GOOGLE_AI_API_KEY_2,
   process.env.GOOGLE_AI_API_KEY_3,
 ].filter(Boolean)
-
-const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
 
 // Aceita: admin, secretaria OU professor com acesso à turma
 async function verificarAcesso(turmaId: string): Promise<{ ok: boolean; response?: NextResponse }> {

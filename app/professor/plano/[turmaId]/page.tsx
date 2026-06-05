@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import PlanoAula from '@/app/painel/turmas/[id]/PlanoAula'
+import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 export default async function ProfessorPlanoPage({ params }: { params: Promise<{ turmaId: string }> }) {
   const { turmaId } = await params
@@ -20,7 +21,6 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
   if (!professor) redirect('/professor/login')
 
-  const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
   const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
 
   const turmaQuery = sb

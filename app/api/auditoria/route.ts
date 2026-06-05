@@ -196,6 +196,108 @@ export async function GET() {
     })
   }
 
+  // 9. Nomenclatura de turmas — nomes suspeitos
+  {
+    const { data } = await sb.from('turmas').select('id, nome').eq('ativa', true)
+    const problemas: { label: string; href: string }[] = []
+    for (const t of data ?? []) {
+      const nome: string = t.nome ?? ''
+      const temEspecial = /[<>{}[\]\\|^~`]/.test(nome)
+      const muitoCurto = nome.trim().length < 4
+      const todoMaiusculo = nome === nome.toUpperCase() && nome.length > 3
+      const espacoDuplo = /\s{2,}/.test(nome)
+      if (temEspecial || muitoCurto || todoMaiusculo || espacoDuplo) {
+        const motivo = [
+          temEspecial && 'caractere especial',
+          muitoCurto && 'muito curto',
+          todoMaiusculo && 'todo maiúsculo',
+          espacoDuplo && 'espaço duplo',
+        ].filter(Boolean).join(', ')
+        problemas.push({ label: `"${nome}" (${motivo})`, href: `/painel/turmas/${t.id}` })
+      }
+    }
+    resultados.push({
+      id: 'nomenclatura_turmas',
+      nome: 'Nomenclatura de turmas',
+      descricao: 'Turmas com nomes suspeitos: muito curtos, todo maiúsculo, caracteres especiais ou espaço duplo.',
+      nivel: problemas.length > 0 ? 'atencao' : 'ok',
+      count: problemas.length,
+      itens: problemas,
+    })
+  }
+
+  // 10. Nomenclatura de modalidades
+  {
+    const { data } = await sb.from('modalidades').select('id, nome').eq('ativo', true)
+    const problemas: { label: string }[] = []
+    for (const m of data ?? []) {
+      const nome: string = m.nome ?? ''
+      if (nome.trim().length < 3 || /[<>{}|]/.test(nome) || /\s{2,}/.test(nome)) {
+        problemas.push({ label: `"${nome}"` })
+      }
+    }
+    resultados.push({
+      id: 'nomenclatura_modalidades',
+      nome: 'Nomenclatura de modalidades',
+      descricao: 'Modalidades com nomes inválidos ou suspeitos.',
+      nivel: problemas.length > 0 ? 'atencao' : 'ok',
+      count: problemas.length,
+      itens: problemas,
+    })
+  }
+
+  // 11. Alunos com nome duplicado exato
+  {
+    const { data } = await sb.from('alunos').select('nome')
+    const contagem = new Map<string, number>()
+    for (const a of data ?? []) {
+      const k = (a.nome ?? '').trim().toLowerCase()
+      contagem.set(k, (contagem.get(k) ?? 0) + 1)
+    }
+    const duplicados = [...contagem.entries()]
+      .filter(([, n]) => n > 1)
+      .map(([nome]) => ({ label: `"${nome}" (${contagem.get(nome)}x)`, href: `/painel/alunos` }))
+    resultados.push({
+      id: 'alunos_duplicados',
+      nome: 'Alunos com nome duplicado',
+      descricao: 'Nomes de alunos que aparecem mais de uma vez — possível cadastro duplicado.',
+      nivel: duplicados.length > 0 ? 'atencao' : 'ok',
+      count: duplicados.length,
+      itens: duplicados,
+    })
+  }
+
+  // 12. Monitor do token Google Drive
+  {
+    let driveOk = false
+    let driveErro = ''
+    try {
+      const tokenUri = process.env.GOOGLE_DRIVE_TOKEN_URI ?? 'https://oauth2.googleapis.com/token'
+      const res = await fetch(tokenUri, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: process.env.GOOGLE_DRIVE_CLIENT_ID ?? '',
+          client_secret: process.env.GOOGLE_DRIVE_CLIENT_SECRET ?? '',
+          refresh_token: process.env.GOOGLE_DRIVE_REFRESH_TOKEN ?? '',
+          grant_type: 'refresh_token',
+        }),
+      })
+      driveOk = res.ok
+      if (!res.ok) driveErro = `HTTP ${res.status}`
+    } catch (e: any) {
+      driveErro = e?.message ?? 'erro desconhecido'
+    }
+    resultados.push({
+      id: 'drive_token',
+      nome: 'Token Google Drive',
+      descricao: 'Verifica se o refresh token do Google Drive ainda está válido.',
+      nivel: driveOk ? 'ok' : 'critico',
+      count: driveOk ? 0 : 1,
+      itens: driveOk ? [] : [{ label: `Token inválido ou expirado: ${driveErro}` }],
+    })
+  }
+
   const criticos = resultados.filter(r => r.nivel === 'critico').reduce((s, r) => s + r.count, 0)
   const atencoes = resultados.filter(r => r.nivel === 'atencao').reduce((s, r) => s + r.count, 0)
 

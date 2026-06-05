@@ -1,12 +1,11 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 const DIAS: Record<string, string> = {
   segunda: 'Seg', terca: 'Ter', quarta: 'Qua',
   quinta: 'Qui', sexta: 'Sex', sabado: 'Sáb', domingo: 'Dom'
 }
-
-const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
 
 export default async function ProfessorPage() {
   const supabase = await createClient()

@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from '@/app/painel/chamada/[aulaId]/ChamadaClient'
+import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 const TOLERANCIA_PROFESSOR_MINUTOS = 120
 
@@ -27,7 +28,6 @@ export default async function ProfessorChamadaPage({
 
   if (!professor) redirect('/professor/login')
 
-  const ADMIN_EMAILS = ['andreadami@sededomovimento.art', 'carlosfontinelle@sededomovimento.art']
   const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
 
   // Dados da aula — verifica se é do professor
