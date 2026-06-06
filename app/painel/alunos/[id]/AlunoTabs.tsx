@@ -285,14 +285,9 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
       ? { valor_final: m?.valor_final, tipo_desconto: m?.tipo_desconto, percentual_desconto: m?.percentual_desconto }
       : { plano: m?.plano }
 
-    const { error } = await supabase.from('termos_aditivos').insert({
-      matricula_id: aditivo.matriculaId,
-      tipo: tipoAditivo,
-      motivo: motivoAditivo || null,
-      antes,
-      depois: { descricao: depoisAditivo },
-      contrato_status: 'pendente',
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insertPayload: any = { matricula_id: aditivo.matriculaId, tipo: tipoAditivo, motivo: motivoAditivo || null, antes, depois: { descricao: depoisAditivo }, contrato_status: 'pendente' }
+    const { error } = await supabase.from('termos_aditivos').insert(insertPayload)
 
     if (error) { setErroAditivo(error.message); setSalvandoAditivo(false); return }
     setSucessoAditivo(true)

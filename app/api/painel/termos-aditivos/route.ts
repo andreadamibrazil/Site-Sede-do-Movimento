@@ -15,17 +15,11 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertPayload: any = { matricula_id, tipo, motivo: motivo ?? null, antes: antes ?? {}, depois, contrato_status: 'pendente', criado_por: guard.userId }
   const { data, error } = await sb
     .from('termos_aditivos')
-    .insert({
-      matricula_id,
-      tipo,
-      motivo: motivo ?? null,
-      antes: antes ?? {},
-      depois,
-      contrato_status: 'pendente',
-      criado_por: guard.userId,
-    })
+    .insert(insertPayload)
     .select('id')
     .single()
 
