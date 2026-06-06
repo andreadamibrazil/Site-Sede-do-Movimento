@@ -1,11 +1,11 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireStaff } from '@/lib/auth/requireStaff'
+import { requireStaff } from '@/lib/api-auth'
 import { uploadUniversal } from '@/lib/upload-universal'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const user = await requireStaff()
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  const guard = await requireStaff()
+  if (!guard.ok) return guard.response
 
   const form = await req.formData()
   const file = form.get('file') as File | null
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       drive_url: result.driveUrl,
       observacao: obsAutomatica,
       dados_extraidos: result.dadosExtraidos ?? null,
-      criado_por: user.id,
+      criado_por: guard.userId,
     })
     .select('id')
     .single()

@@ -1,10 +1,10 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireStaff } from '@/lib/auth/requireStaff'
+import { requireStaff } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const user = await requireStaff()
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  const guard = await requireStaff()
+  if (!guard.ok) return guard.response
 
   const body = await req.json()
   const { matricula_id, tipo, motivo, antes, depois } = body
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       antes: antes ?? {},
       depois,
       contrato_status: 'pendente',
-      criado_por: user.id,
+      criado_por: guard.userId,
     })
     .select('id')
     .single()
@@ -59,8 +59,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const user = await requireStaff()
-  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  const guard = await requireStaff()
+  if (!guard.ok) return guard.response
 
   const matriculaId = req.nextUrl.searchParams.get('matricula_id')
   if (!matriculaId) return NextResponse.json({ error: 'matricula_id obrigatório' }, { status: 400 })

@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireStaff } from '@/lib/auth/requireStaff'
+import { requireStaff } from '@/lib/api-auth'
 
 export interface CheckResult {
   id: string
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const isCron = cronSecret && cronSecret === process.env.CRON_SECRET
   if (!isCron) {
     const guard = await requireStaff()
-    if (guard) return guard
+    if (!guard.ok) return guard.response
   }
 
   const sb = createServiceClient() as any
