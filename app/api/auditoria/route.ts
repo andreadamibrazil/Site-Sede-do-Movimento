@@ -186,8 +186,8 @@ export async function GET(req: NextRequest) {
     const { data } = await sb
       .from('documentos_aluno')
       .select('id, tipo, alunos(nome)')
-      .is('gemini_dados', null)
-      .neq('status', 'rejeitado')
+      .is('dados_extraidos', null)
+      .is('drive_url', null)
     resultados.push({
       id: 'documentos_nao_analisados',
       nome: 'Documentos sem análise de IA',

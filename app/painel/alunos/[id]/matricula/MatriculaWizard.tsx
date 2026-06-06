@@ -10,10 +10,8 @@ const DIAS_LABEL: Record<string, string> = {
 }
 
 const PLANOS = [
-  { id: 'mensal',     label: 'Mensal',     meses: 1  },
-  { id: 'trimestral', label: 'Trimestral', meses: 3  },
-  { id: 'semestral',  label: 'Semestral',  meses: 6  },
-  { id: 'anual',      label: 'Anual',      meses: 12 },
+  { id: 'mensal',     label: 'Mensal',     meses: 1,  descricao: 'Sem fidelidade' },
+  { id: 'fidelidade', label: 'Fidelidade', meses: 12, descricao: '12 meses — contrato anual' },
 ]
 
 const DESCONTOS = [
@@ -246,17 +244,18 @@ export default function MatriculaWizard({
           <h2 className="text-sm font-semibold text-gray-700">Plano e desconto</h2>
 
           {/* Plano */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {PLANOS.map(p => (
               <button
                 key={p.id}
                 onClick={() => setPlano(p.id)}
-                className={`border rounded-xl px-3 py-3 text-sm font-medium transition-colors ${
-                  plano === p.id ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                className={`border rounded-xl px-4 py-4 text-left transition-colors ${
+                  plano === p.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >
-                {p.label}
-                <p className="text-xs font-normal text-gray-400">{p.meses}x</p>
+                <p className={`text-sm font-semibold ${plano === p.id ? 'text-indigo-700' : 'text-gray-900'}`}>{p.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{p.descricao}</p>
+                <p className="text-xs font-medium text-gray-500 mt-1">{p.meses} mensalidade{p.meses > 1 ? 's' : ''}</p>
               </button>
             ))}
           </div>
