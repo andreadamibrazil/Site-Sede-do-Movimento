@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       tipo: tipo as any,
       nome: file.name,
       drive_url: result.driveUrl,
+      storage_path: '',
       observacao: obsAutomatica,
       dados_extraidos: (result.dadosExtraidos ?? null) as any,
       criado_por: guard.userId,
