@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
       aluno_id: alunoId,
       tipo: tipo as any,
       nome: file.name,
-      storage_path: null,
       drive_url: result.driveUrl,
       observacao: obsAutomatica,
       dados_extraidos: result.dadosExtraidos ?? null,
