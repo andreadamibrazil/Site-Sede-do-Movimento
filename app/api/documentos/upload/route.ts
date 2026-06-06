@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       nome: file.name,
       drive_url: result.driveUrl,
       observacao: obsAutomatica,
-      dados_extraidos: result.dadosExtraidos ?? null,
+      dados_extraidos: (result.dadosExtraidos ?? null) as any,
       criado_por: guard.userId,
     })
     .select('id')
