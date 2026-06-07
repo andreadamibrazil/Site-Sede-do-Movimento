@@ -125,6 +125,11 @@ export default function NovoAlunoForm({ leadResponsavel }: { leadResponsavel?: L
 
   async function salvar() {
     if (!dados.nome.trim()) { setErro('Nome é obrigatório.'); return }
+    if (!dados.celular.trim()) { setErro('Celular é obrigatório.'); return }
+    if (!dados.email.trim()) { setErro('E-mail é obrigatório.'); return }
+    if (!dados.email.includes('@')) { setErro('E-mail inválido — verifique se contém @.'); return }
+    const cpfLimpoValidacao = dados.cpf.replace(/\D/g, '')
+    if (cpfLimpoValidacao && cpfLimpoValidacao.length !== 11) { setErro('CPF deve ter 11 dígitos.'); return }
     setSalvando(true); setErro('')
 
     let resp1Id = null, resp2Id = null

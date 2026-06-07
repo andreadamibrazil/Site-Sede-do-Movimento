@@ -43,7 +43,7 @@ export default function MatriculaWizard({
   aluno,
   turmas,
 }: {
-  aluno: { id: string; nome: string; data_nascimento: string | null }
+  aluno: { id: string; nome: string; data_nascimento: string | null; celular: string | null; email: string | null }
   turmas: Turma[]
 }) {
   const router = useRouter()
@@ -138,6 +138,24 @@ export default function MatriculaWizard({
     // 3. Gera mensalidades
     const mensalidades = gerarMensalidades(matricula.id, dataInicio, meses, valorFinal, Number(diaVencimento))
     await supabase.from('mensalidades').insert(mensalidades)
+
+    // 4. Dispara DocuSeal via n8n (sem bloquear — erro não impede redirect)
+    const turmasNomes = turmasSel.map(t => t.nome).join(', ')
+    const celular = aluno.celular ? `55${aluno.celular.replace(/\D/g, '')}` : null
+    fetch('https://n8n.sededomovimento.art/webhook/matricula-criada', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        aluno_id: aluno.id,
+        matricula_id: matricula.id,
+        aluno_nome: aluno.nome,
+        aluno_email: aluno.email,
+        aluno_whatsapp: celular,
+        plano,
+        valor_mensal: valorFinal,
+        turmas: turmasNomes,
+      }),
+    }).catch(() => {})
 
     router.push(`/painel/alunos/${aluno.id}?aba=matriculas`)
   }
