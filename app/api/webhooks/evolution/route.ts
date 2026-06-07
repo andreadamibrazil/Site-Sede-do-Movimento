@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.EVOLUTION_WEBHOOK_SECRET
   if (secret) {
     const apikey = req.headers.get('apikey') ?? req.headers.get('x-api-key')
-    if (apikey !== secret) {
+    if (apikey?.trim() !== secret.trim()) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     }
   }
