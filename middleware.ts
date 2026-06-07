@@ -51,7 +51,7 @@ async function painelMiddleware(request: NextRequest) {
       { cookies: { getAll: () => [], setAll: () => {} } }
     )
     const { data: perfil } = await sb
-      .from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle()
+      .from('perfis_usuario').select('perfil, ativo').eq('id', user.id).maybeSingle()
 
     if (!perfil) {
       // Sem perfil admin — se for professor manda pro portal deles
@@ -59,6 +59,20 @@ async function painelMiddleware(request: NextRequest) {
         .from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle()
       if (prof) return NextResponse.redirect(new URL('/professor', request.url))
       return NextResponse.redirect(new URL('/painel/login', request.url))
+    }
+
+    // Usuário inativo — tela de espera
+    if (!perfil.ativo) {
+      const isWaiting = request.nextUrl.pathname === '/painel/aguardando'
+      if (!isWaiting) return NextResponse.redirect(new URL('/painel/aguardando', request.url))
+      return response
+    }
+
+    // Secretaria: acesso restrito ao Atendimento por padrão
+    const SECRETARIA_PATHS = ['/painel/inbox', '/painel/aguardando']
+    if (perfil.perfil === 'secretaria') {
+      const allowed = SECRETARIA_PATHS.some(p => request.nextUrl.pathname.startsWith(p))
+      if (!allowed) return NextResponse.redirect(new URL('/painel/inbox', request.url))
     }
   }
 
