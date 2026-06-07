@@ -271,6 +271,17 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
   const [salvandoAditivo, setSalvandoAditivo] = useState(false)
   const [erroAditivo, setErroAditivo] = useState('')
   const [sucessoAditivo, setSucessoAditivo] = useState(false)
+  const [cancelando, setCancelando] = useState<string | null>(null)
+
+  async function cancelarMatricula(matriculaId: string) {
+    if (!confirm('Cancelar esta matrícula? As mensalidades em aberto serão canceladas.')) return
+    setCancelando(matriculaId)
+    const sb = createClient()
+    await sb.from('matriculas').update({ status: 'cancelada' }).eq('id', matriculaId)
+    await sb.from('mensalidades').update({ status: 'cancelada' }).eq('matricula_id', matriculaId).eq('status', 'aberta')
+    setCancelando(null)
+    window.location.reload()
+  }
 
   const supabase = createClient()
 
@@ -318,12 +329,21 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
                   R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
                 </p>
                 {m.status === 'ativa' && (
-                  <button
-                    onClick={() => { setAditivo({ matriculaId: m.id, tipo: tipoAditivo }); setTipoAditivo('turma') }}
-                    className="text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
-                  >
-                    + Termo aditivo
-                  </button>
+                  <>
+                    <button
+                      onClick={() => { setAditivo({ matriculaId: m.id, tipo: tipoAditivo }); setTipoAditivo('turma') }}
+                      className="text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+                    >
+                      + Termo aditivo
+                    </button>
+                    <button
+                      onClick={() => cancelarMatricula(m.id)}
+                      disabled={cancelando === m.id}
+                      className="text-xs font-medium text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {cancelando === m.id ? 'Cancelando...' : 'Cancelar'}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
