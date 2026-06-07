@@ -271,17 +271,6 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
   const [salvandoAditivo, setSalvandoAditivo] = useState(false)
   const [erroAditivo, setErroAditivo] = useState('')
   const [sucessoAditivo, setSucessoAditivo] = useState(false)
-  const [cancelando, setCancelando] = useState<string | null>(null)
-
-  async function cancelarMatricula(matriculaId: string) {
-    if (!confirm('Cancelar esta matrícula? As mensalidades em aberto serão canceladas.')) return
-    setCancelando(matriculaId)
-    const sb = createClient()
-    await sb.from('matriculas').update({ status: 'cancelada' }).eq('id', matriculaId)
-    await sb.from('mensalidades').update({ status: 'cancelada' }).eq('matricula_id', matriculaId).eq('status', 'aberta')
-    setCancelando(null)
-    window.location.reload()
-  }
 
   const supabase = createClient()
 
@@ -329,21 +318,12 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
                   R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
                 </p>
                 {m.status === 'ativa' && (
-                  <>
-                    <button
-                      onClick={() => { setAditivo({ matriculaId: m.id, tipo: tipoAditivo }); setTipoAditivo('turma') }}
-                      className="text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
-                    >
-                      + Termo aditivo
-                    </button>
-                    <button
-                      onClick={() => cancelarMatricula(m.id)}
-                      disabled={cancelando === m.id}
-                      className="text-xs font-medium text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40"
-                    >
-                      {cancelando === m.id ? 'Cancelando...' : 'Cancelar'}
-                    </button>
-                  </>
+                  <button
+                    onClick={() => { setAditivo({ matriculaId: m.id, tipo: tipoAditivo }); setTipoAditivo('turma') }}
+                    className="text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    + Termo aditivo
+                  </button>
                 )}
               </div>
             </div>
@@ -645,6 +625,14 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [avissoDrive, setAvisoDrive] = useState(false)
+  const [modo, setModo] = useState<'arquivo' | 'link'>('arquivo')
+  const [linkUrl, setLinkUrl] = useState('')
+  const [linkNome, setLinkNome] = useState('')
+  const [salvandoLink, setSalvandoLink] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [editObs, setEditObs] = useState('')
+  const [editTipo, setEditTipo] = useState('')
+  const [salvandoEdit, setSalvandoEdit] = useState(false)
 
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -653,7 +641,6 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
     setErro('')
     setAvisoDrive(false)
 
-    // Comprime imagens e PDFs grandes antes de enviar
     let fileParaEnviar: File = file
     const ehImagem = file.type.startsWith('image/')
     const ehPDF = file.type === 'application/pdf'
@@ -675,7 +662,6 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
       } catch (_) {}
     }
 
-    // Upload via API server-side → Drive + Gemini
     const form = new FormData()
     form.append('file', fileParaEnviar, fileParaEnviar.name)
     form.append('aluno_id', alunoId)
@@ -687,7 +673,6 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
 
     if (!res.ok || !json.ok) {
       if (json.alertaEnviado) {
-        // Drive falhou — mostra aviso mas não bloqueia
         setAvisoDrive(true)
       } else {
         setErro(json.erro ?? json.error ?? 'Erro ao enviar arquivo')
@@ -702,17 +687,58 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
     router.refresh()
   }
 
-  async function baixar(doc: { storage_path?: string | null; drive_url?: string | null; nome: string }) {
-    if (doc.drive_url) {
-      window.open(doc.drive_url, '_blank')
-      return
+  async function salvarLink() {
+    if (!linkUrl.trim()) { setErro('Cole a URL do Drive'); return }
+    setSalvandoLink(true)
+    setErro('')
+    const nome = linkNome.trim() || TIPO_LABEL[tipo] || tipo
+    const { error } = await supabase.from('documentos_aluno').insert({
+      aluno_id: alunoId,
+      tipo,
+      nome,
+      observacao: obs || null,
+      drive_url: linkUrl.trim(),
+      storage_path: '',
+    })
+    if (error) { setErro(error.message); setSalvandoLink(false); return }
+    setLinkUrl('')
+    setLinkNome('')
+    setObs('')
+    setSalvandoLink(false)
+    router.refresh()
+  }
+
+  function iniciarEdicao(doc: any) {
+    setEditandoId(doc.id)
+    setEditObs(doc.observacao ?? '')
+    setEditTipo(doc.tipo ?? 'outro')
+  }
+
+  async function salvarEdicao(id: string) {
+    setSalvandoEdit(true)
+    await supabase.from('documentos_aluno').update({ observacao: editObs || null, tipo: editTipo }).eq('id', id)
+    setSalvandoEdit(false)
+    setEditandoId(null)
+    router.refresh()
+  }
+
+  async function visualizar(doc: { storage_path?: string | null; drive_url?: string | null }) {
+    if (doc.drive_url) { window.open(doc.drive_url, '_blank'); return }
+    if (doc.storage_path) {
+      const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(doc.storage_path, 300)
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank')
     }
+  }
+
+  async function baixar(doc: { storage_path?: string | null; drive_url?: string | null; nome: string }) {
+    if (doc.drive_url) { window.open(doc.drive_url, '_blank'); return }
     if (doc.storage_path) {
       const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(doc.storage_path, 60)
       if (data?.signedUrl) {
         const a = document.createElement('a')
         a.href = data.signedUrl
         a.download = doc.nome
+        a.target = '_blank'
         a.click()
       }
     }
@@ -720,18 +746,33 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
 
   async function excluir(id: string, storagePath?: string | null) {
     if (!confirm('Excluir este documento?')) return
-    if (storagePath) {
-      await supabase.storage.from('documentos-alunos').remove([storagePath])
-    }
+    if (storagePath) await supabase.storage.from('documentos-alunos').remove([storagePath])
     await supabase.from('documentos_aluno').delete().eq('id', id)
     router.refresh()
   }
 
   return (
     <div className="space-y-5">
-      {/* Upload */}
+      {/* Adicionar documento */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Adicionar documento</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">Adicionar documento</h2>
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+            <button
+              onClick={() => { setModo('arquivo'); setErro('') }}
+              className={`px-3 py-1.5 font-medium transition-colors ${modo === 'arquivo' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              Arquivo
+            </button>
+            <button
+              onClick={() => { setModo('link'); setErro('') }}
+              className={`px-3 py-1.5 font-medium transition-colors ${modo === 'link' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+            >
+              Link Drive
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
@@ -753,16 +794,48 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
             />
           </div>
         </div>
-        <div>
-          <input ref={inputRef} type="file" onChange={upload} disabled={enviando} className="hidden" id="doc-upload" />
-          <label
-            htmlFor="doc-upload"
-            className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-6 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${enviando ? 'opacity-50 pointer-events-none' : ''}`}
-          >
-            <span className="text-2xl">📎</span>
-            <span className="text-sm text-gray-500">{enviando ? 'Enviando...' : 'Clique para selecionar o arquivo'}</span>
-          </label>
-        </div>
+
+        {modo === 'arquivo' ? (
+          <div>
+            <input ref={inputRef} type="file" onChange={upload} disabled={enviando} className="hidden" id="doc-upload" />
+            <label
+              htmlFor="doc-upload"
+              className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-6 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${enviando ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <span className="text-2xl">📎</span>
+              <span className="text-sm text-gray-500">{enviando ? 'Enviando...' : 'Clique para selecionar o arquivo'}</span>
+            </label>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">URL do Google Drive</label>
+              <input
+                value={linkUrl}
+                onChange={e => setLinkUrl(e.target.value)}
+                placeholder="https://drive.google.com/file/d/..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nome do arquivo (opcional)</label>
+              <input
+                value={linkNome}
+                onChange={e => setLinkNome(e.target.value)}
+                placeholder="Ex: Contrato assinado 2026"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <button
+              onClick={salvarLink}
+              disabled={salvandoLink}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-50 transition-colors"
+            >
+              {salvandoLink ? 'Salvando...' : 'Salvar link'}
+            </button>
+          </div>
+        )}
+
         {erro && <p className="text-xs text-red-500">{erro}</p>}
         {avissoDrive && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 text-xs text-orange-700">
@@ -777,33 +850,88 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
       ) : (
         <div className="space-y-2">
           {documentos.map((doc: any) => (
-            <div key={doc.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                    {TIPO_LABEL[doc.tipo] ?? doc.tipo}
-                  </span>
-                  <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
+            <div key={doc.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+              {editandoId === doc.id ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                      <select
+                        value={editTipo}
+                        onChange={e => setEditTipo(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Observação / Descrição</label>
+                      <input
+                        value={editObs}
+                        onChange={e => setEditObs(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setEditandoId(null)}
+                      className="text-xs text-gray-500 hover:text-gray-700 font-medium px-3 py-1"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => salvarEdicao(doc.id)}
+                      disabled={salvandoEdit}
+                      className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1 rounded-lg disabled:opacity-50"
+                    >
+                      {salvandoEdit ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
                 </div>
-                {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => baixar(doc)}
-                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  {doc.drive_url ? 'Abrir no Drive' : 'Baixar'}
-                </button>
-                <button
-                  onClick={() => excluir(doc.id, doc.storage_path)}
-                  className="text-xs text-red-400 hover:text-red-600"
-                >
-                  Excluir
-                </button>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                        {TIPO_LABEL[doc.tipo] ?? doc.tipo}
+                      </span>
+                      <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
+                    </div>
+                    {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => iniciarEdicao(doc)}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                      title="Editar descrição"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => visualizar(doc)}
+                      className="text-xs text-gray-500 hover:text-gray-700 font-medium"
+                    >
+                      Visualizar
+                    </button>
+                    <button
+                      onClick={() => baixar(doc)}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      {doc.drive_url ? 'Abrir no Drive' : 'Baixar'}
+                    </button>
+                    <button
+                      onClick={() => excluir(doc.id, doc.storage_path)}
+                      className="text-xs text-red-400 hover:text-red-600"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
