@@ -329,6 +329,30 @@ export type Database = {
           },
         ]
       }
+      conversas: {
+        Row: {
+          analisado_em: string | null
+          celular: string
+          id: string
+          source: string | null
+          variables: Json | null
+        }
+        Insert: {
+          analisado_em?: string | null
+          celular: string
+          id?: string
+          source?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          analisado_em?: string | null
+          celular?: string
+          id?: string
+          source?: string | null
+          variables?: Json | null
+        }
+        Relationships: []
+      }
       cobrancas_avulsas: {
         Row: {
           aluno_id: string
@@ -1996,6 +2020,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_analise_dashboard: { Args: Record<PropertyKey, never>; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
     }

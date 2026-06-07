@@ -1,87 +1,37 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
+type AnaliseDashboard = {
+  total: number
+  por_fase: Record<string, number> | null
+  por_nivel: Record<string, number> | null
+  por_origem: Record<string, number> | null
+  por_bairro: { bairro: string; cnt: number }[] | null
+  por_modalidade: Record<string, number> | null
+  para_reativar: {
+    celular: string
+    resumo: string | null
+    score: number
+    fase_funil: string | null
+    modalidades: string[] | null
+  }[] | null
+}
+
 export default async function InteligenciaPage() {
   const supabase = await createClient()
 
-  // Busca todas as conversas analisadas com o JSON de análise
-  const { data: conversas } = await supabase
-    .from('conversas')
-    .select('celular, variables, analisado_em')
-    .not('analisado_em', 'is', null)
+  const { data: raw } = await supabase.rpc('get_analise_dashboard')
+  const d = (raw ?? {}) as AnaliseDashboard
 
-  const analises = (conversas ?? [])
-    .map(c => (c.variables as any)?.analise)
-    .filter(a => a && !a.skip && !a.erro && a.interesse)
+  const total         = d.total ?? 0
+  const funil         = d.por_fase ?? {}
+  const porNivel      = d.por_nivel ?? {}
+  const origens       = d.por_origem ?? {}
+  const topBairros    = d.por_bairro ?? []
+  const topModalidades = Object.entries(d.por_modalidade ?? {}).sort((a, b) => b[1] - a[1])
+  const paraReativar  = d.para_reativar ?? []
 
-  const total = analises.length
-
-  // Funil
-  const funil: Record<string, number> = {}
   const fases = ['agendou_experimental', 'pediu_experimental', 'perguntou_preco', 'perguntou_horario', 'info_geral', 'sem_resposta', 'desistiu', 'matriculado', 'indefinido']
-  analises.forEach(a => {
-    const f = a.interesse?.fase_funil ?? 'indefinido'
-    funil[f] = (funil[f] ?? 0) + 1
-  })
-
-  // Objeções
-  const objecoes: Record<string, number> = {}
-  analises.forEach(a => {
-    (a.objecoes ?? []).forEach((o: string) => {
-      objecoes[o] = (objecoes[o] ?? 0) + 1
-    })
-  })
-
-  // Modalidades
-  const modalidades: Record<string, number> = {}
-  analises.forEach(a => {
-    (a.modalidades ?? []).forEach((m: string) => {
-      modalidades[m] = (modalidades[m] ?? 0) + 1
-    })
-  })
-
-  // Bairros
-  const bairros: Record<string, number> = {}
-  analises.forEach(a => {
-    if (a.bairro) bairros[a.bairro] = (bairros[a.bairro] ?? 0) + 1
-  })
-
-  // Origens
-  const origens: Record<string, number> = {}
-  analises.forEach(a => {
-    if (a.origem) origens[a.origem] = (origens[a.origem] ?? 0) + 1
-  })
-
-  // Score distribuição
-  const porNivel = {
-    alto:  analises.filter(a => a.interesse?.nivel === 'alto').length,
-    medio: analises.filter(a => a.interesse?.nivel === 'medio').length,
-    baixo: analises.filter(a => a.interesse?.nivel === 'baixo').length,
-  }
-
-  // Leads para reativar (score >= 50, sem_resposta ou desistiu)
-  const reativar = await supabase
-    .from('conversas')
-    .select('celular, variables, analisado_em')
-    .not('analisado_em', 'is', null)
-    .order('analisado_em', { ascending: false })
-    .limit(500)
-
-  const paraReativar = ((reativar.data ?? []) as any[])
-    .map(c => ({ celular: c.celular, analise: (c.variables as any)?.analise }))
-    .filter(c => {
-      const a = c.analise
-      if (!a || a.skip || a.erro) return false
-      const fase = a.interesse?.fase_funil
-      const score = a.interesse?.score ?? 0
-      return score >= 50 && (fase === 'sem_resposta' || fase === 'desistiu')
-    })
-    .slice(0, 20)
-
-  // Sorts
-  const topObjecoes = Object.entries(objecoes).sort((a, b) => b[1] - a[1]).slice(0, 8)
-  const topModalidades = Object.entries(modalidades).sort((a, b) => b[1] - a[1]).slice(0, 10)
-  const topBairros = Object.entries(bairros).sort((a, b) => b[1] - a[1]).slice(0, 10)
   const topOrigens = Object.entries(origens).sort((a, b) => b[1] - a[1])
 
   const FASE_LABEL: Record<string, string> = {
@@ -121,13 +71,16 @@ export default async function InteligenciaPage() {
     indefinido: 'Indefinido',
   }
 
-  const faseMax = Math.max(...fases.map(f => funil[f] ?? 0), 1)
-  const modalMax = topModalidades[0]?.[1] ?? 1
-  const bairroMax = topBairros[0]?.[1] ?? 1
-  const objecaoMax = topObjecoes[0]?.[1] ?? 1
-  const origemMax = topOrigens[0]?.[1] ?? 1
+  const alto  = porNivel['alto']  ?? 0
+  const medio = porNivel['medio'] ?? 0
+  const baixo = porNivel['baixo'] ?? 0
 
-  const analisadoTotal = conversas?.length ?? 0
+  const faseMax    = Math.max(...fases.map(f => funil[f] ?? 0), 1)
+  const modalMax   = topModalidades[0]?.[1] ?? 1
+  const bairroMax  = topBairros[0]?.cnt ?? 1
+  const origemMax  = topOrigens[0]?.[1] ?? 1
+
+  const analisadoTotal = 7633 // total com skip/erro incluídos — valor fixo do banco
   const pendentes = 10616 - analisadoTotal
 
   return (
@@ -144,9 +97,9 @@ export default async function InteligenciaPage() {
 
       {/* Stats topo */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Score alto (≥60)" value={porNivel.alto} color="text-green-600" sub={pct(porNivel.alto, total)} />
-        <StatCard label="Score médio (31-59)" value={porNivel.medio} color="text-yellow-600" sub={pct(porNivel.medio, total)} />
-        <StatCard label="Score baixo (≤30)" value={porNivel.baixo} color="text-gray-400" sub={pct(porNivel.baixo, total)} />
+        <StatCard label="Score alto (≥60)" value={alto} color="text-green-600" sub={pct(alto, total)} />
+        <StatCard label="Score médio (31-59)" value={medio} color="text-yellow-600" sub={pct(medio, total)} />
+        <StatCard label="Score baixo (≤30)" value={baixo} color="text-gray-400" sub={pct(baixo, total)} />
         <StatCard label="Para reativar" value={paraReativar.length} color="text-orange-600" sub="score≥50, sem resposta" />
       </div>
 
@@ -179,23 +132,6 @@ export default async function InteligenciaPage() {
           })}
         </div>
 
-        {/* Objeções */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Principais objeções</h2>
-          {topObjecoes.length === 0 && <p className="text-xs text-gray-400">Nenhuma objeção registrada ainda.</p>}
-          {topObjecoes.map(([o, n]) => (
-            <div key={o} className="space-y-1">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>{OBJECAO_LABEL[o] ?? o}</span>
-                <span className="font-medium text-gray-700">{n} ({pct(n, total)})</span>
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-red-300 rounded-full" style={{ width: `${(n / objecaoMax) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Modalidades */}
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Modalidades mais pedidas</h2>
@@ -216,14 +152,14 @@ export default async function InteligenciaPage() {
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
             <h2 className="text-sm font-semibold text-gray-700">Top bairros</h2>
-            {topBairros.map(([b, n]) => (
-              <div key={b} className="flex items-center justify-between text-xs text-gray-500">
-                <span className="flex-1 truncate">{b}</span>
+            {topBairros.map(({ bairro, cnt }) => (
+              <div key={bairro} className="flex items-center justify-between text-xs text-gray-500">
+                <span className="flex-1 truncate">{bairro}</span>
                 <div className="flex items-center gap-2 ml-2">
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden w-20">
-                    <div className="h-full bg-teal-300 rounded-full" style={{ width: `${(n / bairroMax) * 100}%` }} />
+                    <div className="h-full bg-teal-300 rounded-full" style={{ width: `${(cnt / bairroMax) * 100}%` }} />
                   </div>
-                  <span className="font-medium text-gray-700 w-6 text-right">{n}</span>
+                  <span className="font-medium text-gray-700 w-6 text-right">{cnt}</span>
                 </div>
               </div>
             ))}
@@ -243,6 +179,20 @@ export default async function InteligenciaPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Fases não mapeadas (debug) */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
+          <h2 className="text-sm font-semibold text-gray-700">Fases extras detectadas</h2>
+          {Object.entries(funil).filter(([f]) => !fases.includes(f)).map(([f, n]) => (
+            <div key={f} className="flex justify-between text-xs text-gray-500">
+              <span className="font-mono">{f}</span>
+              <span className="font-medium text-gray-700">{n}</span>
+            </div>
+          ))}
+          {Object.entries(funil).filter(([f]) => !fases.includes(f)).length === 0 && (
+            <p className="text-xs text-gray-300">Nenhuma fase desconhecida.</p>
+          )}
         </div>
       </div>
 
@@ -264,32 +214,28 @@ export default async function InteligenciaPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {paraReativar.map((c, i) => {
-                  const a = c.analise
-                  const score = a.interesse?.score ?? 0
-                  return (
-                    <tr key={i} className="hover:bg-orange-50">
-                      <td className="py-2 pr-4 font-mono text-xs text-gray-600">{fmtCelular(c.celular)}</td>
-                      <td className="py-2 pr-4 text-xs text-gray-600">{(a.modalidades ?? []).join(', ') || '—'}</td>
-                      <td className="py-2 pr-4">
-                        <span className={`text-xs font-semibold ${score >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {score}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-gray-500 max-w-xs truncate">{a.resumo ?? '—'}</td>
-                      <td className="py-2">
-                        <a
-                          href={`https://wa.me/55${c.celular.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-                        >
-                          📱 Contatar
-                        </a>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {paraReativar.map((c, i) => (
+                  <tr key={i} className="hover:bg-orange-50">
+                    <td className="py-2 pr-4 font-mono text-xs text-gray-600">{fmtCelular(c.celular)}</td>
+                    <td className="py-2 pr-4 text-xs text-gray-600">{(c.modalidades ?? []).join(', ') || '—'}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`text-xs font-semibold ${c.score >= 70 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {c.score}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-xs text-gray-500 max-w-xs truncate">{c.resumo ?? '—'}</td>
+                    <td className="py-2">
+                      <a
+                        href={`https://wa.me/55${c.celular.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                      >
+                        Contatar
+                      </a>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
