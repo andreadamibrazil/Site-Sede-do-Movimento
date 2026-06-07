@@ -82,6 +82,7 @@ export default async function LeadsPage({
   const { data: todosLeads } = await supabase
     .from('leads')
     .select('status, observacoes')
+    .range(0, 9999)
 
   const qtdStatus: Record<string, number> = {}
   const qtdTemperatura: Record<string, number> = {}
