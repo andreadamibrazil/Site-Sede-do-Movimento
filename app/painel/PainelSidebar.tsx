@@ -62,9 +62,11 @@ function NavItem({ href, icon, label, admin = false, collapsed = false, external
 type Props = {
   email: string
   isAdmin: boolean
+  perfil?: string
 }
 
-export default function PainelSidebar({ email, isAdmin }: Props) {
+export default function PainelSidebar({ email, isAdmin, perfil }: Props) {
+  const isSecretaria = perfil === 'secretaria'
   const [collapsed, setCollapsed] = useState(false)
 
   // Persiste estado colapsado no localStorage
@@ -107,15 +109,15 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-        <NavItem href="/painel"            icon="📊" label="Dashboard"  collapsed={collapsed} />
-        <NavItem href="/painel/alunos"     icon="👥" label="Alunos"     collapsed={collapsed} />
-        <NavItem href="/painel/turmas"     icon="🎓" label="Turmas"     collapsed={collapsed} />
-        <NavItem href="/painel/agenda"     icon="📅" label="Agenda"     collapsed={collapsed} />
-        <NavItem href="/painel/financeiro" icon="💰" label="Financeiro" collapsed={collapsed} />
-        <NavItem href="/painel/leads"          icon="🎯" label="Leads"         collapsed={collapsed} />
-        <NavItem href="/painel/inteligencia"   icon="🧠" label="Inteligência"  collapsed={collapsed} />
-        <NavItem href="/painel/relatorios"     icon="📋" label="Relatórios"    collapsed={collapsed} />
-        <NavItem href="/painel/inbox"      icon="💬" label="Atendimento" collapsed={collapsed} />
+        <NavItem href="/painel"              icon="📊" label="Dashboard"   collapsed={collapsed} />
+        <NavItem href="/painel/alunos"       icon="👥" label="Alunos"      collapsed={collapsed} />
+        <NavItem href="/painel/turmas"       icon="🎓" label="Turmas"      collapsed={collapsed} />
+        <NavItem href="/painel/agenda"       icon="📅" label="Agenda"      collapsed={collapsed} />
+        <NavItem href="/painel/financeiro"   icon="💰" label="Financeiro"  collapsed={collapsed} />
+        <NavItem href="/painel/leads"        icon="🎯" label="Leads"       collapsed={collapsed} />
+        <NavItem href="/painel/inteligencia" icon="🧠" label="Inteligência" collapsed={collapsed} />
+        <NavItem href="/painel/relatorios"   icon="📋" label="Relatórios"  collapsed={collapsed} />
+        <NavItem href="/painel/inbox"        icon="💬" label="Atendimento" collapsed={collapsed} />
 
         {isAdmin && (
           <div className="pt-4">

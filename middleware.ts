@@ -68,11 +68,14 @@ async function painelMiddleware(request: NextRequest) {
       return response
     }
 
-    // Secretaria: acesso restrito ao Atendimento por padrão
-    const SECRETARIA_PATHS = ['/painel/inbox', '/painel/aguardando']
+    // Secretaria: bloqueia só seção admin/ferramentas
+    const ADMIN_PATHS = [
+      '/painel/professores', '/painel/folha-pagamento', '/painel/usuarios',
+      '/painel/historico', '/painel/auditoria',
+    ]
     if (perfil.perfil === 'secretaria') {
-      const allowed = SECRETARIA_PATHS.some(p => request.nextUrl.pathname.startsWith(p))
-      if (!allowed) return NextResponse.redirect(new URL('/painel/inbox', request.url))
+      const bloqueado = ADMIN_PATHS.some(p => request.nextUrl.pathname.startsWith(p))
+      if (bloqueado) return NextResponse.redirect(new URL('/painel', request.url))
     }
   }
 

@@ -15,10 +15,11 @@ export default async function PainelLayout({ children }: { children: React.React
     .maybeSingle()
 
   const isAdmin = perfil?.perfil === 'admin'
+  const perfilAtual = perfil?.perfil ?? 'secretaria'
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <PainelSidebar email={user.email ?? ''} isAdmin={isAdmin} />
+      <PainelSidebar email={user.email ?? ''} isAdmin={isAdmin} perfil={perfilAtual} />
       <main className="flex-1 overflow-auto">
         {children}
       </main>
