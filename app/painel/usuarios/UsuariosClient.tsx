@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { atualizarAtivoUsuario, atualizarPerfilUsuario } from './actions'
 
 type Usuario = {
   id: string
@@ -46,20 +46,25 @@ export default function UsuariosClient({
   const [novoPerfil, setNovoPerfil] = useState<'secretaria' | 'admin' | 'professor'>('secretaria')
   const [convidando, setConvidando] = useState(false)
   const [erroConvite, setErroConvite] = useState('')
-  const supabase = createClient()
 
   async function toggleAtivo(id: string, ativo: boolean) {
     setSalvando(id)
-    await supabase.from('perfis_usuario').update({ ativo: !ativo }).eq('id', id)
-    setUsuarios(u => u.map(x => x.id === id ? { ...x, ativo: !ativo } : x))
-    setSalvando(null)
+    try {
+      await atualizarAtivoUsuario(id, !ativo)
+      setUsuarios(u => u.map(x => x.id === id ? { ...x, ativo: !ativo } : x))
+    } finally {
+      setSalvando(null)
+    }
   }
 
   async function mudarPerfil(id: string, perfil: string) {
     setSalvando(id)
-    await supabase.from('perfis_usuario').update({ perfil: perfil as any }).eq('id', id)
-    setUsuarios(u => u.map(x => x.id === id ? { ...x, perfil: perfil as any } : x))
-    setSalvando(null)
+    try {
+      await atualizarPerfilUsuario(id, perfil)
+      setUsuarios(u => u.map(x => x.id === id ? { ...x, perfil: perfil as any } : x))
+    } finally {
+      setSalvando(null)
+    }
   }
 
   async function enviarConvite() {

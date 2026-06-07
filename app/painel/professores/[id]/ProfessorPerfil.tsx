@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { atualizarAcessoProfessor } from './actions'
 
 const DIAS: Record<string, string> = {
   segunda: 'Seg', terca: 'Ter', quarta: 'Qua',
@@ -10,7 +10,6 @@ const DIAS: Record<string, string> = {
 }
 
 export default function ProfessorPerfil({ professor, turmas }: { professor: any; turmas: any[] }) {
-  const supabase = createClient()
   const router = useRouter()
 
   const [email, setEmail] = useState(professor.email ?? '')
@@ -20,14 +19,16 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
 
   async function salvarAcesso() {
     setSalvandoEmail(true)
-    await supabase.from('professores').update({
-      email: email.trim() || null,
-      celular: celular.trim() || null,
-    }).eq('id', professor.id)
-    setSalvandoEmail(false)
-    setEmailSalvo(true)
-    setTimeout(() => setEmailSalvo(false), 3000)
-    router.refresh()
+    try {
+      await atualizarAcessoProfessor(professor.id, { email: email.trim(), celular: celular.trim() })
+      setEmailSalvo(true)
+      setTimeout(() => setEmailSalvo(false), 3000)
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvandoEmail(false)
+    }
   }
 
   const temAcesso = !!professor.email

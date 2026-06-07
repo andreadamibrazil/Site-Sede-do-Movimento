@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { atualizarPrecoPadrao } from './actions'
 
 type Horario = { dia_semana: string; hora_inicio: string; hora_fim: string }
 
@@ -50,7 +50,6 @@ export default function TurmasClient({
   isAdmin: boolean
   contagemPorTurma: Record<string, number>
 }) {
-  const supabase = createClient()
   const router = useRouter()
   const [editando, setEditando] = useState<string | null>(null)
   const [precoTemp, setPrecoTemp] = useState('')
@@ -61,10 +60,15 @@ export default function TurmasClient({
     const valor = parseFloat(precoTemp.replace(',', '.'))
     if (isNaN(valor) || valor <= 0) return
     setSalvando(true)
-    await supabase.from('turmas').update({ preco_padrao: valor }).eq('id', id)
-    setTurmas(ts => ts.map(t => t.id === id ? { ...t, preco_padrao: valor } : t))
-    setSalvando(false)
-    setEditando(null)
+    try {
+      await atualizarPrecoPadrao(id, valor)
+      setTurmas(ts => ts.map(t => t.id === id ? { ...t, preco_padrao: valor } : t))
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+      setEditando(null)
+    }
   }
 
   return (

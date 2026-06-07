@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { registrarPagamento as registrarPagamentoAction } from './actions'
 
 const FILTROS = [
   { id: 'aberta,em_atraso', label: 'A receber' },
@@ -45,7 +45,6 @@ export default function FinanceiroClient({
   buscaAtual: string
 }) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [pagando, setPagando] = useState<string | null>(null) // mensalidade id
   const [forma, setForma] = useState('pix')
@@ -80,34 +79,31 @@ export default function FinanceiroClient({
     const valorNum = Number(valorPago.replace(',', '.'))
     let comprovanteUrl: string | null = null
 
-    // Upload comprovante se houver
+    // Upload comprovante client-side (storage direto do browser)
     if (comprovante) {
+      const { createClient } = await import('@/lib/supabase/client')
+      const storageClient = createClient()
       const path = `comprovantes/${pagando}/${Date.now()}.${comprovante.name.split('.').pop()}`
-      const { data: upData } = await supabase.storage
+      const { data: upData } = await storageClient.storage
         .from('documentos-alunos')
         .upload(path, comprovante)
       if (upData?.path) comprovanteUrl = upData.path
     }
 
-    // Atualiza mensalidade
-    await supabase.from('mensalidades').update({
-      status: 'recebida',
-      valor_pago: valorNum,
-      pago_em: new Date().toISOString(),
-    }).eq('id', pagando)
-
-    // Registra pagamento
-    await supabase.from('pagamentos').insert({
-      mensalidade_id: pagando,
-      valor: valorNum,
-      forma: forma as any,
-      data_pagamento: new Date().toISOString().split('T')[0],
-      comprovante_url: comprovanteUrl,
-    })
-
-    setSalvando(false)
-    setPagando(null)
-    router.refresh()
+    try {
+      await registrarPagamentoAction({
+        mensalidadeId: pagando,
+        valor: valorNum,
+        forma,
+        comprovanteUrl,
+      })
+      setPagando(null)
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao registrar pagamento: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   function fmtData(iso: string) {
