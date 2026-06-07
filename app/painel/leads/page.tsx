@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { Suspense } from 'react'
+import Link from 'next/link'
 import FiltroLeads from './FiltroLeads'
 import BuscaLead from './BuscaLead'
 import BotaoExperimental from './BotaoExperimental'
@@ -187,7 +188,9 @@ export default async function LeadsPage({
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {isExperimental && <span className="text-sm" title="Experimental agendada">🎭</span>}
-                          <p className="font-medium text-gray-900">{lead.nome}</p>
+                          <Link href={`/painel/leads/${lead.id}`} className="font-medium text-gray-900 hover:text-indigo-600 transition-colors">
+                            {lead.nome}
+                          </Link>
                           {lead.status !== 'convertido' ? (
                             <>
                               <BotaoExperimental leadId={lead.id} leadNome={lead.nome} />

@@ -112,8 +112,9 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         <NavItem href="/painel/turmas"     icon="🎓" label="Turmas"     collapsed={collapsed} />
         <NavItem href="/painel/agenda"     icon="📅" label="Agenda"     collapsed={collapsed} />
         <NavItem href="/painel/financeiro" icon="💰" label="Financeiro" collapsed={collapsed} />
-        <NavItem href="/painel/leads"      icon="🎯" label="Leads"      collapsed={collapsed} />
-        <NavItem href="/painel/relatorios" icon="📋" label="Relatórios" collapsed={collapsed} />
+        <NavItem href="/painel/leads"          icon="🎯" label="Leads"         collapsed={collapsed} />
+        <NavItem href="/painel/inteligencia"   icon="🧠" label="Inteligência"  collapsed={collapsed} />
+        <NavItem href="/painel/relatorios"     icon="📋" label="Relatórios"    collapsed={collapsed} />
         <NavItem href="/painel/inbox"      icon="💬" label="Atendimento" collapsed={collapsed} />
 
         {isAdmin && (
