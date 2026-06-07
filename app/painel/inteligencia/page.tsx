@@ -20,7 +20,10 @@ type AnaliseDashboard = {
 export default async function InteligenciaPage() {
   const supabase = await createClient()
 
-  const { data: raw } = await supabase.rpc('get_analise_dashboard')
+  const [{ data: raw }, { count: pendentesCount }] = await Promise.all([
+    supabase.rpc('get_analise_dashboard'),
+    supabase.from('conversas').select('id', { count: 'exact', head: true }).is('analisado_em', null),
+  ])
   const d = (raw ?? {}) as AnaliseDashboard
 
   const total         = d.total ?? 0
@@ -80,8 +83,7 @@ export default async function InteligenciaPage() {
   const bairroMax  = topBairros[0]?.cnt ?? 1
   const origemMax  = topOrigens[0]?.[1] ?? 1
 
-  const analisadoTotal = 7633 // total com skip/erro incluídos — valor fixo do banco
-  const pendentes = 10616 - analisadoTotal
+  const pendentes = pendentesCount ?? 0
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
