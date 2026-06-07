@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { upsertProfessor, excluirProfessor, toggleAtivoProfessor } from './actions'
 
 type Professor = {
   id: string
@@ -25,8 +25,8 @@ const FORMAS = [
 const FORM_VAZIO = { nome: '', email: '', celular: '', forma_pagamento: 'fixo_mensal', valor_base: undefined as number | undefined, observacoes: '' }
 
 export default function ProfessoresClient({ professores: inicial }: { professores: Professor[] }) {
-  const supabase = createClient()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const [lista, setLista] = useState(inicial)
   const [editando, setEditando] = useState<string | null>(null)
   const [criando, setCriando] = useState(false)
@@ -34,52 +34,62 @@ export default function ProfessoresClient({ professores: inicial }: { professore
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState<string | null>(null)
 
-  async function toggleAtivo(id: string, ativo: boolean) {
-    await supabase.from('professores').update({ ativo: !ativo }).eq('id', id)
-    setLista(l => l.map(p => p.id === id ? { ...p, ativo: !ativo } : p))
-  }
-
   function abrirEdit(p: Professor) {
     setForm({ nome: p.nome, email: p.email ?? '', celular: p.celular ?? '', forma_pagamento: p.forma_pagamento, valor_base: p.valor_base ?? undefined, observacoes: p.observacoes ?? '' })
     setEditando(p.id)
   }
 
+  async function toggleAtivo(id: string, ativo: boolean) {
+    setLista(l => l.map(p => p.id === id ? { ...p, ativo: !ativo } : p))
+    await toggleAtivoProfessor(id, ativo)
+  }
+
   async function salvarEdit() {
     if (!editando) return
     setSalvando(true)
-    await supabase.from('professores').update({
-      nome: form.nome,
-      email: form.email || null,
-      celular: form.celular || null,
-      forma_pagamento: form.forma_pagamento as 'fixo_mensal' | 'por_aluno' | 'percentual' | 'diaria' | undefined,
-      valor_base: form.valor_base || null,
-      observacoes: form.observacoes || null,
-    }).eq('id', editando)
-    setSalvando(false)
-    setEditando(null)
-    router.refresh()
+    try {
+      await upsertProfessor({
+        id: editando,
+        nome: form.nome!,
+        email: form.email,
+        celular: form.celular,
+        forma_pagamento: form.forma_pagamento ?? 'fixo_mensal',
+        valor_base: form.valor_base,
+        observacoes: form.observacoes,
+      })
+      setEditando(null)
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
-  async function criarProfessor() {
+  async function criarNovoProfessor() {
     if (!form.nome?.trim()) return
     setSalvando(true)
-    const { data } = await supabase.from('professores').insert({
-      nome: form.nome,
-      email: form.email || null,
-      celular: form.celular || null,
-      forma_pagamento: (form.forma_pagamento || 'fixo_mensal') as 'fixo_mensal' | 'por_aluno' | 'percentual' | 'diaria',
-      valor_base: form.valor_base || null,
-      observacoes: form.observacoes || null,
-      ativo: true,
-    }).select().single()
-    setSalvando(false)
-    setCriando(false)
-    if (data) setLista(l => [...l, data as Professor])
-    setForm(FORM_VAZIO)
+    try {
+      await upsertProfessor({
+        nome: form.nome,
+        email: form.email,
+        celular: form.celular,
+        forma_pagamento: form.forma_pagamento ?? 'fixo_mensal',
+        valor_base: form.valor_base,
+        observacoes: form.observacoes,
+      })
+      setCriando(false)
+      setForm(FORM_VAZIO)
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao criar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
-  async function excluirProfessor(id: string) {
-    await supabase.from('professores').delete().eq('id', id)
+  async function confirmarExclusao(id: string) {
+    await excluirProfessor(id)
     setLista(l => l.filter(p => p.id !== id))
     setExcluindo(null)
   }
@@ -104,6 +114,7 @@ export default function ProfessoresClient({ professores: inicial }: { professore
         </p>
         <div className="space-y-1.5">
           {ativos.map(p => <CardProfessor key={p.id} p={p} onToggle={toggleAtivo} onEdit={abrirEdit} onExcluir={() => setExcluindo(p.id)} />)}
+
         </div>
       </div>
 
@@ -156,7 +167,7 @@ export default function ProfessoresClient({ professores: inicial }: { professore
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={() => { setEditando(null); setCriando(false) }} className="flex-1 text-sm text-gray-500 border border-gray-200 py-2.5 rounded-xl">Cancelar</button>
-              <button onClick={criando ? criarProfessor : salvarEdit} disabled={salvando}
+              <button onClick={criando ? criarNovoProfessor : salvarEdit} disabled={salvando}
                 className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50">
                 {salvando ? 'Salvando...' : criando ? 'Criar' : 'Salvar'}
               </button>
@@ -173,7 +184,7 @@ export default function ProfessoresClient({ professores: inicial }: { professore
             <p className="text-sm text-gray-500">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-2 pt-1">
               <button onClick={() => setExcluindo(null)} className="flex-1 text-sm text-gray-500 border border-gray-200 py-2.5 rounded-xl">Cancelar</button>
-              <button onClick={() => excluirProfessor(excluindo)}
+              <button onClick={() => confirmarExclusao(excluindo)}
                 className="flex-1 bg-red-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-red-700">
                 Excluir
               </button>
