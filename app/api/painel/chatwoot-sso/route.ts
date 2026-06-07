@@ -10,7 +10,7 @@ export async function GET() {
   }
 
   // Pega o email do usuário logado no painel
-  const sb = createClient()
+  const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
 
   if (!user?.email) {
