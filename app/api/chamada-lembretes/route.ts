@@ -76,6 +76,8 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
+  const dryRun = req.nextUrl.searchParams.get('dry_run') === 'true'
+
   const sb = createServiceClient() as any
   const agora = new Date()
   const tresDiasAtras = new Date(agora)
@@ -117,19 +119,20 @@ async function handler(req: NextRequest) {
       const msgProf = MSG_PROFESSOR[janela.tipo]?.(prof.nome, turma?.nome ?? 'sua turma', horaFormatada, prof.email)
       if (!msgProf) continue
 
-      const ok = await whatsapp(prof.celular, msgProf)
-      if (!ok) continue
-
-      await sb.from('lembretes_chamada').insert({ aula_id: aula.id, tipo: janela.tipo })
+      if (!dryRun) {
+        const ok = await whatsapp(prof.celular, msgProf)
+        if (!ok) continue
+        await sb.from('lembretes_chamada').insert({ aula_id: aula.id, tipo: janela.tipo })
+      }
       enviados++
-      log.push(`✓ prof [${janela.tipo}] → ${prof.nome} (${turma?.nome})`)
+      log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${prof.nome} (${turma?.nome}) · ${prof.celular}`)
 
       if (janela.alertaSecretaria && CELULARES_SECRETARIA.length > 0) {
-        const msgSec = MSG_SECRETARIA(prof.nome, turma?.nome ?? '?', horaFormatada, dataFormatada)
-        for (const cel of CELULARES_SECRETARIA) {
-          await whatsapp(cel, msgSec)
+        if (!dryRun) {
+          const msgSec = MSG_SECRETARIA(prof.nome, turma?.nome ?? '?', horaFormatada, dataFormatada)
+          for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
         }
-        log.push(`  → secretaria alertada`)
+        log.push(`  → secretaria ${dryRun ? '[DRY] não alertada' : 'alertada'}`)
       }
     }
   }
@@ -210,5 +213,5 @@ async function handler(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, enviados, log })
+  return NextResponse.json({ ok: true, dry_run: dryRun, enviados, log })
 }
