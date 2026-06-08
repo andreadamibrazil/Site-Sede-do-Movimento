@@ -77,6 +77,7 @@ async function handler(req: NextRequest) {
   }
 
   const dryRun = req.nextUrl.searchParams.get('dry_run') === 'true'
+  const skipWindow = req.nextUrl.searchParams.get('skip_window') === 'true'
 
   const sb = createServiceClient() as any
   const agora = new Date()
@@ -114,7 +115,7 @@ async function handler(req: NextRequest) {
 
     for (const janela of JANELAS) {
       if (enviados_tipos.has(janela.tipo)) continue
-      if (diffMin < janela.minutos - 3 || diffMin > janela.minutos + 8) continue
+      if (!skipWindow && (diffMin < janela.minutos - 3 || diffMin > janela.minutos + 8)) continue
 
       const msgProf = MSG_PROFESSOR[janela.tipo]?.(prof.nome, turma?.nome ?? 'sua turma', horaFormatada, prof.email)
       if (!msgProf) continue
@@ -213,5 +214,5 @@ async function handler(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, dry_run: dryRun, enviados, log })
+  return NextResponse.json({ ok: true, dry_run: dryRun, skip_window: skipWindow, enviados, log })
 }
