@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { atualizarLead } from './actions'
 
 const ABAS = [
   { id: 'analise',  label: 'Análise IA' },
@@ -317,20 +319,98 @@ function AbaHistorico({ historico }: { historico: unknown[] }) {
 
 // ── Aba Dados ─────────────────────────────────────────────────────────────────
 
+const INP = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-300'
+
 function AbaDados({ lead }: { lead: Record<string, unknown> }) {
+  const [editando, setEditando] = useState(false)
+  const [form, setForm] = useState({
+    nome:                 (lead.nome                 as string) ?? '',
+    celular:              (lead.celular              as string) ?? '',
+    email:                (lead.email                as string) ?? '',
+    modalidade_interesse: (lead.modalidade_interesse as string) ?? '',
+    como_conheceu:        (lead.como_conheceu        as string) ?? '',
+    status:               (lead.status               as string) ?? 'novo',
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
   function fmtData(iso: string | null | undefined) {
     if (!iso) return '—'
     return new Date(iso).toLocaleDateString('pt-BR')
   }
+
+  async function handleSalvar() {
+    setSalvando(true)
+    setErro('')
+    try {
+      await atualizarLead(lead.id as string, form)
+      setEditando(false)
+    } catch (e) {
+      setErro(String(e))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  if (!editando) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do lead</h2>
+          <button onClick={() => setEditando(true)} className="text-xs text-indigo-600 hover:underline">Editar</button>
+        </div>
+        <Row label="Nome"          value={(lead.nome as string)                 ?? '—'} />
+        <Row label="Celular"       value={(lead.celular as string)              ?? '—'} />
+        <Row label="Email"         value={(lead.email as string)                ?? '—'} />
+        <Row label="Modalidade"    value={(lead.modalidade_interesse as string) ?? '—'} />
+        <Row label="Como conheceu" value={(lead.como_conheceu as string)        ?? '—'} />
+        <Row label="Status"        value={(lead.status as string)               ?? '—'} />
+        <Row label="Entrada"       value={fmtData(lead.created_at as string)} />
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do lead</h2>
-      <Row label="Nome"          value={(lead.nome as string)              ?? '—'} />
-      <Row label="Celular"       value={(lead.celular as string)           ?? '—'} />
-      <Row label="Email"         value={(lead.email as string)             ?? '—'} />
-      <Row label="Modalidade"    value={(lead.modalidade_interesse as string) ?? '—'} />
-      <Row label="Como conheceu" value={(lead.como_conheceu as string)     ?? '—'} />
-      <Row label="Entrada"       value={fmtData(lead.created_at as string)} />
+    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do lead</h2>
+        <div className="flex gap-2">
+          <button onClick={() => setEditando(false)} className="text-xs text-gray-400 hover:underline">Cancelar</button>
+          <button onClick={handleSalvar} disabled={salvando}
+            className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </button>
+        </div>
+      </div>
+      {erro && <p className="text-xs text-red-500">{erro}</p>}
+      <div className="space-y-3">
+        {[
+          { label: 'Nome',          key: 'nome' },
+          { label: 'Celular',       key: 'celular' },
+          { label: 'Email',         key: 'email' },
+          { label: 'Modalidade',    key: 'modalidade_interesse' },
+          { label: 'Como conheceu', key: 'como_conheceu' },
+        ].map(({ label, key }) => (
+          <div key={key} className="flex items-center gap-4">
+            <span className="text-sm text-gray-500 w-36 shrink-0">{label}</span>
+            <input
+              className={INP}
+              value={form[key as keyof typeof form]}
+              onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+            />
+          </div>
+        ))}
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500 w-36 shrink-0">Status</span>
+          <select className={INP} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+            <option value="novo">Novo</option>
+            <option value="em_contato">Em contato</option>
+            <option value="experimental_agendada">Experimental agendada</option>
+            <option value="convertido">Convertido</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </div>
+      </div>
     </div>
   )
 }
