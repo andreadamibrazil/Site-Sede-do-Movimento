@@ -5,12 +5,19 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 
 function getKeys(): string[] {
   return [
-    process.env.GEMINI_API_KEY_VIVA,
-    process.env.GEMINI_API_KEY,
+    // André Principal + Fallbacks
     process.env.GOOGLE_AI_KEY,
     process.env.GOOGLE_AI_KEY_2,
     process.env.GOOGLE_AI_KEY_3,
+    // Contas extras: Sede SDM, adam_ai, MoviRio, MoviRio_art, Secretaria
     process.env.GOOGLE_AI_KEY_4,
+    process.env.GOOGLE_AI_KEY_5,
+    process.env.GOOGLE_AI_KEY_6,
+    process.env.GOOGLE_AI_KEY_7,
+    process.env.GOOGLE_AI_KEY_8,
+    // Aliases usados em scripts e cron
+    process.env.GEMINI_API_KEY,
+    process.env.GEMINI_API_KEY_VIVA,
   ].filter(Boolean) as string[]
 }
 
