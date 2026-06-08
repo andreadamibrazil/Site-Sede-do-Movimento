@@ -1,4 +1,4 @@
-// Rotação automática entre todas as chaves Gemini free tier
+// Rotação automática entre todas as chaves Gemini free tier — build 2026-06-08
 // 429/401/403 → pula para a próxima chave
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
