@@ -17,20 +17,20 @@ import { NextRequest, NextResponse } from 'next/server'
 const CELULARES_SECRETARIA = (process.env.CELULAR_SECRETARIA ?? '').split(',').filter(Boolean)
 
 const MSG_PROFESSOR: Record<string, (p: string, t: string, h: string, email?: string) => string> = {
-  antes_5min: (p, t, h) =>
-    `Olá ${p}! 📋\n\nSua aula de *${t}* (${h}) está quase no fim.\n\nLance a chamada logo que terminar — leva menos de 1 minuto e faz toda a diferença para os seus alunos! 🙌\n\nsededomovimento.art/professor`,
+  antes_5min: (p, t, h, email) =>
+    `Olá ${p}! 📋\n\nSua aula de *${t}* (${h}) está quase no fim.\n\nLance a chamada logo que terminar — leva menos de 1 minuto e faz toda a diferença para os seus alunos! 🙌\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
 
   apos_0min: (p, t, h, email) =>
     `Olá ${p}! ⏰\n\nSua aula de *${t}* (${h}) acabou de terminar.\n\nPor favor lance a chamada agora. Isso é muito importante:\n\n• A família acompanha a presença do aluno em tempo real\n• Faltas sem registro prejudicam o histórico e o boletim do aluno\n• Sua turma engajada cresce — e isso é bom para você e para a Sede 💪\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
 
-  apos_2h: (p, t, h) =>
-    `${p}, a chamada de *${t}* (${h}) ainda não foi lançada. ⚠️\n\nSabemos que a rotina é corrida, mas registrar a presença dos alunos é fundamental:\n\n• Os responsáveis dependem disso para acompanhar os filhos\n• Faltas recorrentes são um sinal de que o aluno precisa de atenção\n• Quanto mais sua turma cresce e engaja, mais reconhecemos isso no seu valor de hora/aula 🌟\n\nLance agora: sededomovimento.art/professor`,
+  apos_2h: (p, t, h, email) =>
+    `${p}, a chamada de *${t}* (${h}) ainda não foi lançada. ⚠️\n\nSabemos que a rotina é corrida, mas registrar a presença dos alunos é fundamental:\n\n• Os responsáveis dependem disso para acompanhar os filhos\n• Faltas recorrentes são um sinal de que o aluno precisa de atenção\n• Quanto mais sua turma cresce e engaja, mais reconhecemos isso no seu valor de hora/aula 🌟\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
 
-  apos_1dia: (p, t, h) =>
-    `${p}, ainda precisamos da chamada de *${t}* (${h} de ontem). 🙏\n\nA secretaria está acompanhando e pode te ajudar se precisar de algo.\n\nRegistrar corretamente protege o aluno, você e a escola. Por favor regularize:\n\nsededomovimento.art/professor`,
+  apos_1dia: (p, t, h, email) =>
+    `${p}, ainda precisamos da chamada de *${t}* (${h} de ontem). 🙏\n\nA secretaria está acompanhando e pode te ajudar se precisar de algo.\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
 
-  apos_2dias: (p, t, h) =>
-    `${p}, a chamada de *${t}* (${h}) está há 2 dias sem registro.\n\nPrecisamos resolver isso juntos — entre em contato com a secretaria para regularizar.\n\nEstamos aqui para te apoiar! 💙\nsededomovimento.art/professor`,
+  apos_2dias: (p, t, h, email) =>
+    `${p}, a chamada de *${t}* (${h}) está há 2 dias sem registro.\n\nPrecisamos resolver isso juntos — entre em contato com a secretaria para regularizar.\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
 }
 
 const MSG_SECRETARIA = (prof: string, turma: string, hora: string, data: string) =>
