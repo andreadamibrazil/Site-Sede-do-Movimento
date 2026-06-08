@@ -7,6 +7,7 @@ import imageCompression from 'browser-image-compression'
 import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
+import { atualizarAluno, atualizarResponsavel } from './actions'
 
 const ABAS = [
   { id: 'dados',         label: 'Dados pessoais' },
@@ -57,7 +58,76 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
 
 // ── Aba: Dados pessoais ──────────────────────────────────────
 
+const INP = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-300'
+
 function AbaDados({ aluno }: { aluno: any }) {
+  // ── Edição do aluno ──
+  const [editando, setEditando] = useState(false)
+  const [form, setForm] = useState({
+    nome:             aluno.nome             ?? '',
+    nome_social:      aluno.nome_social      ?? '',
+    data_nascimento:  aluno.data_nascimento  ?? '',
+    sexo:             aluno.sexo             ?? '',
+    cpf:              aluno.cpf              ?? '',
+    rg:               aluno.rg              ?? '',
+    celular:          aluno.celular          ?? '',
+    email:            aluno.email            ?? '',
+    endereco:         aluno.endereco         ?? '',
+    bairro:           aluno.bairro           ?? '',
+    cep:              aluno.cep              ?? '',
+    origem:           aluno.origem           ?? '',
+    info_saude:       aluno.info_saude       ?? '',
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  async function handleSalvarAluno() {
+    setSalvando(true); setErro('')
+    try {
+      await atualizarAluno(aluno.id, form)
+      setEditando(false)
+    } catch (e) { setErro(String(e)) }
+    finally { setSalvando(false) }
+  }
+
+  // ── Edição do responsável principal ──
+  const [editR1, setEditR1] = useState(false)
+  const [formR1, setFormR1] = useState({
+    nome:         aluno.responsavel_principal?.nome     ?? '',
+    celular:      aluno.responsavel_principal?.celular  ?? '',
+    email:        aluno.responsavel_principal?.email    ?? '',
+    notificacao:  aluno.responsavel_principal?.notificacao ?? 'whatsapp',
+  })
+  const [salvandoR1, setSalvandoR1] = useState(false)
+
+  async function handleSalvarR1() {
+    setSalvandoR1(true)
+    try {
+      await atualizarResponsavel(aluno.responsavel_principal.id, aluno.id, formR1)
+      setEditR1(false)
+    } catch (e) { alert(String(e)) }
+    finally { setSalvandoR1(false) }
+  }
+
+  // ── Edição do responsável secundário ──
+  const [editR2, setEditR2] = useState(false)
+  const [formR2, setFormR2] = useState({
+    nome:         aluno.responsavel_secundario?.nome     ?? '',
+    celular:      aluno.responsavel_secundario?.celular  ?? '',
+    email:        aluno.responsavel_secundario?.email    ?? '',
+    notificacao:  aluno.responsavel_secundario?.notificacao ?? 'whatsapp',
+  })
+  const [salvandoR2, setSalvandoR2] = useState(false)
+
+  async function handleSalvarR2() {
+    setSalvandoR2(true)
+    try {
+      await atualizarResponsavel(aluno.responsavel_secundario.id, aluno.id, formR2)
+      setEditR2(false)
+    } catch (e) { alert(String(e)) }
+    finally { setSalvandoR2(false) }
+  }
+
   function idade(nasc: string | null) {
     if (!nasc) return null
     const anos = Math.floor((Date.now() - new Date(nasc).getTime()) / (365.25 * 24 * 3600 * 1000))
@@ -68,49 +138,180 @@ function AbaDados({ aluno }: { aluno: any }) {
     return new Date(iso).toLocaleDateString('pt-BR')
   }
 
+  const CAMPOS_ALUNO: { label: string; key: keyof typeof form; tipo?: string }[] = [
+    { label: 'Nome completo',  key: 'nome' },
+    { label: 'Nome social',    key: 'nome_social' },
+    { label: 'Nascimento',     key: 'data_nascimento', tipo: 'date' },
+    { label: 'CPF',            key: 'cpf' },
+    { label: 'RG',             key: 'rg' },
+    { label: 'Celular',        key: 'celular' },
+    { label: 'Email',          key: 'email', tipo: 'email' },
+    { label: 'Endereço',       key: 'endereco' },
+    { label: 'Bairro',         key: 'bairro' },
+    { label: 'CEP',            key: 'cep' },
+    { label: 'Origem',         key: 'origem' },
+    { label: 'Saúde / acessib.', key: 'info_saude' },
+  ]
+
   return (
     <div className="grid grid-cols-2 gap-4">
+      {/* ── Dados do aluno ── */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do aluno</h2>
-        <Row label="Nome completo"     value={aluno.nome} />
-        {aluno.nome_social && <Row label="Nome social" value={aluno.nome_social} />}
-        <Row label="Nascimento"        value={aluno.data_nascimento ? `${fmtData(aluno.data_nascimento)} (${idade(aluno.data_nascimento)})` : '—'} />
-        <Row label="Sexo"              value={aluno.sexo ?? '—'} />
-        <Row label="CPF"               value={aluno.cpf ?? '—'} />
-        <Row label="RG"                value={aluno.rg ?? '—'} />
-        <Row label="Celular"           value={aluno.celular ? formatarCelular(aluno.celular) : '—'} />
-        <Row label="Email"             value={aluno.email ?? '—'} />
-        <Row label="Endereço"          value={[aluno.endereco, aluno.bairro].filter(Boolean).join(' — ') || '—'} />
-        <Row label="CEP"               value={aluno.cep ?? '—'} />
-        <Row label="Origem"            value={aluno.origem ?? '—'} />
-        {aluno.info_saude && <Row label="Saúde / acessibilidade" value={aluno.info_saude} />}
-        {aluno.observacoes && <Row label="Observações" value={aluno.observacoes} />}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do aluno</h2>
+          {!editando
+            ? <button onClick={() => setEditando(true)} className="text-xs text-indigo-600 hover:underline">Editar</button>
+            : <div className="flex gap-2">
+                <button onClick={() => setEditando(false)} className="text-xs text-gray-400 hover:underline">Cancelar</button>
+                <button onClick={handleSalvarAluno} disabled={salvando}
+                  className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                  {salvando ? 'Salvando…' : 'Salvar'}
+                </button>
+              </div>
+          }
+        </div>
+        {erro && <p className="text-xs text-red-500">{erro}</p>}
+
+        {!editando ? (
+          <>
+            <Row label="Nome completo"      value={aluno.nome} />
+            {aluno.nome_social && <Row label="Nome social" value={aluno.nome_social} />}
+            <Row label="Nascimento"         value={aluno.data_nascimento ? `${fmtData(aluno.data_nascimento)} (${idade(aluno.data_nascimento)})` : '—'} />
+            <Row label="Sexo"               value={aluno.sexo ?? '—'} />
+            <Row label="CPF"                value={aluno.cpf ?? '—'} />
+            <Row label="RG"                 value={aluno.rg ?? '—'} />
+            <Row label="Celular"            value={aluno.celular ? formatarCelular(aluno.celular) : '—'} />
+            <Row label="Email"              value={aluno.email ?? '—'} />
+            <Row label="Endereço"           value={[aluno.endereco, aluno.bairro].filter(Boolean).join(' — ') || '—'} />
+            <Row label="CEP"                value={aluno.cep ?? '—'} />
+            <Row label="Origem"             value={aluno.origem ?? '—'} />
+            {aluno.info_saude && <Row label="Saúde / acessibilidade" value={aluno.info_saude} />}
+            {aluno.observacoes && <Row label="Observações" value={aluno.observacoes} />}
+          </>
+        ) : (
+          <div className="space-y-3">
+            {CAMPOS_ALUNO.map(({ label, key, tipo }) => (
+              <div key={key} className="space-y-1">
+                <label className="text-xs text-gray-400">{label}</label>
+                <input
+                  type={tipo ?? 'text'}
+                  className={INP}
+                  value={form[key]}
+                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                />
+              </div>
+            ))}
+            <div className="space-y-1">
+              <label className="text-xs text-gray-400">Sexo</label>
+              <select className={INP} value={form.sexo} onChange={e => setForm(f => ({ ...f, sexo: e.target.value }))}>
+                <option value="">—</option>
+                <option value="feminino">Feminino</option>
+                <option value="masculino">Masculino</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Responsáveis */}
+      {/* ── Responsáveis ── */}
       <div className="space-y-4">
         {aluno.responsavel_principal && (
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Responsável principal · {aluno.responsavel_principal.parentesco ?? ''}
-            </h2>
-            <Row label="Nome"    value={aluno.responsavel_principal.nome} />
-            <Row label="Celular" value={aluno.responsavel_principal.celular ? formatarCelular(aluno.responsavel_principal.celular) : '—'} />
-            <Row label="Email"   value={aluno.responsavel_principal.email ?? '—'} />
-            <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_principal.notificacao] ?? '—'} />
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Responsável principal · {aluno.responsavel_principal.parentesco ?? ''}
+              </h2>
+              {!editR1
+                ? <button onClick={() => setEditR1(true)} className="text-xs text-indigo-600 hover:underline">Editar</button>
+                : <div className="flex gap-2">
+                    <button onClick={() => setEditR1(false)} className="text-xs text-gray-400 hover:underline">Cancelar</button>
+                    <button onClick={handleSalvarR1} disabled={salvandoR1}
+                      className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                      {salvandoR1 ? 'Salvando…' : 'Salvar'}
+                    </button>
+                  </div>
+              }
+            </div>
+            {!editR1 ? (
+              <>
+                <Row label="Nome"    value={aluno.responsavel_principal.nome} />
+                <Row label="Celular" value={aluno.responsavel_principal.celular ? formatarCelular(aluno.responsavel_principal.celular) : '—'} />
+                <Row label="Email"   value={aluno.responsavel_principal.email ?? '—'} />
+                <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_principal.notificacao] ?? '—'} />
+              </>
+            ) : (
+              <div className="space-y-3">
+                {(['nome', 'celular', 'email'] as const).map(key => (
+                  <div key={key} className="space-y-1">
+                    <label className="text-xs text-gray-400">{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+                    <input className={INP} value={formR1[key]}
+                      onChange={e => setFormR1(f => ({ ...f, [key]: e.target.value }))} />
+                  </div>
+                ))}
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400">Notificações</label>
+                  <select className={INP} value={formR1.notificacao}
+                    onChange={e => setFormR1(f => ({ ...f, notificacao: e.target.value }))}>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="ambos">Ambos</option>
+                    <option value="nenhum">Nenhum</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
         {aluno.responsavel_secundario && (
           <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Responsável secundário · {aluno.responsavel_secundario.parentesco ?? ''}
-            </h2>
-            <Row label="Nome"    value={aluno.responsavel_secundario.nome} />
-            <Row label="Celular" value={aluno.responsavel_secundario.celular ? formatarCelular(aluno.responsavel_secundario.celular) : '—'} />
-            <Row label="Email"   value={aluno.responsavel_secundario.email ?? '—'} />
-            <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_secundario.notificacao] ?? '—'} />
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Responsável secundário · {aluno.responsavel_secundario.parentesco ?? ''}
+              </h2>
+              {!editR2
+                ? <button onClick={() => setEditR2(true)} className="text-xs text-indigo-600 hover:underline">Editar</button>
+                : <div className="flex gap-2">
+                    <button onClick={() => setEditR2(false)} className="text-xs text-gray-400 hover:underline">Cancelar</button>
+                    <button onClick={handleSalvarR2} disabled={salvandoR2}
+                      className="text-xs bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                      {salvandoR2 ? 'Salvando…' : 'Salvar'}
+                    </button>
+                  </div>
+              }
+            </div>
+            {!editR2 ? (
+              <>
+                <Row label="Nome"    value={aluno.responsavel_secundario.nome} />
+                <Row label="Celular" value={aluno.responsavel_secundario.celular ? formatarCelular(aluno.responsavel_secundario.celular) : '—'} />
+                <Row label="Email"   value={aluno.responsavel_secundario.email ?? '—'} />
+                <Row label="Notificações" value={NOTIF_LABEL[aluno.responsavel_secundario.notificacao] ?? '—'} />
+              </>
+            ) : (
+              <div className="space-y-3">
+                {(['nome', 'celular', 'email'] as const).map(key => (
+                  <div key={key} className="space-y-1">
+                    <label className="text-xs text-gray-400">{key.charAt(0).toUpperCase() + key.slice(1)}</label>
+                    <input className={INP} value={formR2[key]}
+                      onChange={e => setFormR2(f => ({ ...f, [key]: e.target.value }))} />
+                  </div>
+                ))}
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-400">Notificações</label>
+                  <select className={INP} value={formR2.notificacao}
+                    onChange={e => setFormR2(f => ({ ...f, notificacao: e.target.value }))}>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="ambos">Ambos</option>
+                    <option value="nenhum">Nenhum</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
         {!aluno.responsavel_principal && !aluno.responsavel_secundario && (
           <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-5 text-center text-sm text-gray-400">
             Sem responsável cadastrado
