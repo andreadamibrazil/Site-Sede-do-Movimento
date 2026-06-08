@@ -203,20 +203,15 @@ export async function GET(req: NextRequest) {
       }).eq('id', id)
     }
 
-    if (leadId) {
-      await atualizarLead(leadId)
-    } else {
-      // Tenta vincular pelo celular
-      const { data: lead } = await sb
-        .from('leads')
-        .select('id')
-        .eq('celular', celular)
-        .maybeSingle()
+    // Vincula pelo celular (lead_id não existe em conversas)
+    const { data: lead } = await sb
+      .from('leads')
+      .select('id')
+      .eq('celular', celular)
+      .maybeSingle()
 
-      if (lead) {
-        await sb.from('conversas').update({ lead_id: lead.id }).eq('id', conversa.id)
-        await atualizarLead(lead.id)
-      }
+    if (lead) {
+      await atualizarLead(lead.id)
     }
 
     // Avança o ponteiro no blob e marca conversa como analisada
