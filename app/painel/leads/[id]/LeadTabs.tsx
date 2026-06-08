@@ -1,224 +1,239 @@
-'use client'
+import { createServiceClient } from '@/lib/supabase/server'
+import { readBlobData, markAnalyzed } from '@/lib/azure-blob'
+import { callGemini } from '@/lib/gemini'
+import { NextRequest, NextResponse } from 'next/server'
 
-import { useRouter, usePathname } from 'next/navigation'
+// Roda 2x por dia: 12:00 e 00:00 via cron Azure VM
+// GET https://sededomovimento.art/api/cron/analisar-conversas
+// Header: Authorization: Bearer {CRON_SECRET}
+//
+// Lógica incremental:
+//  - Lê apenas mensagens NOVAS desde ultima_analise_idx no Azure Blob
+//  - Acumula histórico de análises em leads.observacoes.historico_analises
+//  - markAnalyzed() avança o ponteiro no blob após cada análise
 
-const ABAS = [
-  { id: 'analise', label: 'Análise IA' },
-  { id: 'dados',   label: 'Dados' },
-]
+const MAX_POR_EXECUCAO = 30
+const MATURIDADE_HORAS = 24        // só analisa conversas com 24h+ (tempo de acumular conteúdo)
+const REANALISAR_APOS_DIAS = 7     // re-verifica a cada 7 dias se chegaram novas mensagens
+const MAX_HISTORICO = 20           // máximo de entradas no histórico por lead
 
-const FASE_LABEL: Record<string, string> = {
-  info_geral:           'Pediu informações gerais',
-  perguntou_preco:      'Perguntou preço',
-  perguntou_horario:    'Perguntou horário',
-  pediu_experimental:   'Pediu experimental',
-  agendou_experimental: 'Agendou experimental',
-  matriculado:          'Matriculado',
-  desistiu:             'Desistiu',
-  sem_resposta:         'Sumiu após contato',
-  indefinido:           'Indefinido',
+function formatarConversa(messages: unknown[]): string {
+  if (!Array.isArray(messages) || messages.length === 0) return '(sem mensagens)'
+  return messages
+    .slice(-60)
+    .map((m: unknown) => {
+      const msg = m as Record<string, unknown>
+      const who = msg.fromMe ? 'Escola' : 'Cliente'
+      const text = (msg.text as string) ?? `[${(msg.type as string) ?? 'media'}]`
+      const ts = msg.timestamp
+        ? new Date((msg.timestamp as number) * 1000).toLocaleDateString('pt-BR')
+        : ''
+      return `${who}${ts ? ` (${ts})` : ''}: ${text}`
+    })
+    .join('\n')
 }
 
-const OBJECAO_LABEL: Record<string, string> = {
-  preco_alto:                  'Preço alto',
-  horario_incompativel:        'Horário incompatível',
-  distancia:                   'Distância',
-  crianca_nao_quis:            'Criança não quis',
-  aguardando_decisao_familiar: 'Aguardando decisão familiar',
-  problemas_financeiros:       'Problemas financeiros',
-  mudanca_cidade:              'Mudança de cidade',
-  escolheu_concorrente:        'Escolheu concorrente',
-  sem_retorno:                 'Sem retorno após orçamento',
+async function geminiAnalyze(
+  textoNovas: string,
+  analiseAnterior: Record<string, unknown> | null
+): Promise<Record<string, unknown> | null> {
+  const contexto = analiseAnterior
+    ? `\n\nCONTEXTO DA ANÁLISE ANTERIOR (não repita, apenas evolua):
+Temperatura anterior: ${analiseAnterior.temperatura ?? 'desconhecida'}
+Resumo anterior: ${analiseAnterior.resumo ?? 'sem resumo'}`
+    : ''
+
+  const prompt = `Você é especialista em análise de conversas da escola de dança Sede do Movimento.
+
+Analise estas NOVAS mensagens de WhatsApp desde a última análise.${contexto}
+
+NOVAS MENSAGENS:
+${textoNovas}
+
+Retorne APENAS um JSON válido (sem markdown) com esta estrutura:
+{
+  "temperatura": "quente|morno|frio",
+  "demanda": "o que a pessoa procurava (máx 100 chars)",
+  "objecoes": ["preço", "horário", "localização", "modalidade"],
+  "oportunidade": "primeira_matricula|ex_aluno_retorno|segundo_filho|informacao|outro",
+  "acao_sugerida": "próxima ação recomendada (máx 80 chars)",
+  "resumo": "o que aconteceu nestas mensagens (máx 200 chars)",
+  "mudanca": "como evoluiu em relação ao histórico anterior, ou null se primeira análise"
 }
 
-const ACAO_CONFIG: Record<string, { label: string; className: string }> = {
-  ligar_agendar_experimental: { label: 'Ligar para agendar experimental', className: 'bg-green-600 text-white' },
-  enviar_horarios:            { label: 'Enviar horários e preços', className: 'bg-blue-600 text-white' },
-  fazer_followup:             { label: 'Fazer follow-up', className: 'bg-yellow-500 text-white' },
-  reativar_lead:              { label: 'Reativar lead', className: 'bg-orange-500 text-white' },
-  sem_acao:                   { label: 'Sem ação necessária', className: 'bg-gray-200 text-gray-600' },
-  encaminhar_rh:              { label: 'Encaminhar para RH', className: 'bg-purple-100 text-purple-700' },
+- temperatura=quente: quer matricular, interesse claro
+- temperatura=morno: curioso, pediu info mas não confirmou
+- temperatura=frio: sem resposta, cancelou, só curiosidade`
+
+  try {
+    const text = await callGemini(prompt, { temperature: 0.1, maxOutputTokens: 512 })
+    const j0 = text.indexOf('{')
+    const j1 = text.lastIndexOf('}')
+    if (j0 === -1 || j1 === -1) return null
+    return JSON.parse(text.slice(j0, j1 + 1))
+  } catch (e) {
+    console.error('[analisar-conversas] Gemini falhou:', e)
+    return null
+  }
 }
 
-export default function LeadTabs({ abaAtiva, lead, analise, analisadoEm }: any) {
-  const router   = useRouter()
-  const pathname = usePathname()
-
-  return (
-    <div>
-      <div className="flex gap-1 border-b border-gray-200 mb-5">
-        {ABAS.map(aba => (
-          <button
-            key={aba.id}
-            onClick={() => router.push(`${pathname}?aba=${aba.id}`)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              abaAtiva === aba.id
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {aba.label}
-          </button>
-        ))}
-      </div>
-
-      {abaAtiva === 'analise' && <AbaAnalise analise={analise} analisadoEm={analisadoEm} />}
-      {abaAtiva === 'dados'   && <AbaDados lead={lead} />}
-    </div>
-  )
-}
-
-function AbaAnalise({ analise, analisadoEm }: { analise: any; analisadoEm: string | null }) {
-  if (!analise) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl p-10 text-center space-y-2">
-        <p className="text-gray-400 text-sm">Nenhuma análise disponível para este contato.</p>
-        <p className="text-gray-300 text-xs">A análise é feita automaticamente quando há histórico de conversa no WhatsApp.</p>
-      </div>
-    )
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  if (analise.skip) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-        <p className="text-gray-400 text-sm">Conversa sem mensagens de texto para analisar.</p>
-      </div>
-    )
+  const sb = createServiceClient()
+  const agora = new Date()
+  const agoraISO = agora.toISOString()
+  const maturidade = new Date(agora.getTime() - MATURIDADE_HORAS * 3600_000).toISOString()
+  const reanalisarDesde = new Date(agora.getTime() - REANALISAR_APOS_DIAS * 86_400_000).toISOString()
+
+  // Fila primária: nunca analisadas + maduras (≥24h)
+  const { data: primarias, error: err1 } = await sb
+    .from('conversas')
+    .select('id, celular, lead_id, source, blob_path, variables, analisado_em')
+    .is('analisado_em', null)
+    .lt('created_at', maturidade)
+    .order('created_at', { ascending: false })
+    .limit(Math.ceil(MAX_POR_EXECUCAO * 0.7))
+
+  if (err1) return NextResponse.json({ error: err1.message }, { status: 500 })
+
+  // Fila de re-análise: já analisadas há mais de 7 dias (verifica se chegaram novas mensagens)
+  const slotsRestantes = MAX_POR_EXECUCAO - (primarias?.length ?? 0)
+  const { data: reanalisar } = slotsRestantes > 0
+    ? await sb
+        .from('conversas')
+        .select('id, celular, lead_id, source, blob_path, variables, analisado_em')
+        .not('analisado_em', 'is', null)
+        .lt('analisado_em', reanalisarDesde)
+        .order('analisado_em', { ascending: true })
+        .limit(slotsRestantes)
+    : { data: [] }
+
+  const conversas = [...(primarias ?? []), ...(reanalisar ?? [])]
+  if (conversas.length === 0) {
+    return NextResponse.json({ ok: true, analisadas: 0, mensagem: 'nada pendente' })
   }
 
-  const score  = analise.interesse?.score  ?? 0
-  const nivel  = analise.interesse?.nivel  ?? 'indefinido'
-  const fase   = analise.interesse?.fase_funil ?? 'indefinido'
-  const acao   = analise.proxima_acao
-  const acaoConfig = acao ? ACAO_CONFIG[acao] : null
-  const filled = Math.round(score / 10)
+  let analisadas = 0
+  let semNovas = 0
+  let erros = 0
 
-  return (
-    <div className="space-y-4">
-      {/* Score + resumo */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1 items-center">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full ${
-                  i < filled
-                    ? nivel === 'alto'  ? 'bg-green-500'
-                    : nivel === 'medio' ? 'bg-yellow-400'
-                    :                    'bg-gray-400'
-                    : 'bg-gray-200'
-                }`}
-              />
-            ))}
-            <span className="text-sm font-semibold text-gray-700 ml-2">{score}/100</span>
-          </div>
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-            nivel === 'alto'  ? 'bg-green-100 text-green-700' :
-            nivel === 'medio' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-gray-100 text-gray-500'
-          }`}>
-            {nivel.charAt(0).toUpperCase() + nivel.slice(1)}
-          </span>
-        </div>
+  for (const conversa of conversas) {
+    const celular = conversa.celular as string
+    const cvars = conversa.variables as Record<string, unknown> | null
+    const instance = (cvars?.instance as string) ?? 'sede-movimento'
 
-        {analise.resumo && (
-          <p className="text-sm text-gray-700 leading-relaxed border-l-2 border-indigo-200 pl-3">
-            {analise.resumo}
-          </p>
-        )}
+    // Lê blob — pega apenas mensagens NOVAS desde ultima_analise_idx
+    let blobData = { messages: [] as unknown[], ultima_analise_idx: 0 }
+    try {
+      blobData = await readBlobData(instance, celular)
+    } catch { /* sem blob — continua com vazio */ }
 
-        <p className="text-xs text-gray-400">
-          Fase: <span className="text-gray-600">{FASE_LABEL[fase] ?? fase}</span>
-        </p>
+    const novasMensagens = blobData.messages.slice(blobData.ultima_analise_idx)
 
-        {acaoConfig && (
-          <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium ${acaoConfig.className}`}>
-            ▶ {acaoConfig.label}
-          </div>
-        )}
-      </div>
+    if (novasMensagens.length === 0) {
+      // Nenhuma mensagem nova — só avança o analisado_em para voltar ao fim da fila
+      await sb.from('conversas').update({ analisado_em: agoraISO }).eq('id', conversa.id)
+      semNovas++
+      continue
+    }
 
-      {/* Perfil + Interesse */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2.5">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Perfil</h3>
-          {analise.nome             && <Row label="Nome identificado" value={analise.nome} />}
-          <Row label="Quem pratica" value={analise.perfil?.quem_pratica ?? '—'} />
-          <Row label="Faixa etária" value={analise.perfil?.faixa_etaria ?? '—'} />
-          <Row label="Quem fala"    value={analise.perfil?.quem_fala    ?? '—'} />
-          {analise.perfil?.potencial_irmaos && <Row label="Pot. irmãos" value="Sim" />}
-          <Row
-            label="Exp. anterior"
-            value={
-              analise.experiencia_anterior === true  ? 'Sim' :
-              analise.experiencia_anterior === false ? 'Não' : '—'
-            }
-          />
-        </div>
+    // Busca análise anterior para dar contexto ao Gemini
+    const leadId = conversa.lead_id as string | null
+    let analiseAnterior: Record<string, unknown> | null = null
 
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2.5">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Interesse</h3>
-          {analise.modalidades?.length > 0 && (
-            <Row label="Modalidades" value={analise.modalidades.join(', ')} />
-          )}
-          <Row label="Bairro"    value={analise.bairro    ?? '—'} />
-          <Row label="Origem"    value={analise.origem    ?? '—'} />
-          <Row label="Sentimento" value={analise.sentimento ?? '—'} />
-          {analise.horarios_desejados?.length > 0 && (
-            <Row label="Horários pedidos" value={analise.horarios_desejados.join(', ')} />
-          )}
-        </div>
-      </div>
+    if (leadId) {
+      const { data: leadAtual } = await sb
+        .from('leads')
+        .select('observacoes')
+        .eq('id', leadId)
+        .maybeSingle()
+      try {
+        if (leadAtual?.observacoes) analiseAnterior = JSON.parse(leadAtual.observacoes)
+      } catch { /* ignora */ }
+    }
 
-      {/* Objeções */}
-      {analise.objecoes?.length > 0 && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">
-            Objeções detectadas
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {analise.objecoes.map((o: string) => (
-              <span key={o} className="text-xs px-2.5 py-1 bg-white border border-red-200 text-red-700 rounded-full">
-                {OBJECAO_LABEL[o] ?? o}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+    const texto = formatarConversa(novasMensagens)
+    const analise = await geminiAnalyze(texto, analiseAnterior)
 
-      {analisadoEm && (
-        <p className="text-xs text-gray-300 text-right">
-          Analisado em {new Date(analisadoEm).toLocaleString('pt-BR')}
-        </p>
-      )}
-    </div>
-  )
-}
+    if (!analise) {
+      erros++
+      continue
+    }
 
-function AbaDados({ lead }: { lead: any }) {
-  function fmtData(iso: string | null) {
-    if (!iso) return '—'
-    return new Date(iso).toLocaleDateString('pt-BR')
+    // Entrada que vai para o histórico
+    const entradaHistorico = {
+      data: agoraISO,
+      temperatura: analise.temperatura,
+      resumo: analise.resumo ?? '',
+      mudanca: analise.mudanca ?? null,
+      mensagens_analisadas: novasMensagens.length,
+    }
+
+    // Atualiza leads.observacoes — sobrescreve campos de IA, preserva manuais, acumula histórico
+    async function atualizarLead(id: string) {
+      const { data: lead } = await sb
+        .from('leads')
+        .select('observacoes')
+        .eq('id', id)
+        .maybeSingle()
+
+      let obs: Record<string, unknown> = {}
+      try { if (lead?.observacoes) obs = JSON.parse(lead.observacoes) } catch { /* ignora */ }
+
+      const historico = Array.isArray(obs.historico_analises) ? obs.historico_analises as unknown[] : []
+      historico.push(entradaHistorico)
+
+      await sb.from('leads').update({
+        observacoes: JSON.stringify({
+          ...obs,
+          temperatura: analise.temperatura,
+          demanda: analise.demanda,
+          objecoes: analise.objecoes,
+          oportunidade: analise.oportunidade,
+          acao_sugerida: analise.acao_sugerida,
+          resumo: analise.resumo,
+          ultima_analise: agoraISO,
+          historico_analises: historico.slice(-MAX_HISTORICO),
+        }),
+        updated_at: agoraISO,
+      }).eq('id', id)
+    }
+
+    if (leadId) {
+      await atualizarLead(leadId)
+    } else {
+      // Tenta vincular pelo celular
+      const { data: lead } = await sb
+        .from('leads')
+        .select('id')
+        .eq('celular', celular)
+        .maybeSingle()
+
+      if (lead) {
+        await sb.from('conversas').update({ lead_id: lead.id }).eq('id', conversa.id)
+        await atualizarLead(lead.id)
+      }
+    }
+
+    // Avança o ponteiro no blob e marca conversa como analisada
+    try { await markAnalyzed(instance, celular, blobData.messages.length) } catch { /* ignora */ }
+    await sb.from('conversas').update({ analisado_em: agoraISO }).eq('id', conversa.id)
+
+    analisadas++
   }
-  return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do lead</h2>
-      <Row label="Nome"          value={lead.nome              ?? '—'} />
-      <Row label="Celular"       value={lead.celular           ?? '—'} />
-      <Row label="Email"         value={lead.email             ?? '—'} />
-      <Row label="Modalidade"    value={lead.modalidade_interesse ?? '—'} />
-      <Row label="Como conheceu" value={lead.como_conheceu     ?? '—'} />
-      <Row label="Entrada"       value={fmtData(lead.created_at)} />
-    </div>
-  )
-}
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 text-sm">
-      <span className="text-gray-500 shrink-0">{label}</span>
-      <span className="text-gray-900 text-right">{value}</span>
-    </div>
-  )
+  return NextResponse.json({
+    ok: true,
+    analisadas,
+    sem_novas: semNovas,
+    erros,
+    primarias: primarias?.length ?? 0,
+    reanalisadas: reanalisar?.length ?? 0,
+    executado_em: agoraISO,
+  })
 }
