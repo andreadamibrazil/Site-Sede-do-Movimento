@@ -1,6 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+async function whatsapp(celular: string, mensagem: string) {
+  const num = celular.replace(/\D/g, '')
+  const numero = num.startsWith('55') ? num : `55${num}`
+  try {
+    const res = await fetch(
+      `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
+      {
+        method: 'POST',
+        headers: { 'apikey': process.env.EVOLUTION_API_KEY ?? '', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: numero, text: mensagem }),
+      }
+    )
+    return res.ok
+  } catch { return false }
+}
+
 async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -45,26 +61,18 @@ export async function POST(req: NextRequest) {
   // Atualiza status do lead
   await supabase.from('leads').update({ status: 'experimental_agendada' }).eq('id', lead_id)
 
-  // Notifica professor via WhatsApp (BotConversa)
+  // Notifica professor via WhatsApp (Evolution API)
   const professor = aula.professores as any
   const turma = aula.turmas as any
   let notificou = false
 
-  if (professor?.celular && process.env.BOTCONVERSA_API_KEY) {
-    const celular = professor.celular.replace(/\D/g, '')
+  if (professor?.celular) {
     const dataFormatada = new Date(aula.data + 'T12:00:00').toLocaleDateString('pt-BR', {
       weekday: 'long', day: '2-digit', month: 'long'
     })
     const mensagem = `Olá ${professor.nome}! 🎭\n\nVocê terá um *aluno experimental* na sua aula:\n\n👤 *${lead.nome}*\n📚 ${turma?.nome ?? 'Turma'}\n📅 ${dataFormatada}\n⏰ ${aula.hora_inicio?.slice(0,5)} – ${aula.hora_fim?.slice(0,5)}\n\nQualquer dúvida, fala com a secretaria. Obrigada! 🙏`
 
-    try {
-      const res = await fetch(`https://backend.botconversa.com.br/api/v1/subscriber/${celular}/send-message/`, {
-        method: 'POST',
-        headers: { 'API-KEY': process.env.BOTCONVERSA_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'text', message: mensagem }),
-      })
-      notificou = res.ok
-    } catch (_) {}
+    notificou = await whatsapp(professor.celular, mensagem)
 
     if (notificou) {
       await supabase.from('experimentais').update({ notificou_professor: true }).eq('id', experimental.id)
@@ -95,23 +103,15 @@ export async function PATCH(req: NextRequest) {
     .select('lead_id, aula_id, leads(nome, celular), aulas(data, turmas(nome))')
     .single()
 
-  // Se faltou → WhatsApp para o lead
-  if (status === 'nao_compareceu' && process.env.BOTCONVERSA_API_KEY) {
+  // Se faltou → WhatsApp para o lead (Evolution API)
+  if (status === 'nao_compareceu') {
     const lead = (exp as any)?.leads
     const aula = (exp as any)?.aulas
     const turma = aula?.turmas
 
     if (lead?.celular) {
-      const celular = lead.celular.replace(/\D/g, '')
       const mensagem = `Olá ${lead.nome}! 💙\n\nNotamos que você não pôde comparecer à sua aula experimental de *${turma?.nome ?? 'dança'}* hoje.\n\nTudo bem? Ficamos à disposição para remarcar quando quiser! 😊\n\n— Sede do Movimento`
-
-      try {
-        await fetch(`https://backend.botconversa.com.br/api/v1/subscriber/${celular}/send-message/`, {
-          method: 'POST',
-          headers: { 'API-KEY': process.env.BOTCONVERSA_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'text', message: mensagem }),
-        })
-      } catch (_) {}
+      await whatsapp(lead.celular, mensagem)
     }
   }
 

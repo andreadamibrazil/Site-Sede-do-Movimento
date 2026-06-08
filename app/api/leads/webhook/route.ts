@@ -2,12 +2,12 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 // POST /api/leads/webhook
-// Chamado pelo BotConversa quando um novo contato entra ou é atualizado.
+// Recebe leads de fontes externas (Chatwoot, formulários, etc.) e insere/atualiza no CRM.
 //
-// Como configurar no BotConversa:
-//   Configurações → Integrações → Webhooks → Novo Webhook
-//   URL: https://sededomovimento.art/api/leads/webhook
-//   Evento: Novo assinante / Assinante atualizado
+// Como configurar no Chatwoot:
+//   Settings → Integrations → Webhooks → New Webhook
+//   URL: https://www.sededomovimento.art/api/leads/webhook
+//   Eventos: contact_created, contact_updated
 //   Header: X-Webhook-Secret: <WEBHOOK_SECRET>
 
 function normalizarCelular(phone: string): string {
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       modalidade_interesse: modalidade,
       como_conheceu: comoConheceu,
       horario_preferido: horario,
-      origem: 'botconversa',
+      origem: 'chatwoot',
       status: 'novo',
       observacoes: obs,
     })
