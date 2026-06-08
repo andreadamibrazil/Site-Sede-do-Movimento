@@ -1,24 +1,25 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
-import { criarFamilia, vincularAlunoFamilia, salvarAditivo as salvarAditivoServer, justificarFalta as justificarFaltaServer, adicionarCobrancaAvulsa, marcarCobrancaAvulsaPaga, salvarDocumentoLink, editarDocumento, excluirDocumentoDB } from './actions'
+import AbaInteligencia from './AbaInteligencia'
 
 const ABAS = [
-  { id: 'dados',       label: 'Dados pessoais' },
-  { id: 'matriculas',  label: 'Matrículas e turmas' },
-  { id: 'financeiro',  label: 'Financeiro' },
-  { id: 'cobrancas',   label: 'Cobranças avulsas' },
-  { id: 'presenca',    label: 'Presença' },
-  { id: 'documentos',  label: 'Documentos' },
-  { id: 'uniforme',    label: 'Uniforme' },
+  { id: 'dados',         label: 'Dados pessoais' },
+  { id: 'matriculas',    label: 'Matrículas e turmas' },
+  { id: 'financeiro',    label: 'Financeiro' },
+  { id: 'cobrancas',     label: 'Cobranças avulsas' },
+  { id: 'presenca',      label: 'Presença' },
+  { id: 'documentos',    label: 'Documentos' },
+  { id: 'uniforme',      label: 'Uniforme' },
+  { id: 'inteligencia',  label: 'Análise IA' },
 ]
 
-export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos, uniforme }: any) {
+export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos, uniforme, analiseCron, historicoAnalises }: any) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -48,7 +49,8 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
       {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
       {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} />}
       {abaAtiva === 'documentos'  && <AbaDocumentos documentos={documentos} alunoId={aluno.id} />}
-      {abaAtiva === 'uniforme'    && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
+      {abaAtiva === 'uniforme'     && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
+      {abaAtiva === 'inteligencia' && <AbaInteligencia analiseCron={analiseCron ?? null} historicoAnalises={historicoAnalises ?? []} />}
     </div>
   )
 }
@@ -138,7 +140,7 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
     setSelecionada(null)
     if (termo.length < 2) { setSugestoes([]); return }
     const { data } = await supabase
-      .from('familias')
+      .from('familias' as any)
       .select('id, nome')
       .ilike('nome', `%${termo}%`)
       .limit(5)
@@ -158,23 +160,15 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
       // Cria nova família
       const nome = (nomeNovo ?? busca).trim()
       if (!nome) { setSalvando(false); return }
-      try {
-        fId = await criarFamilia(nome)
-        fNome = nome
-      } catch (e) {
-        alert('Erro ao criar família: ' + (e as Error).message)
-        setSalvando(false)
-        return
-      }
+      const { data: raw } = await supabase.from('familias' as any).insert({ nome }).select('id').single()
+      const criada = raw as { id: string } | null
+      if (!criada) { setSalvando(false); return }
+      fId = criada.id
+      fNome = nome
     }
 
-    try {
-      await vincularAlunoFamilia(alunoId, fId)
-    } catch (e) {
-      alert('Erro ao vincular: ' + (e as Error).message)
-      setSalvando(false)
-      return
-    }
+    await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
+    await supabase.from('familia_membros' as any).insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
 
     setSalvando(false)
     setVinculado(true)
@@ -273,36 +267,6 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
 // ── Aba: Matrículas e turmas ─────────────────────────────────
 
 function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
-  const [aditivo, setAditivo] = useState<{ matriculaId: string; tipo: string } | null>(null)
-  const [tipoAditivo, setTipoAditivo] = useState('turma')
-  const [motivoAditivo, setMotivoAditivo] = useState('')
-  const [depoisAditivo, setDepoisAditivo] = useState('')
-  const [salvandoAditivo, setSalvandoAditivo] = useState(false)
-  const [erroAditivo, setErroAditivo] = useState('')
-  const [sucessoAditivo, setSucessoAditivo] = useState(false)
-
-  async function salvarAditivo() {
-    if (!aditivo) return
-    setErroAditivo('')
-    setSalvandoAditivo(true)
-    const m = matriculas.find(x => x.id === aditivo.matriculaId)
-    const antes = tipoAditivo === 'turma'
-      ? { turmas: m?.matricula_turmas?.filter((mt: any) => !mt.data_saida).map((mt: any) => mt.turmas?.nome) }
-      : tipoAditivo === 'preco'
-      ? { valor_final: m?.valor_final, tipo_desconto: m?.tipo_desconto, percentual_desconto: m?.percentual_desconto }
-      : { plano: m?.plano }
-
-    try {
-      await salvarAditivoServer({ matricula_id: aditivo.matriculaId, tipo: tipoAditivo, motivo: motivoAditivo || null, antes, depois: { descricao: depoisAditivo } })
-      setSucessoAditivo(true)
-      setTimeout(() => { setAditivo(null); setSucessoAditivo(false); setDepoisAditivo(''); setMotivoAditivo('') }, 2000)
-    } catch (e) {
-      setErroAditivo((e as Error).message)
-    } finally {
-      setSalvandoAditivo(false)
-    }
-  }
-
   if (!matriculas.length) return (
     <p className="text-sm text-gray-400 text-center py-12">Nenhuma matrícula ainda.</p>
   )
@@ -321,19 +285,9 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
                 }`}>{m.status}</span>
                 <span className="ml-2 text-xs text-gray-400">{PLANO_LABEL[m.plano] ?? m.plano}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-gray-900">
-                  R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
-                </p>
-                {m.status === 'ativa' && (
-                  <button
-                    onClick={() => { setAditivo({ matriculaId: m.id, tipo: tipoAditivo }); setTipoAditivo('turma') }}
-                    className="text-xs font-medium text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
-                  >
-                    + Termo aditivo
-                  </button>
-                )}
-              </div>
+              <p className="text-sm font-semibold text-gray-900">
+                R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+              </p>
             </div>
             {m.tipo_desconto && (
               <p className="text-xs text-gray-500">
@@ -358,90 +312,6 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
           </div>
         )
       })}
-
-      {/* ── Modal Termo Aditivo ── */}
-      {aditivo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-gray-900">Termo aditivo</h2>
-              <button onClick={() => setAditivo(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
-            </div>
-
-            {/* Tipo */}
-            <div>
-              <p className="text-xs font-medium text-gray-600 mb-2">Tipo de alteração</p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'turma',   label: 'Turma',    desc: 'Mudança de turma ou modalidade' },
-                  { id: 'preco',   label: 'Preço',    desc: 'Novo valor ou desconto' },
-                  { id: 'plano',   label: 'Plano',    desc: 'Mensal ↔ Fidelidade' },
-                ].map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTipoAditivo(t.id)}
-                    className={`border rounded-xl p-3 text-left transition-colors ${
-                      tipoAditivo === t.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <p className={`text-xs font-semibold ${tipoAditivo === t.id ? 'text-indigo-700' : 'text-gray-700'}`}>{t.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 leading-tight">{t.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* O que muda */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                {tipoAditivo === 'turma' ? 'Nova(s) turma(s)' :
-                 tipoAditivo === 'preco' ? 'Novo valor e/ou desconto' :
-                 'Novo plano'}
-              </label>
-              <textarea
-                value={depoisAditivo}
-                onChange={e => setDepoisAditivo(e.target.value)}
-                rows={3}
-                placeholder={
-                  tipoAditivo === 'turma' ? 'Ex: Sai de Ballet Básico I e entra em Ballet Básico II + Jazz Preliminar I' :
-                  tipoAditivo === 'preco' ? 'Ex: Novo valor R$ 280/mês — desconto família 20% aprovado por Carlos em 05/06/26' :
-                  'Ex: Muda de Mensal para Fidelidade 12 meses'
-                }
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              />
-            </div>
-
-            {/* Motivo */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Motivo / observação (opcional)</label>
-              <input
-                value={motivoAditivo}
-                onChange={e => setMotivoAditivo(e.target.value)}
-                placeholder="Ex: Solicitado pela família em 05/06/2026"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {erroAditivo && <p className="text-xs text-red-500">{erroAditivo}</p>}
-            {sucessoAditivo && (
-              <p className="text-xs text-green-600 font-medium">Termo aditivo registrado! Contrato será enviado para assinatura.</p>
-            )}
-
-            <div className="flex justify-between pt-1">
-              <button onClick={() => setAditivo(null)} className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2">
-                Cancelar
-              </button>
-              <button
-                onClick={salvarAditivo}
-                disabled={!depoisAditivo.trim() || salvandoAditivo}
-                className="bg-indigo-600 text-white text-sm font-medium px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors"
-              >
-                {salvandoAditivo ? 'Salvando...' : 'Registrar aditivo'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -491,6 +361,7 @@ function AbaFinanceiro({ mensalidades }: { mensalidades: any[] }) {
 // ── Aba: Presença ────────────────────────────────────────────
 
 function AbaPresenca({ presencas }: { presencas: any[] }) {
+  const supabase = createClient()
   const router = useRouter()
   const [justificando, setJustificando] = useState<string | null>(null)
   const [obs, setObs] = useState('')
@@ -506,16 +377,14 @@ function AbaPresenca({ presencas }: { presencas: any[] }) {
 
   async function justificarFalta(presencaId: string) {
     setSalvando(true)
-    try {
-      await justificarFaltaServer(presencaId, obs)
-      setJustificando(null)
-      setObs('')
-      router.refresh()
-    } catch (e) {
-      alert('Erro ao justificar: ' + (e as Error).message)
-    } finally {
-      setSalvando(false)
-    }
+    await supabase.from('presencas').update({
+      status: 'falta_justificada' as any,
+      observacao: obs || 'Atestado entregue',
+    }).eq('id', presencaId)
+    setJustificando(null)
+    setObs('')
+    setSalvando(false)
+    router.refresh()
   }
 
   return (
@@ -633,23 +502,14 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
   const [obs, setObs] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
-  const [avissoDrive, setAvisoDrive] = useState(false)
-  const [modo, setModo] = useState<'arquivo' | 'link'>('arquivo')
-  const [linkUrl, setLinkUrl] = useState('')
-  const [linkNome, setLinkNome] = useState('')
-  const [salvandoLink, setSalvandoLink] = useState(false)
-  const [editandoId, setEditandoId] = useState<string | null>(null)
-  const [editObs, setEditObs] = useState('')
-  const [editTipo, setEditTipo] = useState('')
-  const [salvandoEdit, setSalvandoEdit] = useState(false)
 
   async function upload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setEnviando(true)
     setErro('')
-    setAvisoDrive(false)
 
+    // Comprime antes de enviar
     let fileParaEnviar: File = file
     const ehImagem = file.type.startsWith('image/')
     const ehPDF = file.type === 'application/pdf'
@@ -668,27 +528,61 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
         if (compressed.byteLength < file.size) {
           fileParaEnviar = new File([compressed.buffer as ArrayBuffer], file.name, { type: 'application/pdf' })
         }
-      } catch (_) {}
-    }
-
-    const form = new FormData()
-    form.append('file', fileParaEnviar, fileParaEnviar.name)
-    form.append('aluno_id', alunoId)
-    form.append('tipo', tipo)
-    if (obs) form.append('observacao', obs)
-
-    const res = await fetch('/api/documentos/upload', { method: 'POST', body: form })
-    const json = await res.json()
-
-    if (!res.ok || !json.ok) {
-      if (json.alertaEnviado) {
-        setAvisoDrive(true)
-      } else {
-        setErro(json.erro ?? json.error ?? 'Erro ao enviar arquivo')
+      } catch (_) {
+        // Se falhar compressão, usa o original
       }
-      setEnviando(false)
-      return
     }
+
+    const ext = file.name.split('.').pop()
+    const path = `${alunoId}/${Date.now()}.${ext}`
+
+    const { error: upErr } = await supabase.storage
+      .from('documentos-alunos')
+      .upload(path, fileParaEnviar)
+
+    if (upErr) { setErro(upErr.message); setEnviando(false); return }
+
+    // Extrai dados automaticamente via Gemini (atestados e documentos com imagem)
+    let dadosExtraidos = null
+    let obsAutomatica = obs || null
+    const ehDocumentoAnalisavel = ['atestado', 'outro', 'autorizacao'].includes(tipo)
+    const ehArquivoLegivel = file.type.startsWith('image/') || file.type === 'application/pdf'
+
+    if (ehDocumentoAnalisavel && ehArquivoLegivel) {
+      try {
+        const form = new FormData()
+        form.append('file', fileParaEnviar, file.name)
+        const res = await fetch('/api/painel/analisar-documento', { method: 'POST', body: form })
+        const json = await res.json()
+        if (json.dados) {
+          dadosExtraidos = json.dados
+          // Monta descrição automática a partir dos dados extraídos
+          const d = json.dados
+          const partes = []
+          if (d.nome_medico) partes.push(`Médico: ${d.nome_medico}`)
+          if (d.crm) partes.push(`CRM: ${d.crm}`)
+          if (d.data_consulta) partes.push(`Consulta: ${new Date(d.data_consulta).toLocaleDateString('pt-BR')}`)
+          if (d.hora_consulta) partes.push(`às ${d.hora_consulta}`)
+          if (d.data_inicio_afastamento && d.data_fim_afastamento) {
+            partes.push(`Afastamento: ${new Date(d.data_inicio_afastamento).toLocaleDateString('pt-BR')} a ${new Date(d.data_fim_afastamento).toLocaleDateString('pt-BR')}`)
+          }
+          if (d.dias_afastamento) partes.push(`(${d.dias_afastamento} dias)`)
+          if (d.diagnostico) partes.push(`| ${d.diagnostico}`)
+          if (partes.length) obsAutomatica = (obs ? obs + ' — ' : '') + partes.join(' · ')
+        }
+      } catch (_) {
+        // Falha no Gemini não impede o upload
+      }
+    }
+
+    await supabase.from('documentos_aluno').insert({
+      aluno_id: alunoId,
+      tipo: tipo as any,
+      nome: file.name,
+      storage_path: path,
+      observacao: obsAutomatica,
+      dados_extraidos: dadosExtraidos as any,
+    })
 
     setObs('')
     setEnviando(false)
@@ -696,94 +590,28 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
     router.refresh()
   }
 
-  async function salvarLink() {
-    if (!linkUrl.trim()) { setErro('Cole a URL do Drive'); return }
-    setSalvandoLink(true)
-    setErro('')
-    const nome = linkNome.trim() || TIPO_LABEL[tipo] || tipo
-    try {
-      await salvarDocumentoLink({ aluno_id: alunoId, tipo, nome, observacao: obs || null, drive_url: linkUrl.trim() })
-      setLinkUrl('')
-      setLinkNome('')
-      setObs('')
-      router.refresh()
-    } catch (e) {
-      setErro((e as Error).message)
-    } finally {
-      setSalvandoLink(false)
+  async function baixar(path: string, nome: string) {
+    const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(path, 60)
+    if (data?.signedUrl) {
+      const a = document.createElement('a')
+      a.href = data.signedUrl
+      a.download = nome
+      a.click()
     }
   }
 
-  function iniciarEdicao(doc: any) {
-    setEditandoId(doc.id)
-    setEditObs(doc.observacao ?? '')
-    setEditTipo(doc.tipo ?? 'outro')
-  }
-
-  async function salvarEdicao(id: string) {
-    setSalvandoEdit(true)
-    try {
-      await editarDocumento(id, { observacao: editObs || null, tipo: editTipo })
-      setEditandoId(null)
-      router.refresh()
-    } catch (e) {
-      alert('Erro ao salvar: ' + (e as Error).message)
-    } finally {
-      setSalvandoEdit(false)
-    }
-  }
-
-  async function visualizar(doc: { storage_path?: string | null; drive_url?: string | null }) {
-    if (doc.drive_url) { window.open(doc.drive_url, '_blank'); return }
-    if (doc.storage_path) {
-      const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(doc.storage_path, 300)
-      if (data?.signedUrl) window.open(data.signedUrl, '_blank')
-    }
-  }
-
-  async function baixar(doc: { storage_path?: string | null; drive_url?: string | null; nome: string }) {
-    if (doc.drive_url) { window.open(doc.drive_url, '_blank'); return }
-    if (doc.storage_path) {
-      const { data } = await supabase.storage.from('documentos-alunos').createSignedUrl(doc.storage_path, 60)
-      if (data?.signedUrl) {
-        const a = document.createElement('a')
-        a.href = data.signedUrl
-        a.download = doc.nome
-        a.target = '_blank'
-        a.click()
-      }
-    }
-  }
-
-  async function excluir(id: string, storagePath?: string | null) {
+  async function excluir(id: string, path: string) {
     if (!confirm('Excluir este documento?')) return
-    if (storagePath) await supabase.storage.from('documentos-alunos').remove([storagePath])
-    await excluirDocumentoDB(id)
+    await supabase.storage.from('documentos-alunos').remove([path])
+    await supabase.from('documentos_aluno').delete().eq('id', id)
     router.refresh()
   }
 
   return (
     <div className="space-y-5">
-      {/* Adicionar documento */}
+      {/* Upload */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Adicionar documento</h2>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs">
-            <button
-              onClick={() => { setModo('arquivo'); setErro('') }}
-              className={`px-3 py-1.5 font-medium transition-colors ${modo === 'arquivo' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              Arquivo
-            </button>
-            <button
-              onClick={() => { setModo('link'); setErro('') }}
-              className={`px-3 py-1.5 font-medium transition-colors ${modo === 'link' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              Link Drive
-            </button>
-          </div>
-        </div>
-
+        <h2 className="text-sm font-semibold text-gray-700">Adicionar documento</h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
@@ -805,54 +633,17 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
             />
           </div>
         </div>
-
-        {modo === 'arquivo' ? (
-          <div>
-            <input ref={inputRef} type="file" onChange={upload} disabled={enviando} className="hidden" id="doc-upload" />
-            <label
-              htmlFor="doc-upload"
-              className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-6 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${enviando ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-              <span className="text-2xl">📎</span>
-              <span className="text-sm text-gray-500">{enviando ? 'Enviando...' : 'Clique para selecionar o arquivo'}</span>
-            </label>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">URL do Google Drive</label>
-              <input
-                value={linkUrl}
-                onChange={e => setLinkUrl(e.target.value)}
-                placeholder="https://drive.google.com/file/d/..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Nome do arquivo (opcional)</label>
-              <input
-                value={linkNome}
-                onChange={e => setLinkNome(e.target.value)}
-                placeholder="Ex: Contrato assinado 2026"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <button
-              onClick={salvarLink}
-              disabled={salvandoLink}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg disabled:opacity-50 transition-colors"
-            >
-              {salvandoLink ? 'Salvando...' : 'Salvar link'}
-            </button>
-          </div>
-        )}
-
+        <div>
+          <input ref={inputRef} type="file" onChange={upload} disabled={enviando} className="hidden" id="doc-upload" />
+          <label
+            htmlFor="doc-upload"
+            className={`flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-6 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${enviando ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <span className="text-2xl">📎</span>
+            <span className="text-sm text-gray-500">{enviando ? 'Enviando...' : 'Clique para selecionar o arquivo'}</span>
+          </label>
+        </div>
         {erro && <p className="text-xs text-red-500">{erro}</p>}
-        {avissoDrive && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 text-xs text-orange-700">
-            Arquivo salvo localmente, mas <strong>não pôde ser enviado ao Google Drive</strong>. Uma notificação foi enviada ao André. O arquivo pode se perder — tente novamente mais tarde.
-          </div>
-        )}
       </div>
 
       {/* Lista de documentos */}
@@ -861,88 +652,33 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
       ) : (
         <div className="space-y-2">
           {documentos.map((doc: any) => (
-            <div key={doc.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3">
-              {editandoId === doc.id ? (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
-                      <select
-                        value={editTipo}
-                        onChange={e => setEditTipo(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        {Object.entries(TIPO_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Observação / Descrição</label>
-                      <input
-                        value={editObs}
-                        onChange={e => setEditObs(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => setEditandoId(null)}
-                      className="text-xs text-gray-500 hover:text-gray-700 font-medium px-3 py-1"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => salvarEdicao(doc.id)}
-                      disabled={salvandoEdit}
-                      className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 py-1 rounded-lg disabled:opacity-50"
-                    >
-                      {salvandoEdit ? 'Salvando...' : 'Salvar'}
-                    </button>
-                  </div>
+            <div key={doc.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                    {TIPO_LABEL[doc.tipo] ?? doc.tipo}
+                  </span>
+                  <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                        {TIPO_LABEL[doc.tipo] ?? doc.tipo}
-                      </span>
-                      <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
-                    </div>
-                    {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => iniciarEdicao(doc)}
-                      className="text-xs text-gray-400 hover:text-gray-600"
-                      title="Editar descrição"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => visualizar(doc)}
-                      className="text-xs text-gray-500 hover:text-gray-700 font-medium"
-                    >
-                      Visualizar
-                    </button>
-                    <button
-                      onClick={() => baixar(doc)}
-                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                    >
-                      {doc.drive_url ? 'Abrir no Drive' : 'Baixar'}
-                    </button>
-                    <button
-                      onClick={() => excluir(doc.id, doc.storage_path)}
-                      className="text-xs text-red-400 hover:text-red-600"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </div>
-              )}
+                {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => baixar(doc.storage_path, doc.nome)}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Baixar
+                </button>
+                <button
+                  onClick={() => excluir(doc.id, doc.storage_path)}
+                  className="text-xs text-red-400 hover:text-red-600"
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -988,37 +724,36 @@ function AbaCobrancas({ alunoId }: { alunoId: string }) {
     vencimento: '',
   })
 
-  useEffect(() => {
+  // Carrega ao montar
+  useState(() => {
     supabase.from('cobrancas_avulsas')
       .select('*')
       .eq('aluno_id', alunoId)
       .order('created_at', { ascending: false })
       .then(({ data }) => { setCobrancas(data ?? []); setCarregado(true) })
-  }, [alunoId])
+  })
 
   async function adicionar() {
     if (!form.descricao || !form.valor) return
     setSalvando(true)
-    try {
-      const nova = await adicionarCobrancaAvulsa({
-        aluno_id: alunoId,
-        categoria: form.categoria,
-        descricao: form.descricao,
-        valor: Number(form.valor.replace(',', '.')),
-        vencimento: form.vencimento || null,
-      })
-      setAdicionando(false)
-      setForm({ categoria: 'espetaculo_participacao', descricao: '', valor: '', vencimento: '' })
-      if (nova) setCobrancas(c => [nova as any, ...c])
-    } catch (e) {
-      alert('Erro ao adicionar: ' + (e as Error).message)
-    } finally {
-      setSalvando(false)
-    }
+    await supabase.from('cobrancas_avulsas').insert({
+      aluno_id: alunoId,
+      categoria: form.categoria as any,
+      descricao: form.descricao,
+      valor: Number(form.valor.replace(',', '.')),
+      vencimento: form.vencimento || null,
+      status: 'pendente',
+    })
+    setSalvando(false)
+    setAdicionando(false)
+    setForm({ categoria: 'espetaculo_participacao', descricao: '', valor: '', vencimento: '' })
+    // Recarrega
+    const { data } = await supabase.from('cobrancas_avulsas').select('*').eq('aluno_id', alunoId).order('created_at', { ascending: false })
+    setCobrancas(data ?? [])
   }
 
   async function marcarPago(id: string) {
-    await marcarCobrancaAvulsaPaga(id)
+    await supabase.from('cobrancas_avulsas').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id)
     setCobrancas(c => c.map(x => x.id === id ? { ...x, status: 'pago' } : x))
   }
 
@@ -1145,9 +880,8 @@ const NOTIF_LABEL: Record<string, string> = {
 }
 
 const PLANO_LABEL: Record<string, string> = {
-  mensal: 'Mensal', fidelidade: 'Fidelidade 12 meses',
-  // legado
-  trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual',
+  mensal: 'Mensal', trimestral: 'Trimestral',
+  semestral: 'Semestral', anual: 'Anual',
 }
 
 const DESCONTO_LABEL: Record<string, string> = {
