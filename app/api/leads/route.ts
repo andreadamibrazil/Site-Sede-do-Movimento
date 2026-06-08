@@ -2,6 +2,14 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireStaff } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
+function normalizarCelular(cel: string): string {
+  const d = cel.replace(/\D/g, '')
+  if (d.length === 13 && d.startsWith('55')) return d.slice(2)        // 55+DDD+9digits → 11
+  if (d.length === 12 && d.startsWith('55')) return d.slice(2, 4) + '9' + d.slice(4) // 55+DDD+8digits → add 9
+  if (d.length === 10) return d.slice(0, 2) + '9' + d.slice(2)        // DDD+8digits → add 9
+  return d // 11 dígitos (correto) ou inválido — retorna como está
+}
+
 export async function POST(req: NextRequest) {
   const guard = await requireStaff()
   if (!guard.ok) return guard.response
@@ -13,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
-  const celularLimpo = celular ? celular.replace(/\D/g, '') : null
+  const celularLimpo = celular ? normalizarCelular(celular) : null
 
   // Verifica duplicata por celular
   if (celularLimpo) {
