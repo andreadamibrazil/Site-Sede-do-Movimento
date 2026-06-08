@@ -1,11 +1,12 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import PainelSidebar from './PainelSidebar'
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return <>{children}</>
+  if (!user) redirect('/painel/login')
 
   const service = createServiceClient()
   const { data: perfil } = await service

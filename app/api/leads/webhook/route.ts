@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid json' }, { status: 400 })
   }
 
-  // BotConversa pode enviar subscriber diretamente ou dentro de { subscriber: ... }
+  // Chatwoot/webhook pode enviar subscriber diretamente ou dentro de { subscriber: ... }
   const subscriber = body?.subscriber ?? body
 
   const phone = subscriber?.phone ?? subscriber?.celular ?? ''
@@ -49,14 +49,14 @@ export async function POST(req: NextRequest) {
   const variables: Record<string, string> = subscriber?.variables ?? {}
   const tags: string[] = subscriber?.tags ?? []
 
-  // Mapeia campos BotConversa → campos do lead
+  // Mapeia campos do webhook → campos do lead
   const modalidade = extrairVariavel(variables, 'Modalidade', 'modalidade', 'ModalidadeInteresse')
   const comoConheceu = extrairVariavel(variables, 'ComoConheceu', 'como_conheceu', 'ComoNosConheceu')
   const horario = extrairVariavel(variables, 'Horario', 'horario', 'HorarioPreferido')
 
-  // Monta observacoes com variáveis do BotConversa (para o CRM)
+  // Monta observacoes com variáveis do webhook (para o CRM)
   const obs = Object.keys(variables).length > 0
-    ? JSON.stringify({ botconversa: variables, tags })
+    ? JSON.stringify({ chatwoot: variables, tags })
     : null
 
   const sb = createServiceClient() as any
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, action: 'created', lead_id: novoLead.id })
 }
 
-// GET para verificação de URL pelo BotConversa
+// GET para verificação de URL do webhook
 export async function GET() {
   return NextResponse.json({ ok: true, service: 'Sede do Movimento — Leads Webhook' })
 }

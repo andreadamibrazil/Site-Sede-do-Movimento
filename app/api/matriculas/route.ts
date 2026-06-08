@@ -72,11 +72,10 @@ export async function POST(req: NextRequest) {
   const mensalidades = gerarMensalidades(matricula.id, dataInicio, meses, valorFinal, Number(diaVencimento))
   const { error: errMens } = await sb.from('mensalidades').insert(mensalidades)
   if (errMens) {
-    return NextResponse.json({
-      ok: true,
-      matricula_id: matricula.id,
-      warning: 'Matrícula criada mas mensalidades falharam: ' + errMens.message,
-    })
+    return NextResponse.json(
+      { error: 'Matrícula criada mas mensalidades falharam: ' + errMens.message },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({ ok: true, matricula_id: matricula.id })
