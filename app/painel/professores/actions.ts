@@ -21,7 +21,7 @@ export async function upsertProfessor(data: {
         nome: data.nome,
         email: data.email || null,
         celular: data.celular || null,
-        forma_pagamento: data.forma_pagamento,
+        forma_pagamento: data.forma_pagamento as any,
         valor_base: data.valor_base || null,
         observacoes: data.observacoes || null,
       })
@@ -34,7 +34,7 @@ export async function upsertProfessor(data: {
         nome: data.nome,
         email: data.email || null,
         celular: data.celular || null,
-        forma_pagamento: data.forma_pagamento,
+        forma_pagamento: data.forma_pagamento as any,
         valor_base: data.valor_base || null,
         observacoes: data.observacoes || null,
         ativo: true,

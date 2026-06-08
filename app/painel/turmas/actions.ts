@@ -39,7 +39,7 @@ export async function criarTurma(data: {
   if (horarios?.length) {
     const { error: hError } = await supabase
       .from('turma_horarios')
-      .insert(horarios.map(h => ({ ...h, turma_id: nova.id })))
+      .insert(horarios.map(h => ({ ...h, turma_id: nova.id })) as any)
     if (hError) throw new Error(hError.message)
   }
 
@@ -73,7 +73,7 @@ export async function editarTurma(
     if (horarios.length) {
       const { error: hError } = await supabase
         .from('turma_horarios')
-        .insert(horarios.map(h => ({ ...h, turma_id: turmaId })))
+        .insert(horarios.map(h => ({ ...h, turma_id: turmaId })) as any)
       if (hError) throw new Error(hError.message)
     }
   }

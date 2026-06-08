@@ -16,7 +16,7 @@ export async function lancarCobrancasLote(items: {
 }[]) {
   const supabase = createServiceClient()
   const inserts = items.map(item => ({ ...item, status: 'pendente' }))
-  const { error } = await supabase.from('cobrancas_avulsas').insert(inserts)
+  const { error } = await supabase.from('cobrancas_avulsas').insert(inserts as any)
   if (error) throw new Error(error.message)
   revalidatePath('/painel/cobranca-lote')
 }

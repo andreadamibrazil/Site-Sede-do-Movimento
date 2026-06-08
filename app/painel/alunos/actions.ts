@@ -139,10 +139,7 @@ export async function salvarAditivo(data: {
   depois: Record<string, any>
 }) {
   const supabase = createServiceClient()
-  const { error } = await supabase.from('termos_aditivos').insert({
-    ...data,
-    contrato_status: 'pendente',
-  })
+  const { error } = await supabase.from('termos_aditivos').insert(data as any)
   if (error) throw new Error(error.message)
 }
 
@@ -167,7 +164,7 @@ export async function adicionarCobrancaAvulsa(data: {
   const supabase = createServiceClient()
   const { data: nova, error } = await supabase
     .from('cobrancas_avulsas')
-    .insert({ ...data, status: 'pendente' })
+    .insert({ ...data, status: 'pendente' } as any)
     .select()
     .single()
   if (error) throw new Error(error.message)
