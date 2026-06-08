@@ -40,8 +40,7 @@ export default async function AlunoPage({
     .eq('aluno_id', id)
     .order('created_at', { ascending: false })
 
-  const serviceForFinanceiro = createServiceClient()
-  const { data: mensalidades } = await serviceForFinanceiro
+  const { data: mensalidades } = await supabase
     .from('mensalidades')
     .select('*')
     .in('matricula_id', (matriculas ?? []).map(m => m.id))
@@ -65,11 +64,32 @@ export default async function AlunoPage({
   const presencas = presencasRes.data
   const documentos = documentosRes.data
 
-  const { data: uniforme } = await serviceForFinanceiro
-    .from('uniforme_retiradas')
+  const service = createServiceClient()
+  const { data: uniforme } = await service
+    .from('uniforme_retiradas' as any)
     .select('*')
     .eq('aluno_id', id)
     .order('created_at', { ascending: false })
+
+  // Análise IA — lê do lead vinculado pelo celular (persiste após conversão)
+  let analiseCron: Record<string, unknown> | null = null
+  let historicoAnalises: unknown[] = []
+  const celularAluno = (aluno as any).celular as string | null
+  if (celularAluno) {
+    const { data: leadVinculado } = await supabase
+      .from('leads')
+      .select('observacoes')
+      .eq('celular', celularAluno)
+      .not('observacoes', 'is', null)
+      .maybeSingle()
+    try {
+      if (leadVinculado?.observacoes) {
+        const obs = JSON.parse(leadVinculado.observacoes as string)
+        if (obs.temperatura) analiseCron = obs
+        historicoAnalises = obs.historico_analises ?? []
+      }
+    } catch { /* observacoes não é JSON */ }
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
@@ -106,6 +126,8 @@ export default async function AlunoPage({
         presencas={presencas as any ?? []}
         documentos={documentos as any ?? []}
         uniforme={uniforme as any ?? []}
+      analiseCron={analiseCron}
+      historicoAnalises={historicoAnalises}
       />
     </div>
   )
