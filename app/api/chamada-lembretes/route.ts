@@ -84,7 +84,7 @@ async function handler(req: NextRequest) {
   // Professor vem via turmas.professor_id — aulas.professor_id não é preenchido no fluxo normal
   const { data: aulas } = await sb
     .from('aulas')
-    .select('id, data, hora_inicio, hora_fim, status, turma_id, turmas!inner(nome, professor_id, professores(nome, celular, email))')
+    .select('id, data, hora_inicio, hora_fim, status, turma_id, turmas!inner(nome, professor_id, professores(nome, celular, email, ativo))')
     .neq('status', 'cancelada')
     .neq('status', 'concluida')
     .gte('data', tresDiasAtras.toISOString().slice(0, 10))
@@ -96,7 +96,7 @@ async function handler(req: NextRequest) {
   for (const aula of (aulas ?? [])) {
     const turma = (aula as any).turmas
     const prof = turma?.professores
-    if (!prof?.celular) continue
+    if (!prof?.celular || prof.ativo === false) continue
 
     const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
     const diffMin = (agora.getTime() - fimAula.getTime()) / 60000

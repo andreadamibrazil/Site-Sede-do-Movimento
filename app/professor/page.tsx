@@ -30,6 +30,11 @@ export default async function ProfessorPage() {
 
   // Aulas pendentes (sem chamada, passadas)
   const em7diasAtras = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+  // Busca turmas do professor para filtrar aulas (aulas.professor_id não é preenchido no fluxo normal)
+  const turmaIds = !isAdmin
+    ? (await sb.from('turmas').select('id').eq('professor_id', professor.id).eq('status', 'ativa')).data?.map(t => t.id) ?? []
+    : null
+
   const aulasPendentesQuery = sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, turmas(nome), professores(nome)')
@@ -38,7 +43,7 @@ export default async function ProfessorPage() {
     .gte('data', em7diasAtras)
     .lt('data', hoje)
     .order('data', { ascending: false })
-  if (!isAdmin) aulasPendentesQuery.eq('professor_id', professor.id)
+  if (!isAdmin && turmaIds) aulasPendentesQuery.in('turma_id', turmaIds.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
   const { data: aulasPendentes } = await aulasPendentesQuery
 
   // Aulas dos próximos 7 dias
@@ -49,7 +54,7 @@ export default async function ProfessorPage() {
     .lte('data', em7dias)
     .order('data')
     .order('hora_inicio')
-  if (!isAdmin) aulasProximasQuery.eq('professor_id', professor.id)
+  if (!isAdmin && turmaIds) aulasProximasQuery.in('turma_id', turmaIds.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
   const { data: aulasProximas } = await aulasProximasQuery
 
   // Turmas
