@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
   // Fila primária: nunca analisadas + maduras (≥24h)
   const { data: primarias, error: err1 } = await sb
     .from('conversas')
-    .select('id, celular, lead_id, source, blob_path, variables, analisado_em')
+    .select('id, celular, source, blob_path, variables, analisado_em')
     .is('analisado_em', null)
     .lt('created_at', maturidade)
     .order('created_at', { ascending: false })
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
   const { data: reanalisar } = slotsRestantes > 0
     ? await sb
         .from('conversas')
-        .select('id, celular, lead_id, source, blob_path, variables, analisado_em')
+        .select('id, celular, source, blob_path, variables, analisado_em')
         .not('analisado_em', 'is', null)
         .lt('analisado_em', reanalisarDesde)
         .order('analisado_em', { ascending: true })
@@ -142,15 +142,14 @@ export async function GET(req: NextRequest) {
       continue
     }
 
-    // Busca análise anterior para dar contexto ao Gemini
-    const leadId = conversa.lead_id as string | null
+    // Busca análise anterior para dar contexto ao Gemini (via celular — lead_id não existe em conversas)
     let analiseAnterior: Record<string, unknown> | null = null
-
-    if (leadId) {
+    if (celular) {
       const { data: leadAtual } = await sb
         .from('leads')
         .select('observacoes')
-        .eq('id', leadId)
+        .eq('celular', celular)
+        .not('observacoes', 'is', null)
         .maybeSingle()
       try {
         if (leadAtual?.observacoes) analiseAnterior = JSON.parse(leadAtual.observacoes)
