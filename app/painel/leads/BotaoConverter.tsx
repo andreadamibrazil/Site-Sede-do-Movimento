@@ -11,16 +11,21 @@ export default function BotaoConverter({ leadId, leadNome }: { leadId: string; l
   async function converterDireto() {
     // Lead É o aluno — adulto que se matriculou diretamente
     setLoading(true)
-    const res = await fetch('/api/leads/converter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead_id: leadId }),
-    })
-    const data = await res.json()
-    if (data.aluno_id) {
-      router.push(`/painel/alunos/${data.aluno_id}`)
-    } else {
-      alert(data.error ?? 'Erro ao converter')
+    try {
+      const res = await fetch('/api/leads/converter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_id: leadId }),
+      })
+      const data = await res.json()
+      if (data.aluno_id) {
+        router.push(`/painel/alunos/${data.aluno_id}`)
+      } else {
+        alert(data.error ?? 'Erro ao converter')
+        setLoading(false)
+      }
+    } catch {
+      alert('Erro de conexão ao converter lead')
       setLoading(false)
     }
   }

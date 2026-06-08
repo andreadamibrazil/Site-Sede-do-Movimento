@@ -1,11 +1,12 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
+import { criarFamilia, vincularAlunoFamilia, salvarAditivo as salvarAditivoServer, justificarFalta as justificarFaltaServer, adicionarCobrancaAvulsa, marcarCobrancaAvulsaPaga, salvarDocumentoLink, editarDocumento, excluirDocumentoDB } from './actions'
 
 const ABAS = [
   { id: 'dados',       label: 'Dados pessoais' },
@@ -157,15 +158,23 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
       // Cria nova família
       const nome = (nomeNovo ?? busca).trim()
       if (!nome) { setSalvando(false); return }
-      const { data: raw } = await supabase.from('familias').insert({ nome }).select('id').single()
-      const criada = raw as { id: string } | null
-      if (!criada) { setSalvando(false); return }
-      fId = criada.id
-      fNome = nome
+      try {
+        fId = await criarFamilia(nome)
+        fNome = nome
+      } catch (e) {
+        alert('Erro ao criar família: ' + (e as Error).message)
+        setSalvando(false)
+        return
+      }
     }
 
-    await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
-    await supabase.from('familia_membros').insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
+    try {
+      await vincularAlunoFamilia(alunoId, fId)
+    } catch (e) {
+      alert('Erro ao vincular: ' + (e as Error).message)
+      setSalvando(false)
+      return
+    }
 
     setSalvando(false)
     setVinculado(true)
@@ -272,8 +281,6 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
   const [erroAditivo, setErroAditivo] = useState('')
   const [sucessoAditivo, setSucessoAditivo] = useState(false)
 
-  const supabase = createClient()
-
   async function salvarAditivo() {
     if (!aditivo) return
     setErroAditivo('')
@@ -285,14 +292,15 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
       ? { valor_final: m?.valor_final, tipo_desconto: m?.tipo_desconto, percentual_desconto: m?.percentual_desconto }
       : { plano: m?.plano }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const insertPayload: any = { matricula_id: aditivo.matriculaId, tipo: tipoAditivo, motivo: motivoAditivo || null, antes, depois: { descricao: depoisAditivo }, contrato_status: 'pendente' }
-    const { error } = await supabase.from('termos_aditivos').insert(insertPayload)
-
-    if (error) { setErroAditivo(error.message); setSalvandoAditivo(false); return }
-    setSucessoAditivo(true)
-    setTimeout(() => { setAditivo(null); setSucessoAditivo(false); setDepoisAditivo(''); setMotivoAditivo('') }, 2000)
-    setSalvandoAditivo(false)
+    try {
+      await salvarAditivoServer({ matricula_id: aditivo.matriculaId, tipo: tipoAditivo, motivo: motivoAditivo || null, antes, depois: { descricao: depoisAditivo } })
+      setSucessoAditivo(true)
+      setTimeout(() => { setAditivo(null); setSucessoAditivo(false); setDepoisAditivo(''); setMotivoAditivo('') }, 2000)
+    } catch (e) {
+      setErroAditivo((e as Error).message)
+    } finally {
+      setSalvandoAditivo(false)
+    }
   }
 
   if (!matriculas.length) return (
@@ -483,7 +491,6 @@ function AbaFinanceiro({ mensalidades }: { mensalidades: any[] }) {
 // ── Aba: Presença ────────────────────────────────────────────
 
 function AbaPresenca({ presencas }: { presencas: any[] }) {
-  const supabase = createClient()
   const router = useRouter()
   const [justificando, setJustificando] = useState<string | null>(null)
   const [obs, setObs] = useState('')
@@ -499,14 +506,16 @@ function AbaPresenca({ presencas }: { presencas: any[] }) {
 
   async function justificarFalta(presencaId: string) {
     setSalvando(true)
-    await supabase.from('presencas').update({
-      status: 'falta_justificada' as any,
-      observacao: obs || 'Atestado entregue',
-    }).eq('id', presencaId)
-    setJustificando(null)
-    setObs('')
-    setSalvando(false)
-    router.refresh()
+    try {
+      await justificarFaltaServer(presencaId, obs)
+      setJustificando(null)
+      setObs('')
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao justificar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   return (
@@ -692,20 +701,17 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
     setSalvandoLink(true)
     setErro('')
     const nome = linkNome.trim() || TIPO_LABEL[tipo] || tipo
-    const { error } = await supabase.from('documentos_aluno').insert({
-      aluno_id: alunoId,
-      tipo,
-      nome,
-      observacao: obs || null,
-      drive_url: linkUrl.trim(),
-      storage_path: '',
-    })
-    if (error) { setErro(error.message); setSalvandoLink(false); return }
-    setLinkUrl('')
-    setLinkNome('')
-    setObs('')
-    setSalvandoLink(false)
-    router.refresh()
+    try {
+      await salvarDocumentoLink({ aluno_id: alunoId, tipo, nome, observacao: obs || null, drive_url: linkUrl.trim() })
+      setLinkUrl('')
+      setLinkNome('')
+      setObs('')
+      router.refresh()
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setSalvandoLink(false)
+    }
   }
 
   function iniciarEdicao(doc: any) {
@@ -716,10 +722,15 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
 
   async function salvarEdicao(id: string) {
     setSalvandoEdit(true)
-    await supabase.from('documentos_aluno').update({ observacao: editObs || null, tipo: editTipo }).eq('id', id)
-    setSalvandoEdit(false)
-    setEditandoId(null)
-    router.refresh()
+    try {
+      await editarDocumento(id, { observacao: editObs || null, tipo: editTipo })
+      setEditandoId(null)
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvandoEdit(false)
+    }
   }
 
   async function visualizar(doc: { storage_path?: string | null; drive_url?: string | null }) {
@@ -747,7 +758,7 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
   async function excluir(id: string, storagePath?: string | null) {
     if (!confirm('Excluir este documento?')) return
     if (storagePath) await supabase.storage.from('documentos-alunos').remove([storagePath])
-    await supabase.from('documentos_aluno').delete().eq('id', id)
+    await excluirDocumentoDB(id)
     router.refresh()
   }
 
@@ -977,36 +988,37 @@ function AbaCobrancas({ alunoId }: { alunoId: string }) {
     vencimento: '',
   })
 
-  // Carrega ao montar
-  useState(() => {
+  useEffect(() => {
     supabase.from('cobrancas_avulsas')
       .select('*')
       .eq('aluno_id', alunoId)
       .order('created_at', { ascending: false })
       .then(({ data }) => { setCobrancas(data ?? []); setCarregado(true) })
-  })
+  }, [alunoId])
 
   async function adicionar() {
     if (!form.descricao || !form.valor) return
     setSalvando(true)
-    await supabase.from('cobrancas_avulsas').insert({
-      aluno_id: alunoId,
-      categoria: form.categoria as any,
-      descricao: form.descricao,
-      valor: Number(form.valor.replace(',', '.')),
-      vencimento: form.vencimento || null,
-      status: 'pendente',
-    })
-    setSalvando(false)
-    setAdicionando(false)
-    setForm({ categoria: 'espetaculo_participacao', descricao: '', valor: '', vencimento: '' })
-    // Recarrega
-    const { data } = await supabase.from('cobrancas_avulsas').select('*').eq('aluno_id', alunoId).order('created_at', { ascending: false })
-    setCobrancas(data ?? [])
+    try {
+      const nova = await adicionarCobrancaAvulsa({
+        aluno_id: alunoId,
+        categoria: form.categoria,
+        descricao: form.descricao,
+        valor: Number(form.valor.replace(',', '.')),
+        vencimento: form.vencimento || null,
+      })
+      setAdicionando(false)
+      setForm({ categoria: 'espetaculo_participacao', descricao: '', valor: '', vencimento: '' })
+      if (nova) setCobrancas(c => [nova as any, ...c])
+    } catch (e) {
+      alert('Erro ao adicionar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   async function marcarPago(id: string) {
-    await supabase.from('cobrancas_avulsas').update({ status: 'pago', pago_em: new Date().toISOString() }).eq('id', id)
+    await marcarCobrancaAvulsaPaga(id)
     setCobrancas(c => c.map(x => x.id === id ? { ...x, status: 'pago' } : x))
   }
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { editarTurma } from '../../actions'
 
 const DIAS = [
   { id: 'segunda', label: 'Seg' }, { id: 'terca', label: 'Ter' },
@@ -15,7 +15,6 @@ type Horario = { id?: string; dia_semana: string; hora_inicio: string; hora_fim:
 
 export default function EditarTurmaForm({ turma, horarios: horariosIniciais, modalidades, professores, salas }: any) {
   const router = useRouter()
-  const supabase = createClient()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -85,40 +84,32 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
     }
     setSalvando(true)
 
-    const payload: any = {
-      nome: form.nome,
-      descricao: form.descricao || null,
-      modalidade_id: form.modalidade_id,
-      professor_id: form.professor_id || null,
-      sala_id: form.sala_id || null,
-      capacidade: Number(form.capacidade),
-      nivel: form.nivel || null,
-      faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
-      faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
-      preco_padrao: Number(form.preco_padrao.replace(',', '.')),
-      status: form.status,
-      observacoes: form.observacoes || null,
-      data_inicio: form.data_inicio || null,
-      data_fim: form.data_fim || null,
-    }
-    const { error } = await supabase.from('turmas').update(payload).eq('id', turma.id)
-
-    if (error) { setErro(error.message); setSalvando(false); return }
-
-    // Recria horários: apaga os antigos e insere os novos
-    await supabase.from('turma_horarios').delete().eq('turma_id', turma.id)
-    if (horarios.length > 0) {
-      await supabase.from('turma_horarios').insert(
-        horarios.map(h => ({
-          turma_id: turma.id,
-          dia_semana: h.dia_semana as any,
-          hora_inicio: h.hora_inicio,
-          hora_fim: h.hora_fim,
-        }))
+    try {
+      await editarTurma(
+        turma.id,
+        {
+          nome: form.nome,
+          descricao: form.descricao || null,
+          modalidade_id: form.modalidade_id,
+          professor_id: form.professor_id || null,
+          sala_id: form.sala_id || null,
+          capacidade: Number(form.capacidade),
+          nivel: form.nivel || null,
+          faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
+          faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
+          preco_padrao: Number(form.preco_padrao.replace(',', '.')),
+          status: form.status,
+          observacoes: form.observacoes || null,
+          data_inicio: form.data_inicio || null,
+          data_fim: form.data_fim || null,
+        } as any,
+        horarios.map((h: any) => ({ dia_semana: h.dia_semana, hora_inicio: h.hora_inicio, hora_fim: h.hora_fim }))
       )
+      router.push(`/painel/turmas/${turma.id}`)
+    } catch (e) {
+      setErro((e as Error).message)
+      setSalvando(false)
     }
-
-    router.push(`/painel/turmas/${turma.id}`)
   }
 
   const { dias, durStr, totalMin } = calcularCarga(horarios)

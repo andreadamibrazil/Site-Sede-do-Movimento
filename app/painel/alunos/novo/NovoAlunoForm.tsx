@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { obterOuCriarResponsavel, salvarAluno } from '../actions'
 
 const ORIGENS = [
   'Instagram', 'WhatsApp', 'Indicação de aluno', 'Indicação de familiar',
@@ -86,43 +87,6 @@ export default function NovoAlunoForm({ leadResponsavel }: { leadResponsavel?: L
     }
   }
 
-  async function obterOuCriarResponsavel(
-    cpf: string, nome: string, celular: string, email: string,
-    parentesco: string, notificacao: string, encontrado: RespEncontrado
-  ): Promise<string | null> {
-    if (!nome.trim()) return null
-
-    // Reutiliza se já encontrou pelo CPF
-    if (encontrado) return encontrado.id
-
-    // Tenta buscar pelo CPF antes de criar (fallback)
-    const cpfLimpo = cpf.replace(/\D/g, '')
-    if (cpfLimpo.length === 11) {
-      const { data: existente } = await supabase
-        .from('responsaveis')
-        .select('id')
-        .eq('cpf', cpfLimpo)
-        .maybeSingle()
-      if (existente) return existente.id
-    }
-
-    // Cria novo
-    const { data } = await supabase
-      .from('responsaveis')
-      .insert({
-        nome: nome.trim(),
-        cpf: cpfLimpo.length === 11 ? cpfLimpo : null,
-        celular: celular || 'não informado',
-        email: email || null,
-        parentesco: parentesco || null,
-        notificacao: notificacao as any,
-      })
-      .select('id')
-      .single()
-
-    return data?.id ?? null
-  }
-
   async function salvar() {
     if (!dados.nome.trim()) { setErro('Nome é obrigatório.'); return }
     if (!dados.celular.trim()) { setErro('Celular é obrigatório.'); return }
@@ -132,54 +96,56 @@ export default function NovoAlunoForm({ leadResponsavel }: { leadResponsavel?: L
     if (cpfLimpoValidacao && cpfLimpoValidacao.length !== 11) { setErro('CPF deve ter 11 dígitos.'); return }
     setSalvando(true); setErro('')
 
-    let resp1Id = null, resp2Id = null
+    try {
+      let resp1Id: string | null = null
+      let resp2Id: string | null = null
 
-    if (responsavel.tem_responsavel && responsavel.nome) {
-      resp1Id = await obterOuCriarResponsavel(
-        responsavel.cpf, responsavel.nome, responsavel.celular,
-        responsavel.email, responsavel.parentesco, responsavel.notificacao,
-        resp1Encontrado
-      )
+      if (responsavel.tem_responsavel && responsavel.nome.trim()) {
+        resp1Id = resp1Encontrado
+          ? resp1Encontrado.id
+          : await obterOuCriarResponsavel({
+              cpf: responsavel.cpf, nome: responsavel.nome, celular: responsavel.celular,
+              email: responsavel.email || null, parentesco: responsavel.parentesco || null,
+              notificacao: responsavel.notificacao,
+            })
 
-      if (responsavel.tem_segundo && responsavel.nome2) {
-        resp2Id = await obterOuCriarResponsavel(
-          responsavel.cpf2, responsavel.nome2, responsavel.celular2,
-          responsavel.email2, responsavel.parentesco2, responsavel.notificacao2,
-          resp2Encontrado
-        )
+        if (responsavel.tem_segundo && responsavel.nome2.trim()) {
+          resp2Id = resp2Encontrado
+            ? resp2Encontrado.id
+            : await obterOuCriarResponsavel({
+                cpf: responsavel.cpf2, nome: responsavel.nome2, celular: responsavel.celular2,
+                email: responsavel.email2 || null, parentesco: responsavel.parentesco2 || null,
+                notificacao: responsavel.notificacao2,
+              })
+        }
       }
+
+      const alunoId = await salvarAluno({
+        nome: dados.nome.trim(),
+        nome_social: dados.nome_social || null,
+        sexo: dados.sexo || null,
+        data_nascimento: dados.data_nascimento || null,
+        cpf: dados.cpf || null,
+        rg: dados.rg || null,
+        celular: dados.celular || null,
+        email: dados.email || null,
+        cep: dados.cep || null,
+        endereco: dados.endereco || null,
+        bairro: dados.bairro || null,
+        origem: dados.origem || null,
+        como_conheceu: dados.como_conheceu || null,
+        info_saude: saude.info_saude || null,
+        observacoes: saude.observacoes || null,
+        responsavel_principal_id: resp1Id,
+        responsavel_secundario_id: resp2Id,
+        leadId: leadId || null,
+      })
+
+      router.push(`/painel/alunos/${alunoId}`)
+    } catch (e) {
+      setErro((e as Error).message)
+      setSalvando(false)
     }
-
-    const { data: aluno, error } = await supabase.from('alunos').insert({
-      nome: dados.nome.trim(),
-      nome_social: dados.nome_social || null,
-      sexo: dados.sexo as any || null,
-      data_nascimento: dados.data_nascimento || null,
-      cpf: dados.cpf || null,
-      rg: dados.rg || null,
-      celular: dados.celular || null,
-      email: dados.email || null,
-      cep: dados.cep || null,
-      endereco: dados.endereco || null,
-      bairro: dados.bairro || null,
-      origem: dados.origem || null,
-      como_conheceu: dados.como_conheceu || null,
-      info_saude: saude.info_saude || null,
-      observacoes: saude.observacoes || null,
-      responsavel_principal_id: resp1Id,
-      responsavel_secundario_id: resp2Id,
-      status_pedagogico: 'ativo',
-      status_financeiro: 'em_dia',
-    }).select('id').single()
-
-    if (error) { setErro(error.message); setSalvando(false); return }
-
-    // Marca lead como convertido se veio de um lead responsável
-    if (leadId) {
-      await supabase.from('leads').update({ status: 'convertido' }).eq('id', leadId)
-    }
-
-    router.push(`/painel/alunos/${aluno.id}`)
   }
 
   const ETAPAS: { id: Etapa; label: string }[] = [

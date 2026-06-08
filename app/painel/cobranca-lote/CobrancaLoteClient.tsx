@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { lancarCobrancasLote } from './actions'
 
 type Aluno = { id: string; nome: string; status_pedagogico: string }
 type Preco = { id: string; categoria: string; descricao: string; valor: number | null }
@@ -23,7 +23,6 @@ const CAT_LABEL: Record<string, string> = {
 }
 
 export default function CobrancaLoteClient({ alunos, precos }: { alunos: Aluno[]; precos: Preco[] }) {
-  const supabase = createClient()
   const router = useRouter()
 
   const [busca, setBusca] = useState('')
@@ -78,11 +77,9 @@ export default function CobrancaLoteClient({ alunos, precos }: { alunos: Aluno[]
     if (!selecionados.size || !form.descricao || !unitario) return
     setSalvando(true)
 
-    let ok = 0, erro = 0
     const alunosArr = Array.from(selecionados)
-
-    for (const aluno_id of alunosArr) {
-      const { error } = await supabase.from('cobrancas_avulsas').insert({
+    try {
+      await lancarCobrancasLote(alunosArr.map(aluno_id => ({
         aluno_id,
         categoria: (precoSelecionado?.categoria as any) ?? 'outro',
         categoria_custom: form.categoria_custom || null,
@@ -92,14 +89,14 @@ export default function CobrancaLoteClient({ alunos, precos }: { alunos: Aluno[]
         preco_unitario: unitario,
         quantidade: qtd,
         vencimento: form.vencimento || null,
-        status: 'pendente',
-      })
-      if (error) erro++; else ok++
+      })))
+      setResultado({ ok: alunosArr.length, erro: 0 })
+    } catch {
+      setResultado({ ok: 0, erro: alunosArr.length })
+    } finally {
+      setSalvando(false)
+      setSelecionados(new Set())
     }
-
-    setSalvando(false)
-    setResultado({ ok, erro })
-    setSelecionados(new Set())
   }
 
   if (resultado) {

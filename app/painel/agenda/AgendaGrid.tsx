@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { atualizarTurmaAgenda } from './actions'
 
 // Só as 6 salas reais — borda esquerda colorida, fundo branco
 const SALA_COR: Record<string, { border: string; dot: string; label: string }> = {
@@ -27,7 +27,6 @@ export default function AgendaGrid({ aulas, pendentes, datas, hojeStr, isAdmin, 
   aulas: Aula[]; pendentes: any[]; datas: string[]; hojeStr: string
   isAdmin: boolean; salas: { id: string; nome: string }[]; professores: { id: string; nome: string }[]
 }) {
-  const supabase = createClient()
   const router = useRouter()
   const [editando, setEditando] = useState<{ turmaId: string; aula: Aula } | null>(null)
   const [editForm, setEditForm] = useState({ nome: '', sala_id: '', professor_id: '' })
@@ -49,14 +48,19 @@ export default function AgendaGrid({ aulas, pendentes, datas, hojeStr, isAdmin, 
   async function salvarEdit() {
     if (!editando) return
     setSalvando(true); setErro('')
-    const { error } = await supabase.from('turmas').update({
-      nome: editForm.nome || editando.aula.turmas!.nome,
-      sala_id: editForm.sala_id || null,
-      professor_id: editForm.professor_id || null,
-    }).eq('id', editando.turmaId)
-    if (error) { setErro(error.message); setSalvando(false); return }
-    setSalvando(false); setEditando(null)
-    router.refresh()
+    try {
+      await atualizarTurmaAgenda(editando.turmaId, {
+        nome: editForm.nome || editando.aula.turmas!.nome,
+        sala_id: editForm.sala_id || null,
+        professor_id: editForm.professor_id || null,
+      })
+      setEditando(null)
+      router.refresh()
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   // Agrupa por dia

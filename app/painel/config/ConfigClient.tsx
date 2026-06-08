@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { adicionarConfigItem, salvarContextoItem } from './actions'
 
 const CATEGORIAS = [
   { id: 'uniforme', label: 'Itens de Uniforme' },
@@ -13,7 +13,6 @@ const CATEGORIAS = [
 ]
 
 export default function ConfigClient({ itens, contexto }: { itens: any[]; contexto: any[] }) {
-  const supabase = createClient() as any
   const router = useRouter()
   const [novoItem, setNovoItem] = useState({ categoria: 'uniforme', valor: '', label: '' })
   const [salvando, setSalvando] = useState(false)
@@ -28,20 +27,30 @@ export default function ConfigClient({ itens, contexto }: { itens: any[]; contex
   async function adicionarItem() {
     if (!novoItem.valor.trim() || !novoItem.label.trim()) return
     setSalvando(true)
-    await supabase.from('config_itens').insert({
-      categoria: novoItem.categoria,
-      valor: novoItem.valor.toLowerCase().replace(/\s+/g, '_'),
-      label: novoItem.label,
-    })
-    setSalvando(false)
-    setNovoItem(n => ({ ...n, valor: '', label: '' }))
-    router.refresh()
+    try {
+      await adicionarConfigItem({
+        categoria: novoItem.categoria,
+        valor: novoItem.valor.toLowerCase().replace(/\s+/g, '_'),
+        label: novoItem.label,
+      })
+      setNovoItem(n => ({ ...n, valor: '', label: '' }))
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   async function salvarContexto(secao: string) {
     setSalvandoContexto(true)
-    await supabase.from('config_auditoria').update({ conteudo: contextoEdit[secao], updated_at: new Date().toISOString() }).eq('secao', secao)
-    setSalvandoContexto(false)
+    try {
+      await salvarContextoItem(secao, contextoEdit[secao] ?? '')
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvandoContexto(false)
+    }
   }
 
   async function auditar() {

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { criarMatricula } from './actions'
 
 const DIAS_LABEL: Record<string, string> = {
   segunda: 'Seg', terca: 'Ter', quarta: 'Qua',
@@ -47,7 +47,6 @@ export default function MatriculaWizard({
   turmas: Turma[]
 }) {
   const router = useRouter()
-  const supabase = createClient()
 
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1)
   const [turmasSelecionadas, setTurmasSelecionadas] = useState<string[]>([])
@@ -81,83 +80,39 @@ export default function MatriculaWizard({
     )
   }
 
-  // Gera datas de vencimento das mensalidades
-  function gerarMensalidades(matriculaId: string, inicio: string, meses: number, valor: number, vencimento: number) {
-    const mensalidades = []
-    const dataBase = new Date(inicio)
-    for (let i = 0; i < meses; i++) {
-      const competencia = new Date(dataBase)
-      competencia.setMonth(competencia.getMonth() + i)
-      const venc = new Date(competencia.getFullYear(), competencia.getMonth(), vencimento)
-      mensalidades.push({
-        matricula_id: matriculaId,
-        competencia: `${competencia.getFullYear()}-${String(competencia.getMonth() + 1).padStart(2, '0')}-01`,
-        valor,
-        vencimento: venc.toISOString().split('T')[0],
-        status: 'aberta' as const,
-      })
-    }
-    return mensalidades
-  }
-
   async function confirmar() {
     setErro('')
     if (!turmasSelecionadas.length) { setErro('Selecione ao menos uma turma.'); return }
     setSalvando(true)
 
-    const meses = PLANOS.find(p => p.id === plano)?.meses ?? 1
-
-    // 1. Cria matrícula
-    const { data: matricula, error: errMat } = await supabase
-      .from('matriculas')
-      .insert({
-        aluno_id: aluno.id,
-        plano: plano as any,
-        data_inicio: dataInicio,
-        dia_vencimento: Number(diaVencimento),
-        valor_final: valorFinal,
-        tipo_desconto: tipoDesconto as any || null,
-        percentual_desconto: percentualDesconto ? Number(percentualDesconto) : 0,
-        observacao_desconto: observacaoDesconto || null,
-        status: 'ativa' as const,
-      })
-      .select('id')
-      .single()
-
-    if (errMat) { setErro(errMat.message); setSalvando(false); return }
-
-    // 2. Vincula turmas
-    await supabase.from('matricula_turmas').insert(
-      turmasSelecionadas.map(turmaId => ({
-        matricula_id: matricula.id,
-        turma_id: turmaId,
-        data_entrada: dataInicio,
-      }))
-    )
-
-    // 3. Gera mensalidades
-    const mensalidades = gerarMensalidades(matricula.id, dataInicio, meses, valorFinal, Number(diaVencimento))
-    await supabase.from('mensalidades').insert(mensalidades)
-
-    // 4. Dispara DocuSeal via n8n (sem bloquear — erro não impede redirect)
-    const turmasNomes = turmasSel.map(t => t.nome).join(', ')
-    const celular = aluno.celular ? `55${aluno.celular.replace(/\D/g, '')}` : null
-    fetch('https://n8n.sededomovimento.art/webhook/matricula-criada', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        aluno_id: aluno.id,
-        matricula_id: matricula.id,
-        aluno_nome: aluno.nome,
-        aluno_email: aluno.email,
-        aluno_whatsapp: celular,
+    try {
+      const celular = aluno.celular ? `55${aluno.celular.replace(/\D/g, '')}` : null
+      const result = await criarMatricula({
+        alunoId: aluno.id,
+        alunoNome: aluno.nome,
+        alunoEmail: aluno.email,
+        alunoWhatsapp: celular,
+        turmaIds: turmasSelecionadas,
         plano,
-        valor_mensal: valorFinal,
-        turmas: turmasNomes,
-      }),
-    }).catch(() => {})
+        dataInicio,
+        diaVencimento: Number(diaVencimento),
+        valorFinal,
+        tipoDesconto: tipoDesconto || null,
+        percentualDesconto: percentualDesconto ? Number(percentualDesconto) : 0,
+        observacaoDesconto: observacaoDesconto || null,
+      })
 
-    router.push(`/painel/alunos/${aluno.id}?aba=matriculas`)
+      if (result.error) {
+        setErro(result.error)
+        return
+      }
+
+      router.push(`/painel/alunos/${aluno.id}?aba=matriculas`)
+    } catch (e) {
+      setErro((e as Error).message)
+    } finally {
+      setSalvando(false)
+    }
   }
 
   return (

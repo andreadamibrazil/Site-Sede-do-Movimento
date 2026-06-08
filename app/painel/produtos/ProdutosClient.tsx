@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { salvarPrecoReferencia, toggleAtivoPrecoReferencia } from './actions'
 
 const CAT_LABEL: Record<string, string> = {
   taxa_matricula: 'Taxa de matrícula',
@@ -25,7 +25,6 @@ type Produto = {
 }
 
 export default function ProdutosClient({ produtos: inicial }: { produtos: Produto[] }) {
-  const supabase = createClient()
   const router = useRouter()
 
   const [produtos, setProdutos] = useState(inicial)
@@ -81,31 +80,24 @@ Verifique:
   async function salvar() {
     if (!form.descricao || !form.categoria) return
     setSalvando(true)
-
-    if (editandoId) {
-      await supabase.from('precos_referencia').update({
-        categoria: form.categoria as any,
-        descricao: form.descricao,
-        valor: form.valor ? Number(form.valor.replace(',', '.')) : null,
-      }).eq('id', editandoId)
-    } else {
-      await supabase.from('precos_referencia').insert({
-        categoria: form.categoria as any,
-        descricao: form.descricao,
-        valor: form.valor ? Number(form.valor.replace(',', '.')) : null,
-        ativo: true,
-      })
+    try {
+      await salvarPrecoReferencia(
+        { categoria: form.categoria, descricao: form.descricao, valor: form.valor ? Number(form.valor.replace(',', '.')) : null },
+        editandoId ?? undefined
+      )
+      setAdicionando(false)
+      setEditandoId(null)
+      setAvisoIA('')
+      router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
     }
-
-    setSalvando(false)
-    setAdicionando(false)
-    setEditandoId(null)
-    setAvisoIA('')
-    router.refresh()
   }
 
   async function toggleAtivo(id: string, ativo: boolean) {
-    await supabase.from('precos_referencia').update({ ativo: !ativo }).eq('id', id)
+    await toggleAtivoPrecoReferencia(id, ativo)
     setProdutos(p => p.map(x => x.id === id ? { ...x, ativo: !ativo } : x))
   }
 

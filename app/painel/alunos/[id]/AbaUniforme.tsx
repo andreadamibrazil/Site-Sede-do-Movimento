@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { inserirRetiradaUniforme } from '../actions'
 
 const ITENS = [
   { id: 'camisa', label: 'Camisa' },
@@ -30,7 +30,6 @@ type Retirada = {
 }
 
 export default function AbaUniforme({ alunoId, retiradas: inicial }: { alunoId: string; retiradas: Retirada[] }) {
-  const supabase = createClient()
   const router = useRouter()
   const [lista, setLista] = useState(inicial)
   const [form, setForm] = useState({ item: 'camisa', tamanho: 'M', quantidade: 1, valor: '', observacao: '', responsavel_nome: '' })
@@ -41,22 +40,24 @@ export default function AbaUniforme({ alunoId, retiradas: inicial }: { alunoId: 
 
   async function salvar() {
     setSalvando(true)
-    const { data, error } = await supabase.from('uniforme_retiradas').insert({
-      aluno_id: alunoId,
-      item: form.item,
-      tamanho: form.tamanho,
-      quantidade: Number(form.quantidade),
-      valor: form.valor ? Number(form.valor.toString().replace(',', '.')) : null,
-      observacao: form.observacao || null,
-      responsavel_nome: form.responsavel_nome || null,
-    }).select().single()
-
-    setSalvando(false)
-    if (!error && data) {
+    try {
+      const data = await inserirRetiradaUniforme({
+        aluno_id: alunoId,
+        item: form.item,
+        tamanho: form.tamanho,
+        quantidade: Number(form.quantidade),
+        valor: form.valor ? Number(form.valor.toString().replace(',', '.')) : null,
+        observacao: form.observacao || null,
+        responsavel_nome: form.responsavel_nome || null,
+      })
       setLista(l => [data as any, ...l])
       setMostrarForm(false)
       setForm({ item: 'camisa', tamanho: 'M', quantidade: 1, valor: '', observacao: '', responsavel_nome: '' })
       router.refresh()
+    } catch (e) {
+      alert('Erro ao salvar: ' + (e as Error).message)
+    } finally {
+      setSalvando(false)
     }
   }
 

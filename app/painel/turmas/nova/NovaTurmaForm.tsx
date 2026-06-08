@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { criarTurma } from '../actions'
 
 const DIAS = [
   { id: 'segunda',  label: 'Seg' },
@@ -28,7 +28,6 @@ type Props = {
 
 export default function NovaTurmaForm({ modalidades, professores, salas }: Props) {
   const router = useRouter()
-  const supabase = createClient()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -113,43 +112,29 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
     }
     setSalvando(true)
 
-    const payload: any = {
-      nome: form.nome,
-      descricao: form.descricao || null,
-      modalidade_id: form.modalidade_id,
-      professor_id: form.professor_id || null,
-      sala_id: form.sala_id || null,
-      capacidade: Number(form.capacidade),
-      nivel: form.nivel || null,
-      faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
-      faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
-      preco_padrao: Number(form.preco_padrao.replace(',', '.')),
-      observacoes: form.observacoes || null,
-      status: 'ativa',
-      data_inicio: form.data_inicio || null,
-      data_fim: form.data_fim || null,
+    try {
+      const turmaId = await criarTurma({
+        nome: form.nome,
+        descricao: form.descricao || null,
+        modalidade_id: form.modalidade_id,
+        professor_id: form.professor_id || null,
+        sala_id: form.sala_id || null,
+        capacidade: Number(form.capacidade),
+        nivel: form.nivel || null,
+        faixa_etaria_min: form.faixa_etaria_min ? Number(form.faixa_etaria_min) : null,
+        faixa_etaria_max: form.faixa_etaria_max ? Number(form.faixa_etaria_max) : null,
+        preco_padrao: Number(form.preco_padrao.replace(',', '.')),
+        observacoes: form.observacoes || null,
+        status: 'ativa',
+        data_inicio: form.data_inicio || null,
+        data_fim: form.data_fim || null,
+        horarios: horarios.length > 0 ? horarios : undefined,
+      } as any)
+      router.push(`/painel/turmas/${turmaId}`)
+    } catch (e) {
+      setErro((e as Error).message)
+      setSalvando(false)
     }
-    const { data: turma, error } = await supabase
-      .from('turmas')
-      .insert(payload)
-      .select('id')
-      .single()
-
-    if (error) { setErro(error.message); setSalvando(false); return }
-
-    // Insere horários
-    if (horarios.length > 0) {
-      await supabase.from('turma_horarios').insert(
-        horarios.map(h => ({
-          turma_id: turma.id,
-          dia_semana: h.dia_semana as 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'sabado' | 'domingo',
-          hora_inicio: h.hora_inicio,
-          hora_fim: h.hora_fim,
-        }))
-      )
-    }
-
-    router.push(`/painel/turmas/${turma.id}`)
   }
 
   return (

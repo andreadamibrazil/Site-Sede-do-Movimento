@@ -223,9 +223,6 @@ export default async function ProfessorPage() {
                       {alunosAtivos.slice(0,8).map((a: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-xs">
                           <span className="text-gray-700">{a.nome}</span>
-                          {a.status_financeiro === 'inadimplente' && (
-                            <span className="text-red-500 text-[10px]">Inadimplente</span>
-                          )}
                         </div>
                       ))}
                       {alunosAtivos.length > 8 && <p className="text-xs text-gray-400">+{alunosAtivos.length - 8} alunos</p>}

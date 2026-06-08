@@ -289,7 +289,7 @@ export default function ChamadaClient({
                 <div>
                   <p className="text-sm font-medium text-gray-900">{aluno.nome_social ?? aluno.nome}</p>
                   {aluno.nome_social && <p className="text-xs text-gray-400">{aluno.nome}</p>}
-                  {aluno.status_financeiro === 'inadimplente' && (
+                  {perfilUsuario !== 'professor' && aluno.status_financeiro === 'inadimplente' && (
                     <span className="text-xs text-red-500">⚠ Inadimplente</span>
                   )}
                 </div>
@@ -557,7 +557,7 @@ export default function ChamadaClient({
                     {aluno.nome_social && (
                       <p className="text-xs text-gray-400 truncate">{aluno.nome}</p>
                     )}
-                    {aluno.status_financeiro === 'inadimplente' && (
+                    {perfilUsuario !== 'professor' && aluno.status_financeiro === 'inadimplente' && (
                       <span className="text-xs text-red-500">⚠ Inadimplente</span>
                     )}
                   </div>

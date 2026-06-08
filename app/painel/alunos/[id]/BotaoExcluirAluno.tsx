@@ -2,28 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { excluirAluno } from '../actions'
 
 export default function BotaoExcluirAluno({ alunoId, alunoNome }: { alunoId: string; alunoNome: string }) {
   const [confirmando, setConfirmando] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   async function excluir() {
     setSalvando(true)
-    // Soft delete: marca como excluído — sai da contagem de ativos, histórico preservado
-    const { error } = await supabase
-      .from('alunos')
-      .update({ status_pedagogico: 'excluido' as any })
-      .eq('id', alunoId)
-
-    if (error) {
-      alert('Erro ao excluir: ' + error.message)
+    try {
+      await excluirAluno(alunoId)
+      router.push('/painel/alunos')
+    } catch (e) {
+      alert('Erro ao excluir: ' + (e as Error).message)
       setSalvando(false)
-      return
     }
-    router.push('/painel/alunos')
   }
 
   return (

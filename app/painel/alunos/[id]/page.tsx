@@ -40,7 +40,8 @@ export default async function AlunoPage({
     .eq('aluno_id', id)
     .order('created_at', { ascending: false })
 
-  const { data: mensalidades } = await supabase
+  const serviceForFinanceiro = createServiceClient()
+  const { data: mensalidades } = await serviceForFinanceiro
     .from('mensalidades')
     .select('*')
     .in('matricula_id', (matriculas ?? []).map(m => m.id))
@@ -64,8 +65,7 @@ export default async function AlunoPage({
   const presencas = presencasRes.data
   const documentos = documentosRes.data
 
-  const service = createServiceClient()
-  const { data: uniforme } = await service
+  const { data: uniforme } = await serviceForFinanceiro
     .from('uniforme_retiradas')
     .select('*')
     .eq('aluno_id', id)
