@@ -1,37 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { callGemini } from '@/lib/gemini'
 import { NextRequest, NextResponse } from 'next/server'
-
-// Fallback entre as 3 chaves Gemini — evita erro de quota
-const GEMINI_KEYS = [
-  process.env.GOOGLE_AI_KEY,
-  process.env.GOOGLE_AI_KEY_2,
-  process.env.GOOGLE_AI_KEY_3,
-  process.env.GOOGLE_AI_KEY_4,
-].filter(Boolean) as string[]
-
-async function chamarGemini(prompt: string): Promise<string> {
-  let ultimoErro = ''
-  for (const key of GEMINI_KEYS) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
-          }),
-        }
-      )
-      if (res.status === 429 || res.status === 403) { ultimoErro = `quota key${GEMINI_KEYS.indexOf(key) + 1}`; continue }
-      if (!res.ok) { ultimoErro = `erro ${res.status}`; continue }
-      const data = await res.json()
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Sem resposta.'
-    } catch (e) { ultimoErro = String(e) }
-  }
-  throw new Error(`Gemini indisponível: ${ultimoErro}`)
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function buscarContexto(sb: any, pergunta: string, isAdmin: boolean) {
@@ -166,7 +135,7 @@ ${pergunta}
 Responda em português. Se precisar de mais informação, faça UMA pergunta por vez.`
 
   try {
-    const resposta = await chamarGemini(prompt)
+    const resposta = await callGemini(prompt)
     return NextResponse.json({ resposta })
   } catch (e) {
     console.error('[assistente]', e)
