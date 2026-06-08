@@ -34,12 +34,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
     }
 
-    // Pega chaves disponíveis
+    // Pega todas as chaves disponíveis em rotação
     const keys = [
+      process.env.GEMINI_API_KEY_VIVA,
+      process.env.GEMINI_API_KEY,
       process.env.GOOGLE_AI_KEY,
       process.env.GOOGLE_AI_KEY_2,
       process.env.GOOGLE_AI_KEY_3,
-  process.env.GOOGLE_AI_KEY_4,
+      process.env.GOOGLE_AI_KEY_4,
     ].filter(Boolean) as string[]
 
     if (!keys.length) {
