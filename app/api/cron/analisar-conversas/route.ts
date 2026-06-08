@@ -1,29 +1,22 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { readBlobData } from '@/lib/azure-blob'
+import { callGemini } from '@/lib/gemini'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Roda 2x por dia: 12:00 e 00:00 via cron Azure VM
-// Chama: GET https://sededomovimento.art/api/cron/analisar-conversas
+// GET https://sededomovimento.art/api/cron/analisar-conversas
 // Header: Authorization: Bearer {CRON_SECRET}
-//
-// Fluxo: busca conversas não analisadas → Gemini Flash → atualiza leads.observacoes
-
-// Todas as chaves disponíveis em rotação — free tier reseta diariamente
-const GEMINI_KEYS = [
-  process.env.GEMINI_API_KEY_VIVA ?? '',   // Vivá (formato AQ.)
-  process.env.GEMINI_API_KEY ?? '',         // Carlos ou André principal
-  process.env.GOOGLE_AI_KEY ?? '',          // André principal (GOOGLE_AI_KEY)
-  process.env.GOOGLE_AI_KEY_2 ?? '',
-  process.env.GOOGLE_AI_KEY_3 ?? '',
-  process.env.GOOGLE_AI_KEY_4 ?? '',
-].filter(Boolean)
-
-const GEMINI_MODEL = 'gemini-2.5-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 // Limite por execução para não bater rate limit do free tier
 const MAX_POR_EXECUCAO = 30
 
-async function geminiAnalyze(conversaText: string): Promise<Record<string, any> | null> {
+// Só analisa conversas com ao menos 24h (tempo de acumular conteúdo)
+const MATURIDADE_HORAS = 24
+
+// Re-analisa conversas já analisadas a mais de N dias (atualiza perfil com histórico crescente)
+const REANALISAR_APOS_DIAS = 7
+
+async function geminiAnalyze(conversaText: string): Promise<Record<string, unknown> | null> {
   const prompt = `Você é especialista em análise de conversas de uma escola de dança chamada Sede do Movimento.
 
 Analise esta conversa de WhatsApp/chatbot e extraia informações estruturadas sobre o contato.
@@ -48,98 +41,94 @@ Regras:
 - objecoes: lista apenas objeções mencionadas explicitamente
 - Se não há informação suficiente, use valores conservadores (frio, oportunidade=informacao)`
 
-  let lastErr: string | null = null
-
-  for (const key of GEMINI_KEYS) {
-    try {
-      const res = await fetch(`${GEMINI_URL}?key=${key}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
-        }),
-      })
-
-      if (res.status === 429 || res.status === 401 || res.status === 403) {
-        lastErr = `HTTP ${res.status}`
-        continue
-      }
-
-      if (!res.ok) {
-        lastErr = `HTTP ${res.status}`
-        continue
-      }
-
-      const data = await res.json()
-      const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-
-      // Extrai JSON da resposta
-      const jsonStart = text.indexOf('{')
-      const jsonEnd = text.lastIndexOf('}')
-      if (jsonStart === -1 || jsonEnd === -1) { lastErr = 'no json in response'; continue }
-
-      return JSON.parse(text.slice(jsonStart, jsonEnd + 1))
-    } catch (e: any) {
-      lastErr = e?.message ?? 'unknown error'
-      continue
-    }
+  try {
+    const text = await callGemini(prompt, { temperature: 0.1, maxOutputTokens: 512 })
+    const jsonStart = text.indexOf('{')
+    const jsonEnd = text.lastIndexOf('}')
+    if (jsonStart === -1 || jsonEnd === -1) return null
+    return JSON.parse(text.slice(jsonStart, jsonEnd + 1))
+  } catch (e) {
+    console.error('[analisar-conversas] Gemini falhou:', e)
+    return null
   }
-
-  console.error('[analisar-conversas] Gemini falhou:', lastErr)
-  return null
 }
 
-function formatarConversa(messages: any[]): string {
+function formatarConversa(messages: unknown[]): string {
   if (!Array.isArray(messages) || messages.length === 0) return '(sem mensagens)'
 
   return messages
-    .slice(-50) // últimas 50 mensagens para não exceder contexto
-    .map((m: any) => {
-      const who = m.fromMe ? 'Escola' : 'Cliente'
-      const text = m.text ?? `[${m.type ?? 'media'}]`
-      const ts = m.timestamp ? new Date(m.timestamp * 1000).toLocaleDateString('pt-BR') : ''
+    .slice(-50)
+    .map((m: unknown) => {
+      const msg = m as Record<string, unknown>
+      const who = msg.fromMe ? 'Escola' : 'Cliente'
+      const text = (msg.text as string) ?? `[${(msg.type as string) ?? 'media'}]`
+      const ts = msg.timestamp ? new Date((msg.timestamp as number) * 1000).toLocaleDateString('pt-BR') : ''
       return `${who}${ts ? ` (${ts})` : ''}: ${text}`
     })
     .join('\n')
 }
 
 export async function GET(req: NextRequest) {
-  // Auth via CRON_SECRET
   const auth = req.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret || auth !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  if (GEMINI_KEYS.length === 0) {
-    return NextResponse.json({ error: 'nenhuma chave Gemini configurada' }, { status: 500 })
+  const sb = createServiceClient() as ReturnType<typeof createServiceClient> & {
+    from: (table: string) => unknown
   }
 
-  const sb = createServiceClient() as any
+  const agora = new Date()
+  const maturidade = new Date(agora.getTime() - MATURIDADE_HORAS * 60 * 60 * 1000).toISOString()
+  const reanalisarDesde = new Date(agora.getTime() - REANALISAR_APOS_DIAS * 24 * 60 * 60 * 1000).toISOString()
 
-  // Busca conversas não analisadas, ordenadas pela mais recente
-  const { data: conversas, error } = await sb
+  // Fila primária: não analisadas + maduras (≥24h)
+  const { data: primarias, error: err1 } = await (sb as unknown as ReturnType<typeof createServiceClient>)
     .from('conversas')
-    .select('id, celular, lead_id, source, messages, variables, tags')
+    .select('id, celular, lead_id, source, messages, blob_path, variables, tags, analisado_em')
     .is('analisado_em', null)
+    .lt('created_at', maturidade)
     .order('created_at', { ascending: false })
-    .limit(MAX_POR_EXECUCAO)
+    .limit(Math.ceil(MAX_POR_EXECUCAO * 0.7))
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  if (err1) return NextResponse.json({ error: err1.message }, { status: 500 })
 
-  if (!conversas || conversas.length === 0) {
+  // Fila de re-análise: já analisadas mas há mais de 7 dias (perfil desatualizado)
+  const slotsRestantes = MAX_POR_EXECUCAO - (primarias?.length ?? 0)
+  const { data: reanalisar } = slotsRestantes > 0
+    ? await (sb as unknown as ReturnType<typeof createServiceClient>)
+        .from('conversas')
+        .select('id, celular, lead_id, source, messages, blob_path, variables, tags, analisado_em')
+        .not('analisado_em', 'is', null)
+        .lt('analisado_em', reanalisarDesde)
+        .order('analisado_em', { ascending: true })
+        .limit(slotsRestantes)
+    : { data: [] }
+
+  const conversas = [...(primarias ?? []), ...(reanalisar ?? [])]
+
+  if (conversas.length === 0) {
     return NextResponse.json({ ok: true, analisadas: 0, mensagem: 'nada pendente' })
   }
 
   let analisadas = 0
   let erros = 0
-  const agora = new Date().toISOString()
+  const agoraISO = agora.toISOString()
 
   for (const conversa of conversas) {
-    const texto = formatarConversa(conversa.messages)
+    // Lê mensagens do Azure Blob se o campo messages estiver vazio
+    let messages = (conversa as Record<string, unknown>).messages as unknown[]
+    if ((!messages || messages.length === 0) && (conversa as Record<string, unknown>).blob_path) {
+      try {
+        const cvars = (conversa as Record<string, unknown>).variables as Record<string, unknown> | null
+        const instance = (cvars?.instance as string) ?? 'sede-movimento'
+        const blobData = await readBlobData(instance, (conversa as Record<string, unknown>).celular as string)
+        messages = blobData.messages
+      } catch { /* sem blob — tenta com mensagens vazias */ }
+    }
+
+    const texto = formatarConversa(messages ?? [])
     const analise = await geminiAnalyze(texto)
 
     if (!analise) {
@@ -147,60 +136,57 @@ export async function GET(req: NextRequest) {
       continue
     }
 
-    // Monta objeto de inteligência para salvar em leads.observacoes
     const inteligencia = {
       ...analise,
-      ultima_analise: agora,
-      source: conversa.source,
+      ultima_analise: agoraISO,
+      source: (conversa as Record<string, unknown>).source,
     }
 
-    // Marca conversa como analisada
-    await sb.from('conversas')
-      .update({ analisado_em: agora })
-      .eq('id', conversa.id)
+    // Atualiza analisado_em na conversa (redefine o clock da re-análise)
+    await (sb as unknown as ReturnType<typeof createServiceClient>)
+      .from('conversas')
+      .update({ analisado_em: agoraISO })
+      .eq('id', (conversa as Record<string, unknown>).id)
 
-    // Atualiza leads.observacoes se tiver lead vinculado
-    if (conversa.lead_id) {
-      const { data: lead } = await sb
+    // Atualiza leads.observacoes: AI fields sobrescritos, campos manuais preservados
+    const leadId = (conversa as Record<string, unknown>).lead_id as string | null
+    const celular = (conversa as Record<string, unknown>).celular as string
+
+    async function atualizarLead(id: string) {
+      const { data: lead } = await (sb as unknown as ReturnType<typeof createServiceClient>)
         .from('leads')
         .select('observacoes')
-        .eq('id', conversa.lead_id)
+        .eq('id', id)
         .maybeSingle()
 
-      // Mescla com observacoes existentes (preserva dados anteriores)
-      let obsExistente: Record<string, any> = {}
-      try {
-        if (lead?.observacoes) obsExistente = JSON.parse(lead.observacoes)
-      } catch { /* observacoes não é JSON — ignora */ }
+      let obsExistente: Record<string, unknown> = {}
+      try { if (lead?.observacoes) obsExistente = JSON.parse(lead.observacoes) } catch { /* ignora */ }
 
-      const obsAtualizada = JSON.stringify({ ...obsExistente, ...inteligencia })
-
-      await sb.from('leads')
-        .update({ observacoes: obsAtualizada, updated_at: agora })
-        .eq('id', conversa.lead_id)
-    } else {
-      // Tenta vincular ao lead pelo celular
-      const { data: lead } = await sb
+      await (sb as unknown as ReturnType<typeof createServiceClient>)
         .from('leads')
-        .select('id, observacoes')
-        .eq('celular', conversa.celular)
+        .update({
+          observacoes: JSON.stringify({ ...obsExistente, ...inteligencia }),
+          updated_at: agoraISO,
+        })
+        .eq('id', id)
+    }
+
+    if (leadId) {
+      await atualizarLead(leadId)
+    } else {
+      // Tenta vincular pelo celular
+      const { data: lead } = await (sb as unknown as ReturnType<typeof createServiceClient>)
+        .from('leads')
+        .select('id')
+        .eq('celular', celular)
         .maybeSingle()
 
       if (lead) {
-        // Vincula conversa ao lead
-        await sb.from('conversas').update({ lead_id: lead.id }).eq('id', conversa.id)
-
-        let obsExistente: Record<string, any> = {}
-        try {
-          if (lead.observacoes) obsExistente = JSON.parse(lead.observacoes)
-        } catch { /* ignora */ }
-
-        await sb.from('leads')
-          .update({
-            observacoes: JSON.stringify({ ...obsExistente, ...inteligencia }),
-            updated_at: agora,
-          })
-          .eq('id', lead.id)
+        await (sb as unknown as ReturnType<typeof createServiceClient>)
+          .from('conversas')
+          .update({ lead_id: lead.id })
+          .eq('id', (conversa as Record<string, unknown>).id)
+        await atualizarLead(lead.id)
       }
     }
 
@@ -211,7 +197,8 @@ export async function GET(req: NextRequest) {
     ok: true,
     analisadas,
     erros,
-    total_pendentes: conversas.length,
-    executado_em: agora,
+    primarias: primarias?.length ?? 0,
+    reanalisadas: reanalisar?.length ?? 0,
+    executado_em: agoraISO,
   })
 }
