@@ -31,7 +31,7 @@ export async function criarTurma(data: {
   const { horarios, ...turmaData } = data
   const { data: nova, error } = await supabase
     .from('turmas')
-    .insert(turmaData)
+    .insert(turmaData as any)
     .select('id')
     .single()
   if (error) throw new Error(error.message)
@@ -65,7 +65,8 @@ export async function editarTurma(
   horarios?: { dia_semana: string; hora_inicio: string; hora_fim: string }[]
 ) {
   const supabase = createServiceClient()
-  const { error } = await supabase.from('turmas').update(data).eq('id', turmaId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from('turmas').update(data as any).eq('id', turmaId)
   if (error) throw new Error(error.message)
 
   if (horarios !== undefined) {
