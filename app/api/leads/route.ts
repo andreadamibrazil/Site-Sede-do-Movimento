@@ -18,10 +18,11 @@ export async function POST(req: NextRequest) {
   const { nome, celular, email, modalidade_interesse, como_conheceu } = body
 
   if (!nome?.trim()) return NextResponse.json({ error: 'Nome é obrigatório' }, { status: 400 })
+  if (!celular?.trim()) return NextResponse.json({ error: 'Celular é obrigatório' }, { status: 400 })
 
   const sb = createServiceClient()
 
-  const celularLimpo = celular ? normalizarCelular(celular) : null
+  const celularLimpo = normalizarCelular(celular)
 
   // Verifica duplicata por celular
   if (celularLimpo) {
