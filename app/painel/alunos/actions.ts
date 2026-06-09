@@ -25,8 +25,7 @@ export async function inserirRetiradaUniforme(data: {
   responsavel_nome: string | null
 }) {
   const supabase = createServiceClient()
-  const { data: retirada, error } = await supabase
-    .from('uniforme_retiradas')
+  const { data: retirada, error } = await (supabase.from('uniforme_retiradas') as any)
     .insert(data)
     .select()
     .single()
@@ -114,8 +113,7 @@ export async function salvarAluno(data: {
 // ── VincularFamilia ──────────────────────────────────────────
 export async function criarFamilia(nome: string): Promise<string> {
   const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('familias')
+  const { data, error } = await (supabase.from('familias') as any)
     .insert({ nome })
     .select('id')
     .single()
@@ -126,7 +124,7 @@ export async function criarFamilia(nome: string): Promise<string> {
 export async function vincularAlunoFamilia(alunoId: string, familiaId: string) {
   const supabase = createServiceClient()
   await (supabase.from('alunos') as any).update({ familia_id: familiaId }).eq('id', alunoId)
-  await supabase.from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
+  await (supabase.from('familia_membros') as any).insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
   revalidatePath(`/painel/alunos/${alunoId}`)
 }
 
