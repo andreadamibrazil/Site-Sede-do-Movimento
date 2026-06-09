@@ -1,5 +1,4 @@
-// generated: 2026-06-09
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -22,11 +21,15 @@ export type Database = {
           cep: string | null
           codigo_nextfit: string | null
           como_conheceu: string | null
+          contrato_assinado_em: string | null
+          contrato_docuseal_id: string | null
+          contrato_status: string
           cpf: string | null
           created_at: string
           data_nascimento: string | null
           email: string | null
           endereco: string | null
+          familia_id: string | null
           id: string
           info_saude: string | null
           nome: string
@@ -48,11 +51,15 @@ export type Database = {
           cep?: string | null
           codigo_nextfit?: string | null
           como_conheceu?: string | null
+          contrato_assinado_em?: string | null
+          contrato_docuseal_id?: string | null
+          contrato_status?: string
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
           endereco?: string | null
+          familia_id?: string | null
           id?: string
           info_saude?: string | null
           nome: string
@@ -74,11 +81,15 @@ export type Database = {
           cep?: string | null
           codigo_nextfit?: string | null
           como_conheceu?: string | null
+          contrato_assinado_em?: string | null
+          contrato_docuseal_id?: string | null
+          contrato_status?: string
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
           endereco?: string | null
+          familia_id?: string | null
           id?: string
           info_saude?: string | null
           nome?: string
@@ -95,6 +106,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "alunos_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "alunos_responsavel_principal_id_fkey"
             columns: ["responsavel_principal_id"]
@@ -117,6 +135,7 @@ export type Database = {
           criado_em: string
           dados_antes: Json | null
           dados_depois: Json | null
+          descricao: string | null
           id: string
           operacao: string
           registro_id: string | null
@@ -129,6 +148,7 @@ export type Database = {
           criado_em?: string
           dados_antes?: Json | null
           dados_depois?: Json | null
+          descricao?: string | null
           id?: string
           operacao: string
           registro_id?: string | null
@@ -141,6 +161,7 @@ export type Database = {
           criado_em?: string
           dados_antes?: Json | null
           dados_depois?: Json | null
+          descricao?: string | null
           id?: string
           operacao?: string
           registro_id?: string | null
@@ -367,45 +388,169 @@ export type Database = {
           },
         ]
       }
-      conversas: {
+      config_auditoria: {
         Row: {
+          conteudo: string
+          descricao: string | null
           id: string
-          celular: string
-          lead_id: string | null
-          source: string
-          messages: Json[]
-          variables: Json | null
-          tags: string[]
-          analisado_em: string | null
-          blob_path: string | null
-          created_at: string
-          updated_at: string
+          secao: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
+          conteudo: string
+          descricao?: string | null
           id?: string
-          celular: string
-          lead_id?: string | null
-          source: string
-          messages?: Json[]
-          variables?: Json | null
-          tags?: string[]
-          analisado_em?: string | null
-          blob_path?: string | null
-          created_at?: string
-          updated_at?: string
+          secao: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
+          conteudo?: string
+          descricao?: string | null
           id?: string
-          celular?: string
-          lead_id?: string | null
-          source?: string
-          messages?: Json[]
-          variables?: Json | null
-          tags?: string[]
+          secao?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      config_itens: {
+        Row: {
+          ativo: boolean | null
+          categoria: string
+          created_at: string | null
+          criado_por: string | null
+          gemini_categoria_sugerida: string | null
+          gemini_nota: string | null
+          id: string
+          label: string
+          valor: string
+          verificado: boolean | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria: string
+          created_at?: string | null
+          criado_por?: string | null
+          gemini_categoria_sugerida?: string | null
+          gemini_nota?: string | null
+          id?: string
+          label: string
+          valor: string
+          verificado?: boolean | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string
+          created_at?: string | null
+          criado_por?: string | null
+          gemini_categoria_sugerida?: string | null
+          gemini_nota?: string | null
+          id?: string
+          label?: string
+          valor?: string
+          verificado?: boolean | null
+        }
+        Relationships: []
+      }
+      contratos: {
+        Row: {
+          aluno_id: string | null
+          created_at: string | null
+          documento_aluno_id: string | null
+          docuseal_submission_id: number | null
+          docuseal_template_id: number | null
+          id: string
+          matricula_id: string | null
+          signed_at: string | null
+          status: string
+        }
+        Insert: {
+          aluno_id?: string | null
+          created_at?: string | null
+          documento_aluno_id?: string | null
+          docuseal_submission_id?: number | null
+          docuseal_template_id?: number | null
+          id?: string
+          matricula_id?: string | null
+          signed_at?: string | null
+          status?: string
+        }
+        Update: {
+          aluno_id?: string | null
+          created_at?: string | null
+          documento_aluno_id?: string | null
+          docuseal_submission_id?: number | null
+          docuseal_template_id?: number | null
+          id?: string
+          matricula_id?: string | null
+          signed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contratos_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_documento_aluno_id_fkey"
+            columns: ["documento_aluno_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_aluno"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_matricula_id_fkey"
+            columns: ["matricula_id"]
+            isOneToOne: false
+            referencedRelation: "matriculas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversas: {
+        Row: {
+          analisado_em: string | null
+          blob_path: string | null
+          celular: string
+          created_at: string
+          id: string
+          lead_id: string | null
+          messages: Json
+          source: string
+          tags: string[]
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
           analisado_em?: string | null
           blob_path?: string | null
+          celular: string
           created_at?: string
+          id?: string
+          lead_id?: string | null
+          messages?: Json
+          source: string
+          tags?: string[]
           updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          analisado_em?: string | null
+          blob_path?: string | null
+          celular?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          messages?: Json
+          source?: string
+          tags?: string[]
+          updated_at?: string
+          variables?: Json
         }
         Relationships: [
           {
@@ -417,47 +562,71 @@ export type Database = {
           },
         ]
       }
+      convites: {
+        Row: {
+          convidado_em: string
+          email: string
+          perfil: Database["public"]["Enums"]["perfil_usuario"]
+        }
+        Insert: {
+          convidado_em?: string
+          email: string
+          perfil?: Database["public"]["Enums"]["perfil_usuario"]
+        }
+        Update: {
+          convidado_em?: string
+          email?: string
+          perfil?: Database["public"]["Enums"]["perfil_usuario"]
+        }
+        Relationships: []
+      }
       documentos_aluno: {
         Row: {
-          aluno_id: string
+          aluno_id: string | null
           arquivado_em: string | null
           created_at: string
           criado_por: string | null
           dados_extraidos: Json | null
+          dados_extraidos_drive_url: string | null
           drive_url: string | null
+          gemini_processado_em: string | null
           id: string
           nome: string
           observacao: string | null
           presenca_id: string | null
-          storage_path: string
+          storage_path: string | null
           tipo: string
         }
         Insert: {
-          aluno_id: string
+          aluno_id?: string | null
           arquivado_em?: string | null
           created_at?: string
           criado_por?: string | null
           dados_extraidos?: Json | null
+          dados_extraidos_drive_url?: string | null
           drive_url?: string | null
+          gemini_processado_em?: string | null
           id?: string
           nome: string
           observacao?: string | null
           presenca_id?: string | null
-          storage_path: string
+          storage_path?: string | null
           tipo: string
         }
         Update: {
-          aluno_id?: string
+          aluno_id?: string | null
           arquivado_em?: string | null
           created_at?: string
           criado_por?: string | null
           dados_extraidos?: Json | null
+          dados_extraidos_drive_url?: string | null
           drive_url?: string | null
+          gemini_processado_em?: string | null
           id?: string
           nome?: string
           observacao?: string | null
           presenca_id?: string | null
-          storage_path?: string
+          storage_path?: string | null
           tipo?: string
         }
         Relationships: [
@@ -592,6 +761,91 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      familia_membros: {
+        Row: {
+          aluno_id: string | null
+          celular: string | null
+          cpf: string | null
+          created_at: string | null
+          email: string | null
+          familia_id: string
+          id: string
+          nome: string | null
+          papeis: string[]
+          responsavel_id: string | null
+        }
+        Insert: {
+          aluno_id?: string | null
+          celular?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          familia_id: string
+          id?: string
+          nome?: string | null
+          papeis?: string[]
+          responsavel_id?: string | null
+        }
+        Update: {
+          aluno_id?: string | null
+          celular?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          familia_id?: string
+          id?: string
+          nome?: string | null
+          papeis?: string[]
+          responsavel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "familia_membros_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "familia_membros_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "familia_membros_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      familias: {
+        Row: {
+          created_at: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       folhas_pagamento: {
         Row: {
@@ -1148,6 +1402,59 @@ export type Database = {
           },
         ]
       }
+      planos_aula: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          drive_file_id: string | null
+          drive_url: string | null
+          gemini_conteudo: Json | null
+          gemini_resumo: string | null
+          id: string
+          texto_original: string
+          turma_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
+          gemini_conteudo?: Json | null
+          gemini_resumo?: string | null
+          id?: string
+          texto_original: string
+          turma_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          drive_file_id?: string | null
+          drive_url?: string | null
+          gemini_conteudo?: Json | null
+          gemini_resumo?: string | null
+          id?: string
+          texto_original?: string
+          turma_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_aula_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       precos_referencia: {
         Row: {
           ativo: boolean
@@ -1371,6 +1678,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           email: string | null
+          familia_id: string | null
           id: string
           nome: string
           notificacao: Database["public"]["Enums"]["tipo_notif_responsavel"]
@@ -1382,6 +1690,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          familia_id?: string | null
           id?: string
           nome: string
           notificacao?: Database["public"]["Enums"]["tipo_notif_responsavel"]
@@ -1393,13 +1702,22 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          familia_id?: string | null
           id?: string
           nome?: string
           notificacao?: Database["public"]["Enums"]["tipo_notif_responsavel"]
           parentesco?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "responsaveis_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "familias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       salas: {
         Row: {
@@ -1431,33 +1749,54 @@ export type Database = {
       substituicoes: {
         Row: {
           aprovado_por: string | null
+          atestado_url: string | null
           aula_id: string
           created_at: string
           id: string
           motivo: string | null
           professor_ausente_id: string
           professor_substituto_id: string | null
+          registrado_por: string | null
+          substituto_celular: string | null
+          substituto_cpf: string | null
+          substituto_nome: string | null
           tem_atestado: boolean
+          termos_aceitos: boolean | null
+          termos_aceitos_em: string | null
         }
         Insert: {
           aprovado_por?: string | null
+          atestado_url?: string | null
           aula_id: string
           created_at?: string
           id?: string
           motivo?: string | null
           professor_ausente_id: string
           professor_substituto_id?: string | null
+          registrado_por?: string | null
+          substituto_celular?: string | null
+          substituto_cpf?: string | null
+          substituto_nome?: string | null
           tem_atestado?: boolean
+          termos_aceitos?: boolean | null
+          termos_aceitos_em?: string | null
         }
         Update: {
           aprovado_por?: string | null
+          atestado_url?: string | null
           aula_id?: string
           created_at?: string
           id?: string
           motivo?: string | null
           professor_ausente_id?: string
           professor_substituto_id?: string | null
+          registrado_por?: string | null
+          substituto_celular?: string | null
+          substituto_cpf?: string | null
+          substituto_nome?: string | null
           tem_atestado?: boolean
+          termos_aceitos?: boolean | null
+          termos_aceitos_em?: string | null
         }
         Relationships: [
           {
@@ -1503,34 +1842,49 @@ export type Database = {
       }
       termos_aditivos: {
         Row: {
+          antes: Json | null
+          contrato_status: string | null
           created_at: string
+          criado_por: string | null
           data_vigencia: string
+          depois: Json | null
           descricao_anterior: string | null
           descricao_nova: string | null
           id: string
           matricula_id: string
+          motivo: string | null
           tipo: string
           valor_anterior: number | null
           valor_novo: number | null
         }
         Insert: {
+          antes?: Json | null
+          contrato_status?: string | null
           created_at?: string
-          data_vigencia: string
+          criado_por?: string | null
+          data_vigencia?: string
+          depois?: Json | null
           descricao_anterior?: string | null
           descricao_nova?: string | null
           id?: string
           matricula_id: string
+          motivo?: string | null
           tipo: string
           valor_anterior?: number | null
           valor_novo?: number | null
         }
         Update: {
+          antes?: Json | null
+          contrato_status?: string | null
           created_at?: string
+          criado_por?: string | null
           data_vigencia?: string
+          depois?: Json | null
           descricao_anterior?: string | null
           descricao_nova?: string | null
           id?: string
           matricula_id?: string
+          motivo?: string | null
           tipo?: string
           valor_anterior?: number | null
           valor_novo?: number | null
@@ -1622,6 +1976,8 @@ export type Database = {
         Row: {
           capacidade: number
           created_at: string
+          data_fim: string | null
+          data_inicio: string | null
           descricao: string | null
           faixa_etaria_max: number | null
           faixa_etaria_min: number | null
@@ -1639,6 +1995,8 @@ export type Database = {
         Insert: {
           capacidade?: number
           created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
           descricao?: string | null
           faixa_etaria_max?: number | null
           faixa_etaria_min?: number | null
@@ -1656,6 +2014,8 @@ export type Database = {
         Update: {
           capacidade?: number
           created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
           descricao?: string | null
           faixa_etaria_max?: number | null
           faixa_etaria_min?: number | null
@@ -1694,12 +2054,79 @@ export type Database = {
           },
         ]
       }
+      uniforme_retiradas: {
+        Row: {
+          aluno_id: string
+          assinado: boolean | null
+          assinado_em: string | null
+          created_at: string | null
+          docuseal_id: string | null
+          enviado_em: string | null
+          enviado_email: boolean | null
+          id: string
+          item: string
+          observacao: string | null
+          quantidade: number
+          registrado_por: string | null
+          responsavel_assinatura: string | null
+          responsavel_nome: string | null
+          tamanho: string
+          valor: number | null
+        }
+        Insert: {
+          aluno_id: string
+          assinado?: boolean | null
+          assinado_em?: string | null
+          created_at?: string | null
+          docuseal_id?: string | null
+          enviado_em?: string | null
+          enviado_email?: boolean | null
+          id?: string
+          item: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por?: string | null
+          responsavel_assinatura?: string | null
+          responsavel_nome?: string | null
+          tamanho: string
+          valor?: number | null
+        }
+        Update: {
+          aluno_id?: string
+          assinado?: boolean | null
+          assinado_em?: string | null
+          created_at?: string | null
+          docuseal_id?: string | null
+          enviado_em?: string | null
+          enviado_email?: boolean | null
+          id?: string
+          item?: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por?: string | null
+          responsavel_assinatura?: string | null
+          responsavel_nome?: string | null
+          tamanho?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uniforme_retiradas_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_analise_dashboard: { Args: never; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
+      is_staff: { Args: never; Returns: boolean }
     }
     Enums: {
       categoria_cobranca:
@@ -1757,6 +2184,7 @@ export type Database = {
         | "trancado"
         | "cancelado"
         | "ex_aluno"
+        | "excluido"
       status_presenca:
         | "presente"
         | "falta"
@@ -1776,7 +2204,7 @@ export type Database = {
         | "so_notificacao"
         | "so_cobranca"
         | "nenhum"
-      tipo_plano: "mensal" | "trimestral" | "semestral" | "anual"
+      tipo_plano: "mensal" | "trimestral" | "semestral" | "anual" | "fidelidade"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1965,6 +2393,7 @@ export const Constants = {
         "trancado",
         "cancelado",
         "ex_aluno",
+        "excluido",
       ],
       status_presenca: [
         "presente",
@@ -1988,7 +2417,7 @@ export const Constants = {
         "so_cobranca",
         "nenhum",
       ],
-      tipo_plano: ["mensal", "trimestral", "semestral", "anual"],
+      tipo_plano: ["mensal", "trimestral", "semestral", "anual", "fidelidade"],
     },
   },
 } as const
