@@ -20,8 +20,9 @@ type AnaliseDashboard = {
 export default async function InteligenciaPage() {
   const supabase = await createClient()
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data: raw }, { count: pendentesCount }] = await Promise.all([
-    supabase.rpc('get_analise_dashboard'),
+    (supabase as any).rpc('get_analise_dashboard'),
     supabase.from('conversas').select('id', { count: 'exact', head: true }).is('analisado_em', null),
   ])
   const d = (raw ?? {}) as AnaliseDashboard
