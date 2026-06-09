@@ -111,7 +111,7 @@ function AbaAnalise({
         <div className={`border rounded-xl p-5 space-y-3 ${TEMP_CLASS[temp] ?? 'bg-gray-50 border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">
-              {TEMP_ICON[temp] ?? ''} {temp?.charAt(0).toUpperCase() + temp?.slice(1) ?? 'Sem dados'}
+              {TEMP_ICON[temp] ?? ''} {temp ? temp.charAt(0).toUpperCase() + temp.slice(1) : 'Sem dados'}
             </span>
             {!!analiseCron.ultima_analise && (
               <span className="text-xs opacity-60">
