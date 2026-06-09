@@ -9,14 +9,16 @@ export async function adicionarConfigItem(data: {
   label: string
 }) {
   const supabase = createServiceClient()
-  const { error } = await supabase.from('config_itens').insert(data)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('config_itens').insert(data)
   if (error) throw new Error(error.message)
   revalidatePath('/painel/config')
 }
 
 export async function salvarContextoItem(secao: string, conteudo: string) {
   const supabase = createServiceClient()
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('config_auditoria')
     .update({ conteudo, updated_at: new Date().toISOString() })
     .eq('secao', secao)
