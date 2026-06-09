@@ -113,16 +113,16 @@ function AbaAnalise({
             <span className="text-sm font-semibold">
               {TEMP_ICON[temp] ?? ''} {temp?.charAt(0).toUpperCase() + temp?.slice(1) ?? 'Sem dados'}
             </span>
-            {analiseCron.ultima_analise && (
+            {!!analiseCron.ultima_analise && (
               <span className="text-xs opacity-60">
                 Analisado em {new Date(analiseCron.ultima_analise as string).toLocaleString('pt-BR')}
               </span>
             )}
           </div>
-          {analiseCron.resumo && (
+          {!!analiseCron.resumo && (
             <p className="text-sm leading-relaxed">{analiseCron.resumo as string}</p>
           )}
-          {analiseCron.acao_sugerida && (
+          {!!analiseCron.acao_sugerida && (
             <p className="text-xs font-medium opacity-80">
               Próxima ação: {analiseCron.acao_sugerida as string}
             </p>
@@ -197,7 +197,7 @@ function AnaliseDetalhadaV2({ analise, analisadoEm }: { analise: Record<string, 
           </span>
         </div>
 
-        {analise.resumo && (
+        {!!analise.resumo && (
           <p className="text-sm text-gray-700 leading-relaxed border-l-2 border-indigo-200 pl-3">
             {analise.resumo as string}
           </p>
@@ -296,11 +296,11 @@ function AbaHistorico({ historico }: { historico: unknown[] }) {
                     </span>
                   </div>
 
-                  {entrada.resumo && (
+                  {!!entrada.resumo && (
                     <p className="text-sm text-gray-700 leading-snug">{entrada.resumo as string}</p>
                   )}
 
-                  {entrada.mudanca && (
+                  {!!entrada.mudanca && (
                     <p className="text-xs text-indigo-500 italic">{entrada.mudanca as string}</p>
                   )}
 

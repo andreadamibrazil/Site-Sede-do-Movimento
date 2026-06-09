@@ -59,7 +59,7 @@ export default async function LeadPage({
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={lead.status as string} />
-          {(analise as Record<string, unknown>)?.interesse && (
+          {!!(analise as Record<string, unknown>)?.interesse && (
             <NivelBadge
               nivel={(analise as Record<string, Record<string, unknown>>).interesse.nivel as string ?? 'baixo'}
               score={(analise as Record<string, Record<string, unknown>>).interesse.score as number ?? 0}
