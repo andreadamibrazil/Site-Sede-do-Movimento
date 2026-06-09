@@ -25,7 +25,8 @@ export async function inserirRetiradaUniforme(data: {
   responsavel_nome: string | null
 }) {
   const supabase = createServiceClient()
-  const { data: retirada, error } = await (supabase.from('uniforme_retiradas') as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: retirada, error } = await (supabase as any).from('uniforme_retiradas')
     .insert(data)
     .select()
     .single()
@@ -113,7 +114,8 @@ export async function salvarAluno(data: {
 // ── VincularFamilia ──────────────────────────────────────────
 export async function criarFamilia(nome: string): Promise<string> {
   const supabase = createServiceClient()
-  const { data, error } = await (supabase.from('familias') as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).from('familias')
     .insert({ nome })
     .select('id')
     .single()
@@ -123,8 +125,10 @@ export async function criarFamilia(nome: string): Promise<string> {
 
 export async function vincularAlunoFamilia(alunoId: string, familiaId: string) {
   const supabase = createServiceClient()
-  await (supabase.from('alunos') as any).update({ familia_id: familiaId }).eq('id', alunoId)
-  await (supabase.from('familia_membros') as any).insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('alunos').update({ familia_id: familiaId }).eq('id', alunoId)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
   revalidatePath(`/painel/alunos/${alunoId}`)
 }
 
