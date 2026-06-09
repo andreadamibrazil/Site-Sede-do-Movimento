@@ -173,6 +173,9 @@ export async function GET(req: NextRequest) {
       mensagens_analisadas: novasMensagens.length,
     }
 
+    // analise não é null aqui (verificado acima com continue)
+    const analiseSegura = analise as Record<string, unknown>
+
     // Atualiza leads.observacoes — sobrescreve campos de IA, preserva manuais, acumula histórico
     async function atualizarLead(id: string) {
       const { data: lead } = await sb
@@ -190,12 +193,12 @@ export async function GET(req: NextRequest) {
       await sb.from('leads').update({
         observacoes: JSON.stringify({
           ...obs,
-          temperatura: analise.temperatura,
-          demanda: analise.demanda,
-          objecoes: analise.objecoes,
-          oportunidade: analise.oportunidade,
-          acao_sugerida: analise.acao_sugerida,
-          resumo: analise.resumo,
+          temperatura: analiseSegura.temperatura,
+          demanda: analiseSegura.demanda,
+          objecoes: analiseSegura.objecoes,
+          oportunidade: analiseSegura.oportunidade,
+          acao_sugerida: analiseSegura.acao_sugerida,
+          resumo: analiseSegura.resumo,
           ultima_analise: agoraISO,
           historico_analises: historico.slice(-MAX_HISTORICO),
         }),
