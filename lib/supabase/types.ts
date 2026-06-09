@@ -1,3 +1,4 @@
+// generated: 2026-06-09
 export type Json =
   | string
   | number
