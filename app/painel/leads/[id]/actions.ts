@@ -15,7 +15,8 @@ export async function atualizarLead(
   }
 ) {
   const supabase = createServiceClient()
-  const { error } = await supabase.from('leads').update(dados).eq('id', id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from('leads').update(dados as any).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath(`/painel/leads/${id}`)
 }
