@@ -58,7 +58,14 @@ async function whatsapp(celular: string, mensagem: string) {
           'apikey': process.env.EVOLUTION_API_KEY ?? '',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ number: numero, text: mensagem }),
+        body: JSON.stringify({
+          number: numero,
+          text: mensagem,
+          options: {
+            delay: Math.min(Math.max(mensagem.length * 20, 1500), 5000),
+            presence: 'composing',
+          },
+        }),
       }
     )
     return res.ok
