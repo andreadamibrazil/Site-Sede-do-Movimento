@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       alunos: {
         Row: {
+          asaas_customer_id: string | null
           bairro: string | null
           celular: string | null
           cep: string | null
@@ -46,6 +47,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asaas_customer_id?: string | null
           bairro?: string | null
           celular?: string | null
           cep?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asaas_customer_id?: string | null
           bairro?: string | null
           celular?: string | null
           cep?: string | null
@@ -318,6 +321,7 @@ export type Database = {
           espetaculo_id: string | null
           forma_pagamento: string | null
           id: string
+          link_pagamento: string | null
           observacoes: string | null
           pago_em: string | null
           preco_unitario: number | null
@@ -340,6 +344,7 @@ export type Database = {
           espetaculo_id?: string | null
           forma_pagamento?: string | null
           id?: string
+          link_pagamento?: string | null
           observacoes?: string | null
           pago_em?: string | null
           preco_unitario?: number | null
@@ -362,6 +367,7 @@ export type Database = {
           espetaculo_id?: string | null
           forma_pagamento?: string | null
           id?: string
+          link_pagamento?: string | null
           observacoes?: string | null
           pago_em?: string | null
           preco_unitario?: number | null
@@ -1248,6 +1254,7 @@ export type Database = {
           desconto_aplicado: number | null
           id: string
           juros_aplicados: number | null
+          link_pagamento: string | null
           matricula_id: string
           pago_em: string | null
           status: Database["public"]["Enums"]["status_mensalidade"]
@@ -1263,6 +1270,7 @@ export type Database = {
           desconto_aplicado?: number | null
           id?: string
           juros_aplicados?: number | null
+          link_pagamento?: string | null
           matricula_id: string
           pago_em?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
@@ -1278,6 +1286,7 @@ export type Database = {
           desconto_aplicado?: number | null
           id?: string
           juros_aplicados?: number | null
+          link_pagamento?: string | null
           matricula_id?: string
           pago_em?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
@@ -2421,3 +2430,4 @@ export const Constants = {
     },
   },
 } as const
+

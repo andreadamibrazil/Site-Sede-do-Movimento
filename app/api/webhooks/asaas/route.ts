@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       await supabase.from('cobrancas_avulsas').update({ status: 'expirado' }).eq('id', id)
     }
     if (tipo === 'mensalidade') {
-      await supabase.from('mensalidades').update({ status: 'vencida' }).eq('id', id)
+      await supabase.from('mensalidades').update({ status: 'em_atraso' }).eq('id', id)
     }
   }
 

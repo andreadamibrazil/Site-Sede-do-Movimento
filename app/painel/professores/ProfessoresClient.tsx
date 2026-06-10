@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { upsertProfessor, excluirProfessor, toggleAtivoProfessor } from './actions'
 
@@ -26,7 +26,6 @@ const FORM_VAZIO = { nome: '', email: '', celular: '', forma_pagamento: 'fixo_me
 
 export default function ProfessoresClient({ professores: inicial }: { professores: Professor[] }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [lista, setLista] = useState(inicial)
   const [editando, setEditando] = useState<string | null>(null)
   const [criando, setCriando] = useState(false)
