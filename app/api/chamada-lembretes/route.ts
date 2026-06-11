@@ -108,7 +108,7 @@ async function handler(req: NextRequest) {
     const prof = turma?.professores
     if (!prof?.celular || prof.ativo === false) continue
 
-    const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
+    const fimAula = new Date(`${aula.data}T${aula.hora_fim}-03:00`)
     const diffMin = (agora.getTime() - fimAula.getTime()) / 60000
     const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)
     const dataFormatada = new Date(aula.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
