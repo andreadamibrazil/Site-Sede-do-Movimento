@@ -67,7 +67,7 @@ export default async function AlunoPage({
   const documentos = documentosRes.data
 
   // Deriva status do contrato a partir dos documentos DocuSeal
-  const contratoDoc = (documentos ?? []).find((d: any) => d.tipo === 'contrato' && d.docuseal_submission_id)
+  const contratoDoc = (documentos ?? []).find((d: any) => d.tipo === 'contrato' && d.docuseal_submission_id) as any
   const contratoStatus = contratoDoc?.docuseal_status === 'assinado'
     ? 'assinado'
     : contratoDoc

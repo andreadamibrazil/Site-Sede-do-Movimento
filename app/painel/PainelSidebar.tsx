@@ -62,10 +62,9 @@ function NavItem({ href, icon, label, admin = false, collapsed = false, external
 type Props = {
   email: string
   isAdmin: boolean
-  perfil?: string
 }
 
-export default function PainelSidebar({ email, isAdmin, perfil }: Props) {
+export default function PainelSidebar({ email, isAdmin }: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
   // Persiste estado colapsado no localStorage
