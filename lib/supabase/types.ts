@@ -1256,6 +1256,13 @@ export type Database = {
             referencedRelation: "alunos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "matriculas_responsavel_financeiro_id_fkey"
+            columns: ["responsavel_financeiro_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mensalidades: {
