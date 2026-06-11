@@ -859,6 +859,15 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
                   <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                     {TIPO_LABEL[doc.tipo] ?? doc.tipo}
                   </span>
+                  {doc.docuseal_status && (
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      doc.docuseal_status === 'assinado'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {doc.docuseal_status === 'assinado' ? 'Assinado' : 'Aguardando assinatura'}
+                    </span>
+                  )}
                   <p className="text-sm font-medium text-gray-900">{doc.nome}</p>
                 </div>
                 {doc.observacao && <p className="text-xs text-gray-400 mt-0.5">{doc.observacao}</p>}
@@ -867,12 +876,23 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => baixar(doc.storage_path, doc.nome)}
-                  className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  Baixar
-                </button>
+                {doc.docuseal_url ? (
+                  <a
+                    href={doc.docuseal_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Abrir
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => baixar(doc.storage_path, doc.nome)}
+                    className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Baixar
+                  </button>
+                )}
                 <button
                   onClick={() => excluir(doc.id, doc.storage_path)}
                   className="text-xs text-red-400 hover:text-red-600"

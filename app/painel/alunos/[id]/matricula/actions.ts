@@ -46,7 +46,7 @@ async function enviarContratoDocuSeal(
   supabase: ReturnType<typeof createServiceClient>,
   matriculaId: string,
   dados: MatriculaDados,
-) {
+): Promise<void> {
   // Busca dados completos do aluno + responsável principal
   const { data: aluno } = await supabase
     .from('alunos')
@@ -89,7 +89,7 @@ async function enviarContratoDocuSeal(
   }
   const dataContrato = new Date().toLocaleDateString('pt-BR')
 
-  await criarSubmission('contrato_matricula', [{
+  const submission = await criarSubmission('contrato_matricula', [{
     email: emailDestino,
     role: 'Responsável',
     values: {
@@ -113,6 +113,22 @@ async function enviarContratoDocuSeal(
       data_contrato:     dataContrato,
     },
   }])
+
+  // Salva na lista de documentos do aluno
+  const signerSlug = submission.submitters?.[0]?.slug
+  const docusealUrl = signerSlug
+    ? `${process.env.DOCUSEAL_URL}/s/${signerSlug}`
+    : `${process.env.DOCUSEAL_URL}/submissions/${submission.id}`
+
+  await supabase.from('documentos_aluno').insert({
+    aluno_id: dados.alunoId,
+    tipo: 'contrato',
+    nome: `Contrato — ${dados.alunoNome}`,
+    observacao: `Matrícula ${matriculaId} · ${duracaoLabel[dados.plano] ?? dados.plano} · ${modalidadesNomes}`,
+    docuseal_submission_id: String(submission.id),
+    docuseal_url: docusealUrl,
+    docuseal_status: 'pendente',
+  })
 }
 
 export async function criarMatricula(dados: MatriculaDados) {
