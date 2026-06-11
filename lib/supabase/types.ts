@@ -594,6 +594,9 @@ export type Database = {
           criado_por: string | null
           dados_extraidos: Json | null
           dados_extraidos_drive_url: string | null
+          docuseal_status: string | null
+          docuseal_submission_id: string | null
+          docuseal_url: string | null
           drive_url: string | null
           gemini_processado_em: string | null
           id: string
@@ -610,6 +613,9 @@ export type Database = {
           criado_por?: string | null
           dados_extraidos?: Json | null
           dados_extraidos_drive_url?: string | null
+          docuseal_status?: string | null
+          docuseal_submission_id?: string | null
+          docuseal_url?: string | null
           drive_url?: string | null
           gemini_processado_em?: string | null
           id?: string
@@ -626,6 +632,9 @@ export type Database = {
           criado_por?: string | null
           dados_extraidos?: Json | null
           dados_extraidos_drive_url?: string | null
+          docuseal_status?: string | null
+          docuseal_submission_id?: string | null
+          docuseal_url?: string | null
           drive_url?: string | null
           gemini_processado_em?: string | null
           id?: string
