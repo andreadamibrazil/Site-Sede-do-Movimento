@@ -14,7 +14,10 @@ export default async function NovaMatriculaPage({
     { data: aluno },
     { data: turmas },
   ] = await Promise.all([
-    supabase.from('alunos').select('id, nome, data_nascimento, celular, email').eq('id', id).single(),
+    supabase.from('alunos').select(`
+      id, nome, data_nascimento, celular, email, status_pedagogico,
+      responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(nome, email, celular)
+    `).eq('id', id).single(),
     supabase
       .from('turmas')
       .select(`

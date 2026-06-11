@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import AlunoTabs from './AlunoTabs'
 import BotaoExcluirAluno from './BotaoExcluirAluno'
 import BotaoDeclaracao from './BotaoDeclaracao'
+import BotaoEnviarContrato from './BotaoEnviarContrato'
 
 export default async function AlunoPage({
   params,
@@ -72,6 +73,8 @@ export default async function AlunoPage({
       ? 'aguardando_assinatura'
       : 'sem_contrato'
 
+  const emailContrato = (aluno as any).responsavel_principal?.email || aluno.email || null
+
   const service = createServiceClient()
   const { data: uniforme } = await service
     .from('uniforme_retiradas' as any)
@@ -114,6 +117,9 @@ export default async function AlunoPage({
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
           <ContratoBadge status={contratoStatus} />
+          {contratoStatus === 'sem_contrato' && emailContrato && (
+            <BotaoEnviarContrato alunoId={id} emailDestino={emailContrato} />
+          )}
           <BotaoDeclaracao alunoId={id} />
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a

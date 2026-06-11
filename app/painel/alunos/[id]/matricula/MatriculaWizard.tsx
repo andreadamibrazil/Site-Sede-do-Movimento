@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { criarMatricula } from './actions'
 
@@ -39,11 +39,18 @@ type Turma = {
   turma_horarios: { dia_semana: string; hora_inicio: string; hora_fim: string }[]
 }
 
+type Responsavel = { nome: string; email: string | null; celular: string | null } | null
+
 export default function MatriculaWizard({
   aluno,
   turmas,
 }: {
-  aluno: { id: string; nome: string; data_nascimento: string | null; celular: string | null; email: string | null }
+  aluno: {
+    id: string; nome: string; data_nascimento: string | null
+    celular: string | null; email: string | null
+    status_pedagogico: string
+    responsavel_principal: Responsavel
+  }
   turmas: Turma[]
 }) {
   const router = useRouter()
@@ -54,6 +61,19 @@ export default function MatriculaWizard({
   const [tipoDesconto, setTipoDesconto] = useState('')
   const [percentualDesconto, setPercentualDesconto] = useState('')
   const [diaVencimento, setDiaVencimento] = useState('10')
+  const [enviarContrato, setEnviarContrato] = useState(false)
+
+  const emailContrato = aluno.responsavel_principal?.email ?? aluno.email ?? null
+  const isExperimental = aluno.status_pedagogico === 'experimental'
+
+  // Auto-marca "enviar contrato" ao escolher fidelidade (se tiver email)
+  useEffect(() => {
+    if (plano === 'fidelidade' && emailContrato && !isExperimental) {
+      setEnviarContrato(true)
+    } else if (plano === 'mensal') {
+      setEnviarContrato(false)
+    }
+  }, [plano])
   const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().split('T')[0])
   const [observacaoDesconto, setObservacaoDesconto] = useState('')
   const [valorOverride, setValorOverride] = useState('')
@@ -100,6 +120,7 @@ export default function MatriculaWizard({
         tipoDesconto: tipoDesconto || null,
         percentualDesconto: percentualDesconto ? Number(percentualDesconto) : 0,
         observacaoDesconto: observacaoDesconto || null,
+        enviarContrato: enviarContrato && !isExperimental,
       })
 
       if (result.error) {
@@ -387,6 +408,52 @@ export default function MatriculaWizard({
               Ao confirmar serão geradas {PLANOS.find(p => p.id === plano)?.meses} mensalidade{(PLANOS.find(p => p.id === plano)?.meses ?? 1) > 1 ? 's' : ''} de R$ {valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} cada.
             </p>
           </div>
+
+          {/* ── Contrato ── */}
+          {isExperimental ? (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+              <p className="text-xs text-gray-500">
+                📋 Aluno experimental — contrato gerado somente na matrícula efetiva.
+              </p>
+            </div>
+          ) : !emailContrato ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-semibold text-amber-700">📋 Contrato</p>
+              <p className="text-xs text-amber-600">
+                Sem email cadastrado (aluno ou responsável). Você pode confirmar agora e enviar o contrato depois.
+              </p>
+              {plano === 'fidelidade' && (
+                <p className="text-xs text-red-600 font-medium">
+                  ⚠ Plano Fidelidade — recomendamos cadastrar o email e enviar o contrato.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-700">📋 Contrato</p>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enviarContrato}
+                  onChange={e => setEnviarContrato(e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <div>
+                  <p className="text-sm text-gray-800">
+                    Enviar contrato para assinatura
+                    {plano === 'fidelidade' && (
+                      <span className="ml-1.5 text-xs bg-indigo-100 text-indigo-600 font-medium px-1.5 py-0.5 rounded">recomendado</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {aluno.responsavel_principal?.nome
+                      ? `${aluno.responsavel_principal.nome} — `
+                      : ''}{emailContrato}
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
 
           {erro && <p className="text-sm text-red-500">{erro}</p>}
 

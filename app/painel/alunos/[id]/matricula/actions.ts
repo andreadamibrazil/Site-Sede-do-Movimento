@@ -16,6 +16,7 @@ type MatriculaDados = {
   tipoDesconto: string | null
   percentualDesconto: number
   observacaoDesconto: string | null
+  enviarContrato: boolean
 }
 
 function gerarMensalidades(
@@ -128,7 +129,7 @@ async function enviarContratoDocuSeal(
     docuseal_submission_id: String(submission.id),
     docuseal_url: docusealUrl,
     docuseal_status: 'pendente',
-  })
+  } as any)
 }
 
 export async function criarMatricula(dados: MatriculaDados) {
@@ -177,8 +178,10 @@ export async function criarMatricula(dados: MatriculaDados) {
 
   if (errMens) return { error: `Matrícula criada mas mensalidades falharam: ${errMens.message}` }
 
-  // Dispara contrato DocuSeal — fire-and-forget intencional
-  enviarContratoDocuSeal(supabase, matricula.id, dados).catch(() => {})
+  // Dispara contrato DocuSeal — fire-and-forget, somente se solicitado
+  if (dados.enviarContrato) {
+    enviarContratoDocuSeal(supabase, matricula.id, dados).catch(() => {})
+  }
 
   return { success: true, matriculaId: matricula.id }
 }
