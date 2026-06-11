@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { criarSubmission } from '@/lib/docuseal'
 
 type MatriculaDados = {
   alunoId: string
@@ -46,10 +47,6 @@ async function enviarContratoDocuSeal(
   matriculaId: string,
   dados: MatriculaDados,
 ) {
-  const url = process.env.DOCUSEAL_URL
-  const key = process.env.DOCUSEAL_API_KEY
-  if (!url || !key) return
-
   // Busca dados completos do aluno + responsável principal
   const { data: aluno } = await supabase
     .from('alunos')
@@ -92,40 +89,30 @@ async function enviarContratoDocuSeal(
   }
   const dataContrato = new Date().toLocaleDateString('pt-BR')
 
-  const payload = {
-    template_id: 1,
-    send_email: true,
-    submitters: [{
-      email: emailDestino,
-      role: 'Responsável',
-      values: {
-        nome_responsavel:  responsavel?.nome ?? dados.alunoNome,
-        data_nascimento:   aluno?.data_nascimento ?? '',
-        cpf:               responsavel?.cpf ?? aluno?.cpf ?? '',
-        endereco:          aluno?.endereco ?? '',
-        cep:               aluno?.cep ?? '',
-        bairro:            aluno?.bairro ?? '',
-        cidade:            'Rio de Janeiro',
-        celular:           responsavel?.celular ?? '',
-        email:             emailDestino,
-        nome_aluno:        dados.alunoNome,
-        modalidades:       modalidadesNomes,
-        turmas:            turmasNomes,
-        carga_horaria:     `${totalHoras.toFixed(1)}h/semana`,
-        data_inicio:       dados.dataInicio,
-        duracao_plano:     duracaoLabel[dados.plano] ?? dados.plano,
-        dia_vencimento:    String(dados.diaVencimento),
-        valor_mensal:      `R$ ${dados.valorFinal.toFixed(2).replace('.', ',')}`,
-        data_contrato:     dataContrato,
-      },
-    }],
-  }
-
-  await fetch(`${url}/api/submissions`, {
-    method: 'POST',
-    headers: { 'X-Auth-Token': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
+  await criarSubmission('contrato_matricula', [{
+    email: emailDestino,
+    role: 'Responsável',
+    values: {
+      nome_responsavel:  responsavel?.nome ?? dados.alunoNome,
+      data_nascimento:   aluno?.data_nascimento ?? '',
+      cpf:               responsavel?.cpf ?? aluno?.cpf ?? '',
+      endereco:          aluno?.endereco ?? '',
+      cep:               aluno?.cep ?? '',
+      bairro:            aluno?.bairro ?? '',
+      cidade:            'Rio de Janeiro',
+      celular:           responsavel?.celular ?? '',
+      email:             emailDestino,
+      nome_aluno:        dados.alunoNome,
+      modalidades:       modalidadesNomes,
+      turmas:            turmasNomes,
+      carga_horaria:     `${totalHoras.toFixed(1)}h/semana`,
+      data_inicio:       dados.dataInicio,
+      duracao_plano:     duracaoLabel[dados.plano] ?? dados.plano,
+      dia_vencimento:    String(dados.diaVencimento),
+      valor_mensal:      `R$ ${dados.valorFinal.toFixed(2).replace('.', ',')}`,
+      data_contrato:     dataContrato,
+    },
+  }])
 }
 
 export async function criarMatricula(dados: MatriculaDados) {
