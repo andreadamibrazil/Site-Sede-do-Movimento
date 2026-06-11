@@ -16,8 +16,12 @@ export default function BotaoEnviarContrato({
     if (!confirm(`Enviar contrato para ${emailDestino}?`)) return
     setEstado('enviando')
     const res = await enviarContratoManual(alunoId)
-    setEstado(res.error ? 'erro' : 'ok')
-    if (!res.error) setTimeout(() => setEstado('idle'), 3000)
+    if ('error' in res) {
+      setEstado('erro')
+    } else {
+      setEstado('ok')
+      setTimeout(() => setEstado('idle'), 3000)
+    }
   }
 
   if (estado === 'ok') {
