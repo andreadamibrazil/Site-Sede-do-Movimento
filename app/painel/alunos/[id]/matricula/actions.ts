@@ -41,6 +41,93 @@ function gerarMensalidades(
   return mensalidades
 }
 
+async function enviarContratoDocuSeal(
+  supabase: ReturnType<typeof createServiceClient>,
+  matriculaId: string,
+  dados: MatriculaDados,
+) {
+  const url = process.env.DOCUSEAL_URL
+  const key = process.env.DOCUSEAL_API_KEY
+  if (!url || !key) return
+
+  // Busca dados completos do aluno + responsável principal
+  const { data: aluno } = await supabase
+    .from('alunos')
+    .select(`
+      data_nascimento, cpf, endereco, bairro, cep,
+      responsavel_principal_id,
+      responsaveis!alunos_responsavel_principal_id_fkey (
+        nome, cpf, celular, email, parentesco
+      )
+    `)
+    .eq('id', dados.alunoId)
+    .single()
+
+  // Busca turmas da matrícula com modalidades
+  const { data: turmasData } = await supabase
+    .from('matricula_turmas')
+    .select('turmas(nome, modalidades(nome), turma_horarios(dia_semana, hora_inicio, hora_fim))')
+    .eq('matricula_id', matriculaId)
+
+  const turmasNomes = turmasData?.map((mt: any) => mt.turmas?.nome).filter(Boolean).join(', ') ?? ''
+  const modalidadesNomes = [...new Set(turmasData?.map((mt: any) => mt.turmas?.modalidades?.nome).filter(Boolean))].join(', ')
+
+  // Calcula carga horária semanal
+  const totalHoras = turmasData?.reduce((acc: number, mt: any) => {
+    const horarios = mt.turmas?.turma_horarios ?? []
+    return acc + horarios.reduce((h: number, hr: any) => {
+      const [ih, im] = (hr.hora_inicio ?? '00:00').split(':').map(Number)
+      const [fh, fm] = (hr.hora_fim ?? '00:00').split(':').map(Number)
+      return h + ((fh * 60 + fm) - (ih * 60 + im)) / 60
+    }, 0)
+  }, 0) ?? 0
+
+  const responsavel = (aluno as any)?.responsaveis
+  const emailDestino = responsavel?.email || dados.alunoEmail
+  if (!emailDestino) return
+
+  const duracaoLabel: Record<string, string> = {
+    mensal: '1 mês', trimestral: '3 meses',
+    semestral: '6 meses', anual: '12 meses', fidelidade: '12 meses',
+  }
+  const dataContrato = new Date().toLocaleDateString('pt-BR')
+
+  const payload = {
+    template_id: 1,
+    send_email: true,
+    submitters: [{
+      email: emailDestino,
+      role: 'Responsável',
+      values: {
+        nome_responsavel:  responsavel?.nome ?? dados.alunoNome,
+        data_nascimento:   aluno?.data_nascimento ?? '',
+        cpf:               responsavel?.cpf ?? aluno?.cpf ?? '',
+        endereco:          aluno?.endereco ?? '',
+        cep:               aluno?.cep ?? '',
+        bairro:            aluno?.bairro ?? '',
+        cidade:            'Rio de Janeiro',
+        celular:           responsavel?.celular ?? '',
+        email:             emailDestino,
+        nome_aluno:        dados.alunoNome,
+        modalidades:       modalidadesNomes,
+        turmas:            turmasNomes,
+        carga_horaria:     `${totalHoras.toFixed(1)}h/semana`,
+        data_inicio:       dados.dataInicio,
+        duracao_plano:     duracaoLabel[dados.plano] ?? dados.plano,
+        dia_vencimento:    String(dados.diaVencimento),
+        valor_mensal:      `R$ ${dados.valorFinal.toFixed(2).replace('.', ',')}`,
+        data_contrato:     dataContrato,
+      },
+    }],
+  }
+
+  await fetch(`${url}/api/submissions`, {
+    method: 'POST',
+    headers: { 'X-Auth-Token': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function criarMatricula(dados: MatriculaDados) {
   const supabase = createServiceClient()
   const meses = dados.plano === 'fidelidade' ? 12 : 1
@@ -87,20 +174,8 @@ export async function criarMatricula(dados: MatriculaDados) {
 
   if (errMens) return { error: `Matrícula criada mas mensalidades falharam: ${errMens.message}` }
 
-  // Dispara DocuSeal via n8n — fire-and-forget intencional
-  fetch('https://n8n.sededomovimento.art/webhook/matricula-criada', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      aluno_id: dados.alunoId,
-      matricula_id: matricula.id,
-      aluno_nome: dados.alunoNome,
-      aluno_email: dados.alunoEmail,
-      aluno_whatsapp: dados.alunoWhatsapp,
-      plano: dados.plano,
-      valor_mensal: dados.valorFinal,
-    }),
-  }).catch(() => {})
+  // Dispara contrato DocuSeal — fire-and-forget intencional
+  enviarContratoDocuSeal(supabase, matricula.id, dados).catch(() => {})
 
   return { success: true, matriculaId: matricula.id }
 }
