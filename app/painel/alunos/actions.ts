@@ -240,7 +240,7 @@ export async function lancarMensalidadesAsaas(
           id, nome, cpf, email, celular, notificacao, asaas_customer_id
         )
       )
-    ` as any)
+    `)
     .eq('aluno_id', alunoId)
     .eq('status', 'ativa')
 
