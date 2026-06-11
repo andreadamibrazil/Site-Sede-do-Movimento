@@ -50,6 +50,9 @@ export async function POST(req: NextRequest) {
     if (tipo === 'cobranca') {
       await supabase.from('cobrancas_avulsas').update({ status: 'cancelado' }).eq('id', id)
     }
+    if (tipo === 'mensalidade') {
+      await supabase.from('mensalidades').update({ status: 'cancelada' }).eq('id', id)
+    }
   }
 
   return NextResponse.json({ ok: true })

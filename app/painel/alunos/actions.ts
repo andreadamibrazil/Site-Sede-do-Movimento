@@ -3,6 +3,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { criarSubmission } from '@/lib/docuseal'
+import { buscarOuCriarCliente, criarCobranca, resolverPagador } from '@/lib/asaas/client'
 
 // ── BotaoExcluirAluno ────────────────────────────────────────
 export async function excluirAluno(alunoId: string) {
@@ -216,6 +217,126 @@ export async function excluirDocumentoDB(id: string) {
     .delete()
     .eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+// ── AbaFinanceiro: lançar mensalidades no Asaas ─────────────
+export async function lancarMensalidadesAsaas(
+  alunoId: string,
+): Promise<{ lancadas: number; erros: string[] }> {
+  if (!process.env.ASAAS_API_KEY) return { lancadas: 0, erros: ['ASAAS_API_KEY não configurada'] }
+
+  const supabase = createServiceClient()
+
+  const { data: matriculas } = await supabase
+    .from('matriculas')
+    .select(`
+      id, responsavel_financeiro_id,
+      responsavel_financeiro:responsaveis!matriculas_responsavel_financeiro_id_fkey(
+        id, nome, cpf, email, celular, asaas_customer_id
+      ),
+      alunos!matriculas_aluno_id_fkey(
+        id, nome, cpf, email, celular, asaas_customer_id,
+        responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(
+          id, nome, cpf, email, celular, notificacao, asaas_customer_id
+        )
+      )
+    `)
+    .eq('aluno_id', alunoId)
+    .eq('status', 'ativa')
+
+  if (!matriculas?.length) return { lancadas: 0, erros: [] }
+
+  const matriculaIds = matriculas.map(m => m.id)
+  const { data: mensalidades } = await supabase
+    .from('mensalidades')
+    .select('id, matricula_id, valor, vencimento, competencia')
+    .in('matricula_id', matriculaIds)
+    .in('status', ['aberta', 'em_atraso'])
+    .is('codigo_asaas', null)
+
+  if (!mensalidades?.length) return { lancadas: 0, erros: [] }
+
+  let lancadas = 0
+  const erros: string[] = []
+
+  for (const mens of mensalidades) {
+    const mat = matriculas.find(m => m.id === mens.matricula_id)
+    if (!mat) continue
+
+    const aluno = (mat as any).alunos
+    const respFinanceiro = (mat as any).responsavel_financeiro
+    const respPrincipal = aluno?.responsavel_principal
+
+    const { pagador, tabela, asaas_customer_id: existingId } = resolverPagador(
+      aluno, respPrincipal, respFinanceiro,
+    )
+
+    try {
+      let customerId = existingId
+      if (!customerId) {
+        customerId = await buscarOuCriarCliente(pagador)
+        if (tabela === 'responsaveis') {
+          await supabase.from('responsaveis').update({ asaas_customer_id: customerId }).eq('id', pagador.id)
+        } else {
+          await supabase.from('alunos').update({ asaas_customer_id: customerId }).eq('id', pagador.id)
+        }
+      }
+
+      const mes = new Date(mens.competencia + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+      const { id: codigoAsaas, invoiceUrl } = await criarCobranca({
+        customerId,
+        valor: Number(mens.valor),
+        vencimento: mens.vencimento,
+        descricao: `Mensalidade ${mes} — ${aluno.nome}`,
+        externalReference: `mensalidade:${mens.id}`,
+      })
+
+      await supabase.from('mensalidades').update({
+        codigo_asaas: codigoAsaas,
+        link_pagamento: invoiceUrl,
+      } as any).eq('id', mens.id)
+
+      lancadas++
+    } catch (e: any) {
+      erros.push(e?.message ?? 'erro desconhecido')
+    }
+  }
+
+  revalidatePath(`/painel/alunos/${alunoId}`)
+  return { lancadas, erros }
+}
+
+// ── AbaFinanceiro: baixa manual presencial ───────────────────
+export async function darBaixaMensalidade(
+  mensalidadeId: string,
+  forma: string,
+  alunoId: string,
+) {
+  const supabase = createServiceClient()
+
+  const { data: mens } = await supabase
+    .from('mensalidades')
+    .select('valor')
+    .eq('id', mensalidadeId)
+    .single()
+
+  if (!mens) throw new Error('Mensalidade não encontrada')
+
+  await supabase.from('mensalidades').update({
+    status: 'recebida',
+    valor_pago: mens.valor,
+    pago_em: new Date().toISOString(),
+  }).eq('id', mensalidadeId)
+
+  await supabase.from('pagamentos').insert({
+    mensalidade_id: mensalidadeId,
+    valor: mens.valor,
+    forma: forma as any,
+    data_pagamento: new Date().toISOString().split('T')[0],
+  })
+
+  revalidatePath(`/painel/alunos/${alunoId}`)
+  revalidatePath('/painel/financeiro')
 }
 
 // ── BotaoEnviarContrato ──────────────────────────────────────
