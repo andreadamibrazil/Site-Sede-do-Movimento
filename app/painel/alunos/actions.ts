@@ -240,7 +240,7 @@ export async function lancarMensalidadesAsaas(
           id, nome, cpf, email, celular, notificacao, asaas_customer_id
         )
       )
-    `)
+    ` as any)
     .eq('aluno_id', alunoId)
     .eq('status', 'ativa')
 
@@ -276,7 +276,7 @@ export async function lancarMensalidadesAsaas(
       if (!customerId) {
         customerId = await buscarOuCriarCliente(pagador)
         if (tabela === 'responsaveis') {
-          await supabase.from('responsaveis').update({ asaas_customer_id: customerId }).eq('id', pagador.id)
+          await supabase.from('responsaveis').update({ asaas_customer_id: customerId } as any).eq('id', pagador.id)
         } else {
           await supabase.from('alunos').update({ asaas_customer_id: customerId }).eq('id', pagador.id)
         }
