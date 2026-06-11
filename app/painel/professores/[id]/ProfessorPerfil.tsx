@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { atualizarAcessoProfessor } from './actions'
 
@@ -89,9 +90,9 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
           <div className="text-center py-6 text-sm text-gray-400">
             Nenhuma turma vinculada.
             <br />
-            <a href="/painel/turmas" className="text-indigo-500 hover:text-indigo-700 text-xs mt-1 block">
+            <Link href="/painel/turmas" className="text-indigo-500 hover:text-indigo-700 text-xs mt-1 block">
               Ir para turmas para vincular →
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="space-y-2">

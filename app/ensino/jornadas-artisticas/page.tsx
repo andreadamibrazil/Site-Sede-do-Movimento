@@ -3,7 +3,6 @@ import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Image from "next/image";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { sanityFetch } from "@/sanity/lib/live";

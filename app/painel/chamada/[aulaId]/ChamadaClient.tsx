@@ -78,6 +78,7 @@ export default function ChamadaClient({
     window.addEventListener('online', on)
     window.addEventListener('offline', off)
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -93,8 +94,9 @@ export default function ChamadaClient({
         if (dados.professsorFaltou) setProfessorFaltou(dados.professsorFaltou)
         if (dados.temAtestado) setTemAtestado(dados.temAtestado)
         if (dados.nomeSubstituto) setNomeSubstituto(dados.nomeSubstituto)
-      } catch (_) {}
+      } catch {}
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function sincronizarPendentes() {

@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import AlunoTabs from './AlunoTabs'
 import BotaoExcluirAluno from './BotaoExcluirAluno'
@@ -107,7 +108,7 @@ export default async function AlunoPage({
       {/* Header do aluno */}
       <div className="flex items-start justify-between">
         <div>
-          <a href="/painel/alunos" className="text-xs text-gray-400 hover:text-gray-600">← Alunos</a>
+          <Link href="/painel/alunos" className="text-xs text-gray-400 hover:text-gray-600">← Alunos</Link>
           <h1 className="text-xl font-semibold text-gray-900 mt-1">{aluno.nome}</h1>
           {aluno.nome_social && (
             <p className="text-sm text-gray-400">Chamado(a) de {aluno.nome_social}</p>

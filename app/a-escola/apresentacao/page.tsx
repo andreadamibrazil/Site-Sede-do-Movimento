@@ -22,8 +22,6 @@ export default async function ApresentacaoPage() {
     sanityFetch({ query: siteSettingsQuery }),
     sanityFetch({ query: recentGalleryPhotosQuery }),
   ]);
-  const imagens = (data as SanitySiteSettings | null)?.imagens;
-
   // Flatten photos from all active albums, shuffle, take 4
   const allPhotos = ((galleryData as { photos: SanityGalleryPhoto[] }[] | null) ?? [])
     .flatMap((a) => a.photos ?? []);

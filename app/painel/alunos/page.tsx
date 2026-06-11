@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import FiltroStatus from './FiltroStatus'
 import BuscaAluno from './BuscaAluno'
@@ -65,12 +66,12 @@ export default async function AlunosPage({
           <Suspense>
             <BuscaAluno />
           </Suspense>
-          <a
+          <Link
             href="/painel/alunos/novo"
             className="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             + Novo aluno
-          </a>
+          </Link>
         </div>
       </div>
 

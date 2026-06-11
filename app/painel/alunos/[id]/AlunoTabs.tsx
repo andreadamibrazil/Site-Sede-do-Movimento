@@ -828,7 +828,7 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
         if (compressed.byteLength < file.size) {
           fileParaEnviar = new File([compressed.buffer as ArrayBuffer], file.name, { type: 'application/pdf' })
         }
-      } catch (_) {
+      } catch {
         // Se falhar compressão, usa o original
       }
     }
@@ -870,7 +870,7 @@ function AbaDocumentos({ documentos, alunoId }: { documentos: any[]; alunoId: st
           if (d.diagnostico) partes.push(`| ${d.diagnostico}`)
           if (partes.length) obsAutomatica = (obs ? obs + ' — ' : '') + partes.join(' · ')
         }
-      } catch (_) {
+      } catch {
         // Falha no Gemini não impede o upload
       }
     }
@@ -1032,7 +1032,6 @@ const STATUS_COB: Record<string, { label: string; className: string }> = {
 
 function AbaCobrancas({ alunoId }: { alunoId: string }) {
   const supabase = createClient()
-  const router = useRouter()
   const [cobrancas, setCobrancas] = useState<any[]>([])
   const [carregado, setCarregado] = useState(false)
   const [adicionando, setAdicionando] = useState(false)

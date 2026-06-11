@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import NovaTurmaForm from './NovaTurmaForm'
 
 export default async function NovaTurmaPage() {
@@ -17,7 +18,7 @@ export default async function NovaTurmaPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <a href="/painel/turmas" className="text-xs text-gray-400 hover:text-gray-600">← Turmas</a>
+        <Link href="/painel/turmas" className="text-xs text-gray-400 hover:text-gray-600">← Turmas</Link>
         <h1 className="text-xl font-semibold text-gray-900 mt-1">Nova turma</h1>
       </div>
       <NovaTurmaForm

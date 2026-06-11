@@ -17,7 +17,7 @@ async function whatsapp(celular: string, mensagem: string) {
   } catch { return false }
 }
 
-async function checkAuth(req: NextRequest): Promise<NextResponse | null> {
+async function checkAuth(_req: NextRequest): Promise<NextResponse | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })

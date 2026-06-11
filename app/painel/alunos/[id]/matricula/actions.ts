@@ -150,7 +150,7 @@ export async function criarMatricula(dados: MatriculaDados) {
       observacao_desconto: dados.observacaoDesconto || null,
       responsavel_financeiro_id: dados.responsavelFinanceiroId || null,
       status: 'ativa' as const,
-    })
+    } as any)
     .select('id')
     .single()
 

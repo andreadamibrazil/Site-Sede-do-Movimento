@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import TurmasClient, { type TurmaComHorarios } from './TurmasClient'
 
 export default async function TurmasPage() {
@@ -50,12 +51,12 @@ export default async function TurmasPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-gray-900">Turmas</h1>
-        <a
+        <Link
           href="/painel/turmas/nova"
           className="bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
         >
           + Nova turma
-        </a>
+        </Link>
       </div>
 
       <TurmasClient

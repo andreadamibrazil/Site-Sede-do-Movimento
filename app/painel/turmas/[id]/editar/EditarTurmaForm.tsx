@@ -113,7 +113,7 @@ export default function EditarTurmaForm({ turma, horarios: horariosIniciais, mod
   }
 
   const { dias, durStr, totalMin } = calcularCarga(horarios)
-  const totalH = Math.floor(totalMin / 60), totalM = totalMin % 60
+  const totalM = totalMin % 60
 
   return (
     <div className="space-y-6">

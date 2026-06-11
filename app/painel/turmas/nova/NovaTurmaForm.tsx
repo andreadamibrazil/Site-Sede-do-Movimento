@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { criarTurma } from '../actions'
 
@@ -374,12 +375,12 @@ export default function NovaTurmaForm({ modalidades, professores, salas }: Props
         >
           {salvando ? 'Salvando...' : 'Criar turma'}
         </button>
-        <a
+        <Link
           href="/painel/turmas"
           className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2.5"
         >
           Cancelar
-        </a>
+        </Link>
       </div>
     </div>
   )

@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
 
 type AnaliseDashboard = {
   total: number
@@ -50,17 +49,6 @@ export default async function InteligenciaPage() {
     indefinido: 'Indefinido',
   }
 
-  const OBJECAO_LABEL: Record<string, string> = {
-    preco_alto: 'Preço alto',
-    horario_incompativel: 'Horário incompatível',
-    distancia: 'Distância',
-    crianca_nao_quis: 'Criança não quis',
-    aguardando_decisao_familiar: 'Aguardando família',
-    problemas_financeiros: 'Problemas financeiros',
-    mudanca_cidade: 'Mudança de cidade',
-    escolheu_concorrente: 'Escolheu concorrente',
-    sem_retorno: 'Sem retorno',
-  }
 
   const ORIGEM_LABEL: Record<string, string> = {
     instagram: 'Instagram',

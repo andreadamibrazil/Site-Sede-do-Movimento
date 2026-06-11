@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PlanoAula from './PlanoAula'
 
@@ -46,7 +47,7 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <a href="/painel/turmas" className="text-xs text-gray-400 hover:text-gray-600">← Turmas</a>
+          <Link href="/painel/turmas" className="text-xs text-gray-400 hover:text-gray-600">← Turmas</Link>
           <h1 className="text-xl font-semibold text-gray-900 mt-1">{turma.nome}</h1>
           {(turma as any).descricao && (
             <p className="text-sm text-gray-500 mt-0.5">{(turma as any).descricao}</p>

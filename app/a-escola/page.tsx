@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Award, Users, Building, Heart } from "lucide-react";
+import { ArrowRight, Award, Building, Heart } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import StatsSection from "@/components/sections/StatsSection";

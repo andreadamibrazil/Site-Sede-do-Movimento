@@ -1,4 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { RetencaoChart, MetaBar, InadimplentesTable } from './DashboardCharts'
 
 const META_ALUNOS = 120
@@ -161,7 +162,7 @@ export default async function DashboardPage() {
                     <p className="text-sm font-medium text-gray-900">{(e.leads as any)?.nome ?? '—'}</p>
                     <p className="text-xs text-purple-700">{(aula?.turmas as any)?.nome ?? '—'} · {data} às {aula?.hora_inicio?.slice(0,5)}</p>
                   </div>
-                  <a href="/painel/leads" className="text-xs font-medium text-purple-600 hover:text-purple-700">Ver lead →</a>
+                  <Link href="/painel/leads" className="text-xs font-medium text-purple-600 hover:text-purple-700">Ver lead →</Link>
                 </div>
               )
             })}

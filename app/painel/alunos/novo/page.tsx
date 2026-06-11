@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import NovoAlunoForm from './NovoAlunoForm'
 
 export default async function NovoAlunoPage({
@@ -22,7 +23,7 @@ export default async function NovoAlunoPage({
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
-        <a href="/painel/alunos" className="text-xs text-gray-400 hover:text-gray-600">← Alunos</a>
+        <Link href="/painel/alunos" className="text-xs text-gray-400 hover:text-gray-600">← Alunos</Link>
         <h1 className="text-xl font-semibold text-gray-900 mt-1">Novo aluno</h1>
         {leadResp && (
           <div className="mt-2 text-xs text-purple-700 bg-purple-50 rounded-lg px-3 py-2 inline-flex items-center gap-1.5">

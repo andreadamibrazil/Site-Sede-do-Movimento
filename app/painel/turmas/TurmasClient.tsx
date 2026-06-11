@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { atualizarPrecoPadrao } from './actions'
 
 type Horario = { dia_semana: string; hora_inicio: string; hora_fim: string }
@@ -50,7 +49,6 @@ export default function TurmasClient({
   isAdmin: boolean
   contagemPorTurma: Record<string, number>
 }) {
-  const router = useRouter()
   const [editando, setEditando] = useState<string | null>(null)
   const [precoTemp, setPrecoTemp] = useState('')
   const [salvando, setSalvando] = useState(false)

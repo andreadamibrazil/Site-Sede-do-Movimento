@@ -1,30 +1,13 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { lancarCobrancasLote } from './actions'
 
 type Aluno = { id: string; nome: string; status_pedagogico: string }
 type Preco = { id: string; categoria: string; descricao: string; valor: number | null }
 
-const CAT_LABEL: Record<string, string> = {
-  taxa_matricula: 'Taxa de matrícula',
-  espetaculo_participacao: 'Espetáculo — participação',
-  espetaculo_figurino: 'Espetáculo — figurino',
-  espetaculo_foto: 'Foto do espetáculo',
-  espetaculo_programa: 'Programa/PlayBill',
-  pratica_montagem: 'Prática de Montagem',
-  workshop: 'Workshop',
-  aula_particular: 'Aula particular',
-  uniforme: 'Uniforme',
-  aluguel_sala: 'Aluguel de sala',
-  ensaio_extra: 'Ensaio extra',
-  outro: 'Outro',
-}
 
 export default function CobrancaLoteClient({ alunos, precos }: { alunos: Aluno[]; precos: Preco[] }) {
-  const router = useRouter()
-
   const [busca, setBusca] = useState('')
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [precoSelecionado, setPrecoSelecionado] = useState<Preco | null>(null)

@@ -90,6 +90,7 @@ export default function MatriculaWizard({
     } else if (plano === 'mensal') {
       setEnviarContrato(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plano])
   const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().split('T')[0])
   const [observacaoDesconto, setObservacaoDesconto] = useState('')

@@ -66,7 +66,6 @@ type Props = {
 }
 
 export default function PainelSidebar({ email, isAdmin, perfil }: Props) {
-  const isSecretaria = perfil === 'secretaria'
   const [collapsed, setCollapsed] = useState(false)
 
   // Persiste estado colapsado no localStorage
@@ -169,7 +168,8 @@ export default function PainelSidebar({ email, isAdmin, perfil }: Props) {
         {collapsed && isAdmin && (
           <div className="w-2 h-2 rounded-full bg-violet-400 mx-auto" title="administrador" />
         )}
-        {/* Logout precisa de <a> para forçar reload e limpar sessão */}
+        {/* Logout usa <a> para forçar reload completo e limpar sessão */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/api/auth/signout"
           title="Sair"

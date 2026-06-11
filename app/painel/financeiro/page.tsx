@@ -35,7 +35,7 @@ export default async function FinanceiroPage({
   // Mensalidades filtradas
   const statusFiltro = filtro.split(',').filter(Boolean)
 
-  let query = supabase
+  const query = supabase
     .from('mensalidades')
     .select(`
       id, competencia, valor, vencimento, status, valor_pago, pago_em,

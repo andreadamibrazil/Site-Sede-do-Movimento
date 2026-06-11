@@ -27,7 +27,7 @@ async function chamarGemini(prompt: string): Promise<string> {
   throw new Error('Gemini indisponível')
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const guard = await requireAdmin()
   if (!guard.ok) return guard.response
 
@@ -91,7 +91,7 @@ Seja objetivo. Foque em: (1) item faz sentido para escola de dança? (2) está n
     const raw = await chamarGemini(prompt)
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     resultado = JSON.parse(cleaned)
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Gemini não retornou JSON válido' }, { status: 500 })
   }
 

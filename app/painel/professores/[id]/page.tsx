@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import ProfessorPerfil from './ProfessorPerfil'
 
@@ -25,7 +26,7 @@ export default async function ProfessorPage({ params }: { params: Promise<{ id: 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-5">
       <div>
-        <a href="/painel/professores" className="text-xs text-gray-400 hover:text-gray-600">← Professores</a>
+        <Link href="/painel/professores" className="text-xs text-gray-400 hover:text-gray-600">← Professores</Link>
         <h1 className="text-xl font-semibold text-gray-900 mt-1">{prof.nome}</h1>
       </div>
       <ProfessorPerfil professor={prof as any} turmas={(turmas ?? []) as any[]} />

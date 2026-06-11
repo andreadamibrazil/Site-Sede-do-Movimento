@@ -72,7 +72,7 @@ Verifique:
       const data = await res.json()
       if (data.aviso) setAvisoIA(`⚠️ IA: ${data.aviso}`)
       else if (data.ok) setAvisoIA('✓ Nome aprovado pela IA')
-    } catch (_) {}
+    } catch {}
 
     setAuditando(false)
   }
