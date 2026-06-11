@@ -35,14 +35,16 @@ export async function POST(req: NextRequest) {
 
   if (!concluido) return NextResponse.json({ ok: true })
 
-  // 1. Atualiza contrato de aluno
-  await sb.from('alunos')
-    .update({ contrato_status: 'assinado', contrato_assinado_em: new Date().toISOString() })
-    .eq('contrato_docuseal_id', submissionId)
+  const agora = new Date().toISOString()
 
-  // 2. Atualiza folha de pagamento do professor
+  // 1. Atualiza documento do aluno (contrato assinado via DocuSeal)
+  await sb.from('documentos_aluno')
+    .update({ docuseal_status: 'assinado' })
+    .eq('docuseal_submission_id', submissionId)
+
+  // 2. Atualiza folha de pagamento do professor (se aplicável)
   await sb.from('folhas_pagamento')
-    .update({ status: 'assinado', assinado_em: new Date().toISOString() })
+    .update({ status: 'assinado', assinado_em: agora })
     .eq('autentique_doc_id', submissionId)
     .eq('status', 'enviado')
 
