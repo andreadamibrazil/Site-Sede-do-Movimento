@@ -64,6 +64,14 @@ export default async function AlunoPage({
   const presencas = presencasRes.data
   const documentos = documentosRes.data
 
+  // Deriva status do contrato a partir dos documentos DocuSeal
+  const contratoDoc = (documentos ?? []).find((d: any) => d.tipo === 'contrato' && d.docuseal_submission_id)
+  const contratoStatus = contratoDoc?.docuseal_status === 'assinado'
+    ? 'assinado'
+    : contratoDoc
+      ? 'aguardando_assinatura'
+      : 'sem_contrato'
+
   const service = createServiceClient()
   const { data: uniforme } = await service
     .from('uniforme_retiradas' as any)
@@ -105,7 +113,7 @@ export default async function AlunoPage({
         <div className="flex items-center gap-2">
           <StatusBadge status={aluno.status_pedagogico} />
           <StatusFinBadge status={aluno.status_financeiro} />
-          <ContratoBadge status={(aluno as any).contrato_status ?? 'sem_contrato'} />
+          <ContratoBadge status={contratoStatus} />
           <BotaoDeclaracao alunoId={id} />
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
