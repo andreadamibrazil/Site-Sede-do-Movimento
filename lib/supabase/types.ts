@@ -1190,6 +1190,7 @@ export type Database = {
           observacoes: string | null
           percentual_desconto: number | null
           plano: Database["public"]["Enums"]["tipo_plano"]
+          responsavel_financeiro_id: string | null
           status: Database["public"]["Enums"]["status_matricula"]
           tipo_desconto: Database["public"]["Enums"]["tipo_desconto"] | null
           trancamentos_usados: number
@@ -1210,6 +1211,7 @@ export type Database = {
           observacoes?: string | null
           percentual_desconto?: number | null
           plano: Database["public"]["Enums"]["tipo_plano"]
+          responsavel_financeiro_id?: string | null
           status?: Database["public"]["Enums"]["status_matricula"]
           tipo_desconto?: Database["public"]["Enums"]["tipo_desconto"] | null
           trancamentos_usados?: number
@@ -1230,6 +1232,7 @@ export type Database = {
           observacoes?: string | null
           percentual_desconto?: number | null
           plano?: Database["public"]["Enums"]["tipo_plano"]
+          responsavel_financeiro_id?: string | null
           status?: Database["public"]["Enums"]["status_matricula"]
           tipo_desconto?: Database["public"]["Enums"]["tipo_desconto"] | null
           trancamentos_usados?: number
@@ -1683,6 +1686,7 @@ export type Database = {
       }
       responsaveis: {
         Row: {
+          asaas_customer_id: string | null
           celular: string
           cpf: string | null
           created_at: string
@@ -1695,6 +1699,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asaas_customer_id?: string | null
           celular: string
           cpf?: string | null
           created_at?: string
@@ -1707,6 +1712,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asaas_customer_id?: string | null
           celular?: string
           cpf?: string | null
           created_at?: string
