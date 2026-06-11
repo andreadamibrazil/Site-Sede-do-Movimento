@@ -7,34 +7,34 @@ function h() {
   }
 }
 
-export async function buscarOuCriarCliente(aluno: {
+export type PessoaAsaas = {
   id: string
   nome: string
   cpf?: string | null
   email?: string | null
   celular?: string | null
-}): Promise<string> {
-  // Busca pelo externalReference (nosso aluno_id)
-  const r1 = await fetch(`${BASE}/customers?externalReference=${aluno.id}`, { headers: h() })
+}
+
+// Aceita aluno_id ou responsavel_id como externalReference — UUIDs nunca colidem
+export async function buscarOuCriarCliente(pessoa: PessoaAsaas): Promise<string> {
+  const r1 = await fetch(`${BASE}/customers?externalReference=${pessoa.id}`, { headers: h() })
   const d1 = await r1.json()
   if (d1.data?.length > 0) return d1.data[0].id
 
-  // Busca pelo CPF se disponível
-  if (aluno.cpf) {
-    const cpf = aluno.cpf.replace(/\D/g, '')
+  if (pessoa.cpf) {
+    const cpf = pessoa.cpf.replace(/\D/g, '')
     const r2 = await fetch(`${BASE}/customers?cpfCnpj=${cpf}`, { headers: h() })
     const d2 = await r2.json()
     if (d2.data?.length > 0) return d2.data[0].id
   }
 
-  // Cria cliente
   const body: Record<string, string> = {
-    name: aluno.nome,
-    externalReference: aluno.id,
+    name: pessoa.nome,
+    externalReference: pessoa.id,
   }
-  if (aluno.cpf) body.cpfCnpj = aluno.cpf.replace(/\D/g, '')
-  if (aluno.email) body.email = aluno.email
-  if (aluno.celular) body.mobilePhone = aluno.celular.replace(/\D/g, '')
+  if (pessoa.cpf) body.cpfCnpj = pessoa.cpf.replace(/\D/g, '')
+  if (pessoa.email) body.email = pessoa.email
+  if (pessoa.celular) body.mobilePhone = pessoa.celular.replace(/\D/g, '')
 
   const r3 = await fetch(`${BASE}/customers`, {
     method: 'POST',
@@ -76,4 +76,26 @@ export async function cancelarCobranca(codigoAsaas: string): Promise<void> {
     method: 'POST',
     headers: h(),
   })
+}
+
+// ── Resolve quem paga uma matrícula ────────────────────────────
+// Prioridade:
+//   1. responsavel_financeiro explícito na matrícula
+//   2. responsavel_principal com permissão de cobrança
+//   3. o próprio aluno (adulto sem responsável)
+export function resolverPagador(
+  aluno: PessoaAsaas & { asaas_customer_id?: string | null },
+  responsavelPrincipal?: (PessoaAsaas & { notificacao?: string | null; asaas_customer_id?: string | null }) | null,
+  responsavelFinanceiro?: (PessoaAsaas & { asaas_customer_id?: string | null }) | null,
+): { pagador: PessoaAsaas; tabela: 'responsaveis' | 'alunos'; asaas_customer_id: string | null } {
+  if (responsavelFinanceiro?.id) {
+    return { pagador: responsavelFinanceiro, tabela: 'responsaveis', asaas_customer_id: responsavelFinanceiro.asaas_customer_id ?? null }
+  }
+  if (
+    responsavelPrincipal?.id &&
+    ['notificacao_e_cobranca', 'so_cobranca'].includes(responsavelPrincipal.notificacao ?? '')
+  ) {
+    return { pagador: responsavelPrincipal, tabela: 'responsaveis', asaas_customer_id: responsavelPrincipal.asaas_customer_id ?? null }
+  }
+  return { pagador: aluno, tabela: 'alunos', asaas_customer_id: aluno.asaas_customer_id ?? null }
 }

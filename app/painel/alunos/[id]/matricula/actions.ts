@@ -17,6 +17,7 @@ type MatriculaDados = {
   percentualDesconto: number
   observacaoDesconto: string | null
   enviarContrato: boolean
+  responsavelFinanceiroId: string | null
 }
 
 function gerarMensalidades(
@@ -147,6 +148,7 @@ export async function criarMatricula(dados: MatriculaDados) {
       tipo_desconto: dados.tipoDesconto as any || null,
       percentual_desconto: dados.percentualDesconto,
       observacao_desconto: dados.observacaoDesconto || null,
+      responsavel_financeiro_id: dados.responsavelFinanceiroId || null,
       status: 'ativa' as const,
     })
     .select('id')

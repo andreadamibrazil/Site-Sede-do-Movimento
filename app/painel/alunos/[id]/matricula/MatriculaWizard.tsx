@@ -39,7 +39,14 @@ type Turma = {
   turma_horarios: { dia_semana: string; hora_inicio: string; hora_fim: string }[]
 }
 
-type Responsavel = { nome: string; email: string | null; celular: string | null } | null
+type Responsavel = {
+  id: string
+  nome: string
+  email: string | null
+  celular: string | null
+  notificacao: string | null
+  asaas_customer_id: string | null
+} | null
 
 export default function MatriculaWizard({
   aluno,
@@ -50,6 +57,7 @@ export default function MatriculaWizard({
     celular: string | null; email: string | null
     status_pedagogico: string
     responsavel_principal: Responsavel
+    responsavel_secundario: Responsavel
   }
   turmas: Turma[]
 }) {
@@ -65,6 +73,15 @@ export default function MatriculaWizard({
 
   const emailContrato = aluno.responsavel_principal?.email ?? aluno.email ?? null
   const isExperimental = aluno.status_pedagogico === 'experimental'
+
+  // Responsáveis elegíveis para cobrança (têm email + permissão financeira)
+  const pagadoresDisponiveis = [aluno.responsavel_principal, aluno.responsavel_secundario].filter(
+    (r): r is NonNullable<Responsavel> =>
+      !!r?.id && !!r?.email && ['notificacao_e_cobranca', 'so_cobranca'].includes(r.notificacao ?? ''),
+  )
+  // Default: responsável principal se elegível, senão null (será resolvido no lançamento)
+  const defaultPagadorId = pagadoresDisponiveis[0]?.id ?? null
+  const [responsavelFinanceiroId, setResponsavelFinanceiroId] = useState<string | null>(defaultPagadorId)
 
   // Auto-marca "enviar contrato" ao escolher fidelidade (se tiver email)
   useEffect(() => {
@@ -121,6 +138,7 @@ export default function MatriculaWizard({
         percentualDesconto: percentualDesconto ? Number(percentualDesconto) : 0,
         observacaoDesconto: observacaoDesconto || null,
         enviarContrato: enviarContrato && !isExperimental,
+        responsavelFinanceiroId,
       })
 
       if (result.error) {
@@ -346,6 +364,23 @@ export default function MatriculaWizard({
             </div>
           </div>
 
+          {/* Responsável financeiro — só aparece quando há 2+ elegíveis */}
+          {pagadoresDisponiveis.length >= 2 && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Responsável financeiro</label>
+              <select
+                value={responsavelFinanceiroId ?? ''}
+                onChange={e => setResponsavelFinanceiroId(e.target.value || null)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {pagadoresDisponiveis.map(r => (
+                  <option key={r.id} value={r.id}>{r.nome}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Quem recebe a cobrança no Asaas para esta matrícula.</p>
+            </div>
+          )}
+
           <div className="flex justify-between">
             <button onClick={() => setEtapa(1)} className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2.5">← Voltar</button>
             <button
@@ -403,10 +438,17 @@ export default function MatriculaWizard({
             )}
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 space-y-1">
             <p className="text-xs text-blue-700 font-medium">
               Ao confirmar serão geradas {PLANOS.find(p => p.id === plano)?.meses} mensalidade{(PLANOS.find(p => p.id === plano)?.meses ?? 1) > 1 ? 's' : ''} de R$ {valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} cada.
             </p>
+            {(() => {
+              const pagador = pagadoresDisponiveis.find(r => r.id === responsavelFinanceiroId) ?? pagadoresDisponiveis[0]
+              if (pagador) return (
+                <p className="text-xs text-blue-600">Cobrança Asaas: {pagador.nome}</p>
+              )
+              return <p className="text-xs text-blue-500">Cobrança Asaas: será resolvida ao lançar</p>
+            })()}
           </div>
 
           {/* ── Contrato ── */}
