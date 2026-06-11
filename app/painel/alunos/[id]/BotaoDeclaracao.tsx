@@ -33,7 +33,7 @@ export default function BotaoDeclaracao({ alunoId }: { alunoId: string }) {
           className="text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
           title="Abrir declaração para imprimir/salvar como PDF"
         >
-          📄
+          📄 PDF
         </a>
         <button
           onClick={() => setAberto(true)}
