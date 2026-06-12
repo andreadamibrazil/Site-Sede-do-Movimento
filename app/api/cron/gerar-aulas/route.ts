@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   const { data: turmas, error: errTurmas } = await sb
     .from('turmas')
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     data: string
     hora_inicio: string
     hora_fim: string
-    status: string
+    status: 'agendada' | 'aberta' | 'concluida' | 'cancelada'
   }[] = []
 
   for (const turma of turmas ?? []) {

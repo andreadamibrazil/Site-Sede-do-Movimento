@@ -31,7 +31,7 @@ export async function POST() {
   const guard = await requireAdmin()
   if (!guard.ok) return guard.response
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   // Carrega contexto do negócio
   const { data: contextoRows } = await sb

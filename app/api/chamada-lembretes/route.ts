@@ -86,7 +86,7 @@ async function handler(req: NextRequest) {
   const dryRun = req.nextUrl.searchParams.get('dry_run') === 'true'
   const skipWindow = req.nextUrl.searchParams.get('skip_window') === 'true'
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   const agora = new Date()
   const tresDiasAtras = new Date(agora)
   tresDiasAtras.setDate(tresDiasAtras.getDate() - 3)

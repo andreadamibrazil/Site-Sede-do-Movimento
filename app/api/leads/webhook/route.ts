@@ -59,12 +59,12 @@ export async function POST(req: NextRequest) {
     ? JSON.stringify({ chatwoot: variables, tags })
     : null
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   // Upsert por celular — atualiza se já existe, cria se não existe
   const { data: existente } = await sb
     .from('leads')
-    .select('id, status')
+    .select('id, status, nome')
     .eq('celular', celular)
     .maybeSingle()
 

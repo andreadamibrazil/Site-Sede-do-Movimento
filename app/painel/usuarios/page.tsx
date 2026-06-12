@@ -9,7 +9,7 @@ export default async function UsuariosPage() {
   const [{ data: perfis }, { data: { users: authUsers } }, { data: convites }] = await Promise.all([
     supabase.from('perfis_usuario').select('*').order('created_at', { ascending: false }),
     supabase.auth.admin.listUsers(),
-    (supabase as any).from('convites').select('*').order('convidado_em', { ascending: false }),
+    supabase.from('convites').select('*').order('convidado_em', { ascending: false }),
   ])
 
   const authMap = Object.fromEntries(

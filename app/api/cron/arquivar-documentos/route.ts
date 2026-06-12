@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   const agora = new Date().toISOString()
 
   // Documentos com dados_extraidos ainda no Supabase + criados há > 90 dias

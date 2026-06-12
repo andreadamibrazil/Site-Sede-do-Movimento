@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'DocuSeal não configurado' }, { status: 503 })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   const { folha_id, professor_email, admin_email } = await req.json()
   if (!folha_id) return NextResponse.json({ error: 'folha_id obrigatório' }, { status: 400 })
 

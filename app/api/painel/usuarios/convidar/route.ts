@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'email e perfil são obrigatórios' }, { status: 400 })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   // Verifica se já existe como usuário ativo
   const { data: existente } = await sb
@@ -39,7 +39,7 @@ export async function DELETE(req: NextRequest) {
   await requireAdmin()
   const { email } = await req.json()
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   await sb.from('convites').delete().eq('email', email)
 
   return NextResponse.json({ ok: true })

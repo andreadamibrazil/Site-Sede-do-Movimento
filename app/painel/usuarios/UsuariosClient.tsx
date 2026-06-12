@@ -61,7 +61,7 @@ export default function UsuariosClient({
     setSalvando(id)
     try {
       await atualizarPerfilUsuario(id, perfil)
-      setUsuarios(u => u.map(x => x.id === id ? { ...x, perfil: perfil as any } : x))
+      setUsuarios(u => u.map(x => x.id === id ? { ...x, perfil: perfil as 'admin' | 'secretaria' | 'professor' } : x))
     } finally {
       setSalvando(null)
     }
@@ -232,7 +232,7 @@ export default function UsuariosClient({
                 <label className="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
                 <select
                   value={novoPerfil}
-                  onChange={e => setNovoPerfil(e.target.value as any)}
+                  onChange={e => setNovoPerfil(e.target.value as 'secretaria' | 'admin' | 'professor')}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="secretaria">Secretaria</option>

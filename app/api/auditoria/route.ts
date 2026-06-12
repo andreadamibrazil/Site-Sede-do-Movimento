@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     if (!guard.ok) return guard.response
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   const resultados: CheckResult[] = []
 
   // 1. Turmas ativas sem professor
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const { data } = await sb
       .from('turmas')
       .select('id, nome')
-      .eq('ativa', true)
+      .eq('status', 'ativa')
       .is('professor_id', null)
     resultados.push({
       id: 'turmas_sem_professor',
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   // 2. Turmas ativas sem plano de aula
   {
-    const { data: turmas } = await sb.from('turmas').select('id, nome').eq('ativa', true)
+    const { data: turmas } = await sb.from('turmas').select('id, nome').eq('status', 'ativa')
     const { data: planos } = await sb.from('planos_aula').select('turma_id')
     const comPlano = new Set((planos ?? []).map((p: any) => p.turma_id))
     const semPlano = (turmas ?? []).filter((t: any) => !comPlano.has(t.id))
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
   // 3. Aulas passadas sem chamada (últimos 60 dias)
   {
-    const { data: turmas } = await sb.from('turmas').select('id').eq('ativa', true)
+    const { data: turmas } = await sb.from('turmas').select('id').eq('status', 'ativa')
     const turmaIds = (turmas ?? []).map((t: any) => t.id)
     const sessenta = new Date()
     sessenta.setDate(sessenta.getDate() - 60)
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
     const { data } = await sb
       .from('mensalidades')
       .select('id, aluno_id, vencimento, alunos(nome)')
-      .eq('status', 'pendente')
+      .in('status', ['aberta', 'em_atraso'])
       .lt('vencimento', new Date().toISOString().split('T')[0])
       .gte('vencimento', noventa.toISOString().split('T')[0])
     resultados.push({
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
     const { data: turmas } = await sb
       .from('turmas')
       .select('professor_id')
-      .eq('ativa', true)
+      .eq('status', 'ativa')
       .not('professor_id', 'is', null)
     const comTurma = new Set((turmas ?? []).map((t: any) => t.professor_id))
     const semTurma = (profs ?? []).filter((p: any) => !comTurma.has(p.id))
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
 
   // 9. Nomenclatura de turmas — nomes suspeitos
   {
-    const { data } = await sb.from('turmas').select('id, nome').eq('ativa', true)
+    const { data } = await sb.from('turmas').select('id, nome').eq('status', 'ativa')
     const problemas: { label: string; href: string }[] = []
     for (const t of data ?? []) {
       const nome: string = t.nome ?? ''

@@ -68,7 +68,7 @@ export default async function ProfessorChamadaPage({
   )
 
   // Experimentais
-  const { data: experimentaisData } = await (service as any)
+  const { data: experimentaisData } = await service
     .from('experimentais')
     .select('id, status, leads(id, nome, celular, modalidade_interesse)')
     .eq('aula_id', aulaId)

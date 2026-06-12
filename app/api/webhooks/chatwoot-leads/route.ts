@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: 'no phone' })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   // Verifica se já é lead — se for, não duplica
   const { data: existente } = await sb
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const { data: novoLead, error } = await sb
     .from('leads')
     .insert({
-      nome: nome !== 'Sem nome' ? nome : null,
+      nome,
       celular,
       origem: 'chatwoot',
       status: 'novo',

@@ -84,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const guard = await verificarAcesso(turma_id)
   if (!guard.ok) return guard.response!
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   let resumo: string
   let conteudo: any
   let textoOriginal = ''
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: turma_id } = await params
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   const { data } = await sb
     .from('planos_aula')

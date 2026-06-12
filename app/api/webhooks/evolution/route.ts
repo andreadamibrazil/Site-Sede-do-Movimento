@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const messages = Array.isArray(data?.messages) ? data.messages : data ? [data] : []
   if (!messages.length) return NextResponse.json({ ok: true })
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   for (const msg of messages) {
     const remoteJid: string = msg?.key?.remoteJid ?? msg?.remoteJid ?? ''
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (existing) {
-      const msgs: any[] = existing.messages ?? []
+      const msgs: any[] = Array.isArray(existing.messages) ? (existing.messages as any[]) : []
       // Evita duplicar mesma mensagem
       if (!msgs.find((m: any) => m.id === messageEntry.id)) {
         msgs.push(messageEntry)

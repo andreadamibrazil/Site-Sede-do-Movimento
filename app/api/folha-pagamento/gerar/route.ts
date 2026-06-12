@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
   if (!guard.ok) return guard.response
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
   const { professor_id, mes } = await req.json()
   if (!professor_id || !mes) return NextResponse.json({ error: 'professor_id e mes obrigatórios' }, { status: 400 })
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 
   // Valor fixo (coordenação, etc)
   let totalFixo = 0
-  if (prof?.forma_pagamento === 'fixo_mais_hora' || prof?.forma_pagamento === 'fixo') {
+  if (prof?.forma_pagamento === 'fixo_mensal') {
     const valorFixo = prof?.valor_base ?? 0
     if (valorFixo > 0) {
       itens.push({ tipo: 'fixo', descricao: 'Coordenação / valor fixo mensal', valor: valorFixo, pago: true })

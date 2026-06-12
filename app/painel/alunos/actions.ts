@@ -10,7 +10,7 @@ export async function excluirAluno(alunoId: string) {
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('alunos')
-    .update({ status_pedagogico: 'excluido' as any })
+    .update({ status_pedagogico: 'excluido' })
     .eq('id', alunoId)
   if (error) throw new Error(error.message)
   revalidatePath('/painel/alunos')
@@ -27,8 +27,7 @@ export async function inserirRetiradaUniforme(data: {
   responsavel_nome: string | null
 }) {
   const supabase = createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: retirada, error } = await (supabase as any).from('uniforme_retiradas')
+  const { data: retirada, error } = await supabase.from('uniforme_retiradas')
     .insert(data)
     .select()
     .single()
@@ -116,8 +115,7 @@ export async function salvarAluno(data: {
 // ── VincularFamilia ──────────────────────────────────────────
 export async function criarFamilia(nome: string): Promise<string> {
   const supabase = createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any).from('familias')
+  const { data, error } = await supabase.from('familias')
     .insert({ nome })
     .select('id')
     .single()
@@ -127,10 +125,8 @@ export async function criarFamilia(nome: string): Promise<string> {
 
 export async function vincularAlunoFamilia(alunoId: string, familiaId: string) {
   const supabase = createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('alunos').update({ familia_id: familiaId }).eq('id', alunoId)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
+  await supabase.from('alunos').update({ familia_id: familiaId }).eq('id', alunoId)
+  await supabase.from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
   revalidatePath(`/painel/alunos/${alunoId}`)
 }
 
@@ -152,7 +148,7 @@ export async function justificarFalta(presencaId: string, obs: string) {
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('presencas')
-    .update({ status: 'falta_justificada' as any, observacao: obs || 'Atestado entregue' })
+    .update({ status: 'falta_justificada', observacao: obs || 'Atestado entregue' })
     .eq('id', presencaId)
   if (error) throw new Error(error.message)
 }

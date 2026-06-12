@@ -17,7 +17,7 @@ export async function atualizarPerfilUsuario(userId: string, perfil: string) {
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('perfis_usuario')
-    .update({ perfil: perfil as any })
+    .update({ perfil: perfil as 'admin' | 'secretaria' | 'professor' })
     .eq('id', userId)
   if (error) throw new Error(error.message)
   revalidatePath('/painel/usuarios')
