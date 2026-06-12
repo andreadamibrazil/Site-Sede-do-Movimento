@@ -1,6 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
@@ -27,7 +27,7 @@ async function chamarGemini(prompt: string): Promise<string> {
   throw new Error('Gemini indisponível')
 }
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const guard = await requireAdmin()
   if (!guard.ok) return guard.response
 

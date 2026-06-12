@@ -7,7 +7,7 @@ import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import { sanityFetch } from "@/sanity/lib/live";
 import { siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
-import type { SanitySiteSettings, SanityGalleryPhoto } from "@/lib/sanity/types";
+import type { SanityGalleryPhoto } from "@/lib/sanity/types";
 import { Heart, Users, GraduationCap } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ApresentacaoPage() {
-  const [{ data }, { data: galleryData }] = await Promise.all([
+  const [, { data: galleryData }] = await Promise.all([
     sanityFetch({ query: siteSettingsQuery }),
     sanityFetch({ query: recentGalleryPhotosQuery }),
   ]);
