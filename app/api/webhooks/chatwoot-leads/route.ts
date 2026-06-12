@@ -18,9 +18,9 @@ function normalizarCelular(phone: string | null | undefined): string | null {
 
 export async function POST(req: NextRequest) {
   // Autenticação opcional via token secreto
-  const secret = process.env.CHATWOOT_WEBHOOK_SECRET
+  const secret = process.env.CHATWOOT_WEBHOOK_SECRET?.trim()
   if (secret) {
-    const token = req.headers.get('x-chatwoot-token')
+    const token = req.headers.get('x-chatwoot-token')?.trim()
     if (token !== secret) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     }
