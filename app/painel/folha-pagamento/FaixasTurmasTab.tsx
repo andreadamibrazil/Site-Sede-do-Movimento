@@ -73,26 +73,20 @@ export default function FaixasTurmasTab({ dados }: { dados: TurmaFaixaDado[] }) 
               <td className="px-4 py-3 font-medium text-gray-900">{d.turma_nome}</td>
               <td className="px-4 py-3 text-gray-600">{d.professor_nome}</td>
               <td className="px-4 py-3 text-center">
-                {d.forma_pagamento === 'fixo_mensal'
-                  ? <span className="text-xs text-gray-400">—</span>
-                  : <span className="font-mono text-gray-800 font-semibold">{d.num_alunos}</span>}
+                <span className="font-mono text-gray-800 font-semibold">{d.num_alunos}</span>
               </td>
               <td className="px-4 py-3 text-center">
-                {d.forma_pagamento === 'fixo_mensal' ? (
-                  <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Fixo mensal</span>
-                ) : d.personalizado ? (
+                {d.personalizado ? (
                   <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Personalizado</span>
                 ) : (
                   <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{d.faixa_label}</span>
                 )}
               </td>
               <td className="px-4 py-3 text-right font-mono font-semibold text-gray-900">
-                {d.forma_pagamento === 'fixo_mensal'
-                  ? '—'
-                  : `R$${d.valor_hora_efetivo.toFixed(2).replace('.', ',')}`}
+                {`R$${d.valor_hora_efetivo.toFixed(2).replace('.', ',')}`}
               </td>
               <td className="px-4 py-3 text-right">
-                {d.forma_pagamento !== 'fixo_mensal' && (
+                {(
                   editando === d.turma_id ? (
                     <div className="flex items-center gap-1 justify-end">
                       <span className="text-xs text-gray-400">R$</span>
