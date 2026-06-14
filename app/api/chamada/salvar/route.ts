@@ -20,11 +20,14 @@ export async function POST(req: NextRequest) {
   // Verifica se o usuário tem acesso a esta aula
   const { data: aula } = await sb
     .from('aulas')
-    .select('id, professor_id, turma_id, status')
+    .select('id, professor_id, turma_id, status, turmas(professor_id)')
     .eq('id', aulaId)
     .single()
 
   if (!aula) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })
+
+  // professor_id efetivo: aulas.professor_id ou turmas.professor_id (fluxo normal não preenche aulas.professor_id)
+  const professorIdEfetivo = aula.professor_id ?? (aula.turmas as any)?.professor_id ?? null
 
   // Se for professor, verifica se é a aula dele
   const { data: perfil } = await sb
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
   const isAdmin = perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria'
 
   if (!isAdmin) {
-    // Verifica se é professor desta aula
+    // Verifica se é professor desta aula (checa aulas.professor_id e turmas.professor_id)
     const { data: prof } = await sb
       .from('professores')
       .select('id')
@@ -44,7 +47,10 @@ export async function POST(req: NextRequest) {
       .eq('ativo', true)
       .maybeSingle()
 
-    if (!prof || aula.professor_id !== prof.id) {
+    const pertenceAoProfessor =
+      prof && (aula.professor_id === prof.id || (aula.turmas as any)?.professor_id === prof.id)
+
+    if (!pertenceAoProfessor) {
       return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
     }
   }
@@ -58,10 +64,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Substituto (professor faltou)
-  if (profFaltou && aula.professor_id) {
+  if (profFaltou && professorIdEfetivo) {
     await sb.from('substituicoes').upsert({
       aula_id: aulaId,
-      professor_ausente_id: aula.professor_id,
+      professor_ausente_id: professorIdEfetivo,
       professor_substituto_id: null,
       tem_atestado: atestado ?? false,
       motivo: motivoAusencia || (substituto ? `Substituto: ${substituto}` : null),
