@@ -40,10 +40,20 @@ export default async function ProfessorChamadaPage({
   if (!aula) notFound()
 
   // Admin vê qualquer aula; professor só acessa as suas.
-  // aulas.professor_id não é preenchido no fluxo normal — checa também turmas.professor_id
-  const pertenceAoProfessor =
+  // Checa: aulas.professor_id, turmas.professor_id, ou turma_professores (co-regência)
+  let pertenceAoProfessor =
     aula.professor_id === professor.id ||
     (aula.turmas as any)?.professor_id === professor.id
+
+  if (!isAdmin && !pertenceAoProfessor) {
+    const { data: coProf } = await service
+      .from('turma_professores')
+      .select('professor_id')
+      .eq('turma_id', aula.turma_id)
+      .eq('professor_id', professor.id)
+      .maybeSingle()
+    pertenceAoProfessor = !!coProf
+  }
 
   if (!isAdmin && !pertenceAoProfessor) {
     redirect('/professor')

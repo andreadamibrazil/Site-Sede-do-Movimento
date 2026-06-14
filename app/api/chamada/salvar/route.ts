@@ -47,8 +47,18 @@ export async function POST(req: NextRequest) {
       .eq('ativo', true)
       .maybeSingle()
 
-    const pertenceAoProfessor =
+    let pertenceAoProfessor =
       prof && (aula.professor_id === prof.id || (aula.turmas as any)?.professor_id === prof.id)
+
+    if (prof && !pertenceAoProfessor) {
+      const { data: coProf } = await sb
+        .from('turma_professores')
+        .select('professor_id')
+        .eq('turma_id', aula.turma_id)
+        .eq('professor_id', prof.id)
+        .maybeSingle()
+      pertenceAoProfessor = !!coProf
+    }
 
     if (!pertenceAoProfessor) {
       return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })

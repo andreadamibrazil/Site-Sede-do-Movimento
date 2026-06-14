@@ -38,13 +38,18 @@ async function verificarAcesso(turmaId: string): Promise<{ ok: boolean; response
   // Admin professor: acessa qualquer turma
   if (ADMIN_EMAILS.includes(user.email ?? '')) return { ok: true }
 
-  // Professor comum: só acessa turmas dele
+  // Professor comum: acessa turma se for o professor_id principal ou co-regente
   const { data: turma } = await sb
-    .from('turmas').select('id')
-    .eq('id', turmaId).eq('professor_id', professor.id).maybeSingle()
-  if (!turma) return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
+    .from('turmas').select('id, professor_id')
+    .eq('id', turmaId).maybeSingle()
+  if (turma?.professor_id === professor.id) return { ok: true }
 
-  return { ok: true }
+  const { data: coProf } = await sb
+    .from('turma_professores').select('professor_id')
+    .eq('turma_id', turmaId).eq('professor_id', professor.id).maybeSingle()
+  if (coProf) return { ok: true }
+
+  return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
 }
 
 const PROMPT_EXTRACAO = `Você é um assistente pedagógico de uma escola de dança.
