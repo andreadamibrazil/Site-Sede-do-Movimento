@@ -26,23 +26,16 @@ export default async function DashboardPage() {
     { count: totalAtivos },
     { count: totalInadimplentes },
     { data: aulasHoje },
-    { data: chamadasPendentes },
     { data: entradas },
     { data: saidas },
     { data: inadimplentesDetalhes },
   ] = await Promise.all([
     supabase.from('alunos').select('*', { count: 'exact', head: true }).eq('status_pedagogico', 'ativo'),
     supabase.from('alunos').select('*', { count: 'exact', head: true }).eq('status_financeiro', 'inadimplente'),
-    supabase.from('aulas')
+    service.from('aulas')
       .select('id, hora_inicio, hora_fim, turmas(nome), professores(nome)')
       .eq('data', hoje.toISOString().split('T')[0])
       .order('hora_inicio'),
-    supabase.from('aulas')
-      .select('id, data, turmas(nome)')
-      .is('chamada_concluida_em', null)
-      .in('status', ['aberta', 'concluida'])
-      .gte('data', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0])
-      .lt('data', hoje.toISOString().split('T')[0]),
     service.from('matricula_turmas').select('data_entrada').gte('data_entrada', seisMesesAtrasStr),
     service.from('matricula_turmas').select('data_saida').gte('data_saida', seisMesesAtrasStr).not('data_saida', 'is', null),
     isAdmin
@@ -75,24 +68,18 @@ export default async function DashboardPage() {
       <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
 
       {/* Alertas */}
-      {((chamadasPendentes?.length ?? 0) > 0 || (totalInadimplentes ?? 0) > 0) && (
+      {(totalInadimplentes ?? 0) > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-1.5">
           <p className="text-sm font-semibold text-red-700">🚨 Alertas</p>
-          {(chamadasPendentes?.length ?? 0) > 0 && (
-            <p className="text-sm text-red-600">{chamadasPendentes!.length} aula(s) sem chamada nos últimos 7 dias</p>
-          )}
-          {(totalInadimplentes ?? 0) > 0 && (
-            <p className="text-sm text-red-600">{totalInadimplentes} aluno(s) inadimplentes</p>
-          )}
+          <p className="text-sm text-red-600">{totalInadimplentes} aluno(s) inadimplentes</p>
         </div>
       )}
 
       {/* Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Alunos ativos" value={totalAtivos ?? 0} color="blue" />
         <StatCard label="Inadimplentes" value={totalInadimplentes ?? 0} color="red" />
         <StatCard label="Aulas hoje" value={aulasHoje?.length ?? 0} color="gray" />
-        <StatCard label="Chamadas em aberto" value={chamadasPendentes?.length ?? 0} color="orange" />
         <StatCard label="Experimentais" value={experimentaisFuturos.length} color="purple" />
       </div>
 
@@ -128,25 +115,6 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      {/* Chamadas pendentes */}
-      {(chamadasPendentes?.length ?? 0) > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Chamadas pendentes</h2>
-          <div className="space-y-2">
-            {chamadasPendentes!.map((aula) => (
-              <div key={aula.id} className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{(aula.turmas as any)?.nome ?? '—'}</p>
-                  <p className="text-xs text-orange-600">
-                    {new Date(aula.data).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-                <a href={`/painel/chamada/${aula.id}`} className="text-xs font-medium text-orange-700 hover:text-orange-800">Fazer chamada →</a>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Experimentais agendados */}
       {experimentaisFuturos.length > 0 && (
