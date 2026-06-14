@@ -32,6 +32,13 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
   if (!turma) notFound()
 
+  // Datas do semestre atual para contextualizar o plano de aula
+  const agora = new Date()
+  const ano = agora.getFullYear()
+  const mes = agora.getMonth() + 1
+  const dataInicio = mes <= 6 ? `${ano}-01-01` : `${ano}-07-01`
+  const dataFim    = mes <= 6 ? `${ano}-06-30` : `${ano}-12-31`
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-indigo-600 text-white px-4 py-4 flex items-center gap-3">
@@ -50,6 +57,8 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
         <PlanoAula
           turmaId={turmaId}
+          dataInicio={dataInicio}
+          dataFim={dataFim}
         />
       </div>
     </div>

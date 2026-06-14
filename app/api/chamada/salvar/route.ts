@@ -55,11 +55,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Salva presenças
+  // Salva presenças (inclui registrado_por para auditoria)
   if (presencas && presencas.length > 0) {
+    const presencasComRegistro = presencas.map((p: any) => ({ ...p, registrado_por: user.id }))
     const { error } = await sb
       .from('presencas')
-      .upsert(presencas, { onConflict: 'aula_id,aluno_id' })
+      .upsert(presencasComRegistro, { onConflict: 'aula_id,aluno_id' })
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

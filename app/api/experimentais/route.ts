@@ -75,7 +75,8 @@ export async function POST(req: NextRequest) {
     notificou = await whatsapp(professor.celular, mensagem)
 
     if (notificou) {
-      await supabase.from('experimentais').update({ notificou_professor: true }).eq('id', experimental.id)
+      const { error: updErr } = await supabase.from('experimentais').update({ notificou_professor: true }).eq('id', experimental.id)
+      if (updErr) console.error('notificou_professor update falhou:', updErr.message)
     }
   }
 

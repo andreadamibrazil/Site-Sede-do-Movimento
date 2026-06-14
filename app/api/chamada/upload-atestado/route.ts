@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const { data: buckets } = await sb.storage.listBuckets()
   if (!buckets?.find(b => b.name === BUCKET)) {
-    await sb.storage.createBucket(BUCKET, { public: false })
+    await sb.storage.createBucket(BUCKET, { public: true })
   }
 
   const { error } = await sb.storage

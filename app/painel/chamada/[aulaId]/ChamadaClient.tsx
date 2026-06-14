@@ -54,7 +54,7 @@ export default function ChamadaClient({
   })
 
   const [experimentais, setExperimentais] = useState<Experimental[]>(experimentaisIniciais)
-  const [professsorFaltou, setProfessorFaltou] = useState(false)
+  const [professorFaltou, setProfessorFaltou] = useState(false)
   const [temAtestado, setTemAtestado] = useState(false)
   const [nomeSubstituto, setNomeSubstituto] = useState('')
   const [cpfSubstituto, setCpfSubstituto] = useState('')
@@ -82,8 +82,8 @@ export default function ChamadaClient({
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professsorFaltou, temAtestado, nomeSubstituto }))
-  }, [registros, professsorFaltou, temAtestado, nomeSubstituto, aulaId])
+    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto }))
+  }, [registros, professorFaltou, temAtestado, nomeSubstituto, aulaId])
 
   useEffect(() => {
     const salvo = localStorage.getItem(STORAGE_KEY(aulaId))
@@ -91,7 +91,7 @@ export default function ChamadaClient({
       try {
         const dados = JSON.parse(salvo)
         if (dados.registros && Object.keys(presencasIniciais).length === 0) setRegistros(dados.registros)
-        if (dados.professsorFaltou) setProfessorFaltou(dados.professsorFaltou)
+        if (dados.professorFaltou) setProfessorFaltou(dados.professorFaltou)
         if (dados.temAtestado) setTemAtestado(dados.temAtestado)
         if (dados.nomeSubstituto) setNomeSubstituto(dados.nomeSubstituto)
       } catch {}
@@ -103,7 +103,7 @@ export default function ChamadaClient({
     const pendente = localStorage.getItem(`pendente_${aulaId}`)
     if (!pendente) return
     const dados = JSON.parse(pendente)
-    await salvarNoBanco(dados.registros, dados.professsorFaltou, dados.temAtestado, dados.nomeSubstituto, true)
+    await salvarNoBanco(dados.registros, dados.professorFaltou, dados.temAtestado, dados.nomeSubstituto, true)
     localStorage.removeItem(`pendente_${aulaId}`)
   }
 
@@ -193,12 +193,12 @@ export default function ChamadaClient({
 
   async function salvar() {
     if (!online) {
-      localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professsorFaltou, temAtestado, nomeSubstituto }))
+      localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto }))
       setSalvoLocalmente(true)
       setTimeout(() => setSalvoLocalmente(false), 2000)
       return
     }
-    await salvarNoBanco(registros, professsorFaltou, temAtestado, nomeSubstituto)
+    await salvarNoBanco(registros, professorFaltou, temAtestado, nomeSubstituto)
   }
 
   async function concluir() {
@@ -342,17 +342,17 @@ export default function ChamadaClient({
       {/* Professor faltou */}
       <div className="mx-4 mt-4 pb-36">
         <button
-          onClick={() => setProfessorFaltou(!professsorFaltou)}
+          onClick={() => setProfessorFaltou(!professorFaltou)}
           className={`w-full py-3 rounded-xl text-sm font-medium border-2 transition-colors ${
-            professsorFaltou
+            professorFaltou
               ? 'border-red-400 bg-red-50 text-red-700'
               : 'border-gray-200 bg-white text-gray-500'
           }`}
         >
-          {professsorFaltou ? '⚠️ Professor faltou (marcado)' : 'Professor faltou?'}
+          {professorFaltou ? '⚠️ Professor faltou (marcado)' : 'Professor faltou?'}
         </button>
 
-        {professsorFaltou && (
+        {professorFaltou && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-2 space-y-4">
             <p className="text-xs text-red-600 font-medium">
               Todos os alunos serão marcados como presentes. O professor cadastrado nesta turma será remunerado normalmente pela escola.
@@ -532,7 +532,7 @@ export default function ChamadaClient({
       )}
 
       {/* Lista de alunos regulares */}
-      {!professsorFaltou && (
+      {!professorFaltou && (
         <div className="px-4 mt-4 pb-32 space-y-2">
           {experimentais.length > 0 && alunos.length > 0 && (
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Turma</p>
@@ -617,15 +617,15 @@ export default function ChamadaClient({
           </button>
           <button
             onClick={concluir}
-            disabled={salvando || uploadandoAtestado || (professsorFaltou && !termosAceitos) || (temAtestado && !!atestadoErro)}
+            disabled={salvando || uploadandoAtestado || (professorFaltou && !termosAceitos) || (temAtestado && !!atestadoErro)}
             title={
-              professsorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' :
+              professorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' :
               temAtestado && atestadoErro ? 'Corrija o atestado antes de concluir' : undefined
             }
             className="flex-1 bg-indigo-600 text-white text-sm font-medium py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {uploadandoAtestado ? 'Verificando atestado...' :
-             professsorFaltou && !termosAceitos ? '⚠ Aceite os termos' :
+             professorFaltou && !termosAceitos ? '⚠ Aceite os termos' :
              temAtestado && atestadoErro ? '⚠ Atestado inválido' :
              'Concluir chamada ✓'}
           </button>
