@@ -45,7 +45,7 @@ async function verificarAcesso(turmaId: string): Promise<{ ok: boolean; response
   if (turma?.professor_id === professor.id) return { ok: true }
 
   const { data: coProf } = await sb
-    .from('turma_professores').select('professor_id')
+    .from('turma_professores' as any).select('professor_id')
     .eq('turma_id', turmaId).eq('professor_id', professor.id).maybeSingle()
   if (coProf) return { ok: true }
 

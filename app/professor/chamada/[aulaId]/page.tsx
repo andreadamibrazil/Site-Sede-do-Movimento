@@ -47,7 +47,7 @@ export default async function ProfessorChamadaPage({
 
   if (!isAdmin && !pertenceAoProfessor) {
     const { data: coProf } = await service
-      .from('turma_professores')
+      .from('turma_professores' as any)
       .select('professor_id')
       .eq('turma_id', aula.turma_id)
       .eq('professor_id', professor.id)

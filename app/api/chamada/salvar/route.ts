@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (prof && !pertenceAoProfessor) {
       const { data: coProf } = await sb
-        .from('turma_professores')
+        .from('turma_professores' as any)
         .select('professor_id')
         .eq('turma_id', aula.turma_id)
         .eq('professor_id', prof.id)
