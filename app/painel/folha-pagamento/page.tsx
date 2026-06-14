@@ -66,12 +66,16 @@ export default async function FolhaPagamentoPage({
   // Dados da aba Faixas — só busca quando necessário
   let faixasDados: TurmaFaixaDado[] = []
   if (abaAtual === 'faixas') {
-    const [{ data: turmas }, { data: faixas }, { data: matriculas }] = await Promise.all([
+    const [{ data: turmas }, { data: profsList }, { data: faixas }, { data: matriculas }] = await Promise.all([
       service
         .from('turmas')
-        .select('id, nome, professor_id, professores(id, nome, forma_pagamento)')
-        .eq('status', 'ativa')
+        .select('id, nome, status, professor_id')
+        .in('status', ['ativa', 'suspensa'])
         .order('nome'),
+      service
+        .from('professores')
+        .select('id, nome, forma_pagamento')
+        .eq('ativo', true),
       service
         .from('faixas_hora_aula')
         .select('*')
@@ -82,6 +86,9 @@ export default async function FolhaPagamentoPage({
         .lte('data_entrada', inicioMes)
         .or(`data_saida.is.null,data_saida.gte.${fimMes}`),
     ])
+
+    const profMap: Record<string, any> = {}
+    for (const p of (profsList ?? []) as any[]) profMap[p.id] = p
 
     // Conta alunos por turma em JS (uma só query em vez de N)
     const contagemPorTurma: Record<string, number> = {}
@@ -111,7 +118,7 @@ export default async function FolhaPagamentoPage({
     }
 
     faixasDados = ((turmas ?? []) as any[]).map(t => {
-      const prof = t.professores as any
+      const prof = profMap[t.professor_id] ?? null
       const numAlunos = contagemPorTurma[t.id] ?? 0
       const { valor, label, personalizado, override } = calcFaixa(numAlunos, t.id)
       return {
