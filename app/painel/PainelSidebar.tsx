@@ -145,7 +145,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
 
             <NavItem href="https://plane.sededomovimento.art"     icon="✈️" label="Plane"      admin collapsed={collapsed} external />
             <NavItem href="https://n8n.sededomovimento.art"     icon="⚡" label="n8n"        admin collapsed={collapsed} external />
-            <NavItem href="https://evolution.sededomovimento.art" icon="📱" label="WhatsApp"  admin collapsed={collapsed} external />
+            <NavItem href="http://172.202.26.166:8080" icon="📱" label="WhatsApp"  admin collapsed={collapsed} external />
             <NavItem href="https://crm.sededomovimento.art"     icon="💬" label="CRM"        admin collapsed={collapsed} external />
             <NavItem href="http://20.197.211.8:3000"            icon="📄" label="DocuSeal"  admin collapsed={collapsed} external />
             <AssistenteIA collapsed={collapsed} />
