@@ -4,7 +4,7 @@ import { callGemini } from '@/lib/gemini'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Roda 2x por dia: 12:00 e 00:00 via cron Azure VM
-// GET https://sededomovimento.art/api/cron/analisar-conversas
+// GET https://www.sededomovimento.art/api/cron/analisar-conversas
 // Header: Authorization: Bearer {CRON_SECRET}
 //
 // Lógica incremental:
@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 //  - Acumula histórico de análises em leads.observacoes.historico_analises
 //  - markAnalyzed() avança o ponteiro no blob após cada análise
 
-const MAX_POR_EXECUCAO = 30
+const MAX_POR_EXECUCAO = 10
 const MATURIDADE_HORAS = 24        // só analisa conversas com 24h+ (tempo de acumular conteúdo)
 const REANALISAR_APOS_DIAS = 7     // re-verifica a cada 7 dias se chegaram novas mensagens
 const MAX_HISTORICO = 20           // máximo de entradas no histórico por lead
@@ -20,7 +20,7 @@ const MAX_HISTORICO = 20           // máximo de entradas no histórico por lead
 function formatarConversa(messages: unknown[]): string {
   if (!Array.isArray(messages) || messages.length === 0) return '(sem mensagens)'
   return messages
-    .slice(-60)
+    .slice(-150)
     .map((m: unknown) => {
       const msg = m as Record<string, unknown>
       const who = msg.fromMe ? 'Escola' : 'Cliente'

@@ -1,24 +1,40 @@
-// Rotação automática entre todas as chaves Gemini free tier — build 2026-06-08
+// Rotação automática entre todas as chaves Gemini free tier
+// AQ. keys → header x-goog-api-key | AIzaSy keys → ?key= param
 // 429/401/403 → pula para a próxima chave
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 
 function getKeys(): string[] {
   return [
-    // André Principal + Fallbacks
     process.env.GOOGLE_AI_KEY,
     process.env.GOOGLE_AI_KEY_2,
     process.env.GOOGLE_AI_KEY_3,
-    // Contas extras: Sede SDM, adam_ai, MoviRio, MoviRio_art, Secretaria
     process.env.GOOGLE_AI_KEY_4,
     process.env.GOOGLE_AI_KEY_5,
     process.env.GOOGLE_AI_KEY_6,
     process.env.GOOGLE_AI_KEY_7,
     process.env.GOOGLE_AI_KEY_8,
-    // Aliases usados em scripts e cron
+    process.env.GOOGLE_AI_KEY_9,
+    process.env.GOOGLE_AI_KEY_10,
+    // Aliases legados (cron scripts)
     process.env.GEMINI_API_KEY,
     process.env.GEMINI_API_KEY_VIVA,
   ].filter(Boolean) as string[]
+}
+
+function makeRequest(url: string, apiKey: string, body: object): Promise<Response> {
+  if (apiKey.startsWith('AQ.')) {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    })
+  }
+  return fetch(`${url}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
 export async function callGemini(
@@ -33,13 +49,9 @@ export async function callGemini(
   let lastErr = ''
   for (let i = 0; i < keys.length; i++) {
     try {
-      const res = await fetch(`${url}?key=${keys[i]}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature, maxOutputTokens },
-        }),
+      const res = await makeRequest(url, keys[i], {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature, maxOutputTokens, thinkingConfig: { thinkingBudget: 0 } },
       })
       if (res.status === 429 || res.status === 401 || res.status === 403) {
         lastErr = `HTTP ${res.status} (key ${i + 1})`
@@ -47,7 +59,10 @@ export async function callGemini(
       }
       if (!res.ok) { lastErr = `HTTP ${res.status}`; continue }
       const data = await res.json()
-      const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      // gemini-2.5-flash may return a thought part (thought:true) before the actual answer
+      type Part = { thought?: boolean; text?: string }
+      const parts: Part[] = data?.candidates?.[0]?.content?.parts ?? []
+      const text: string = (parts.find(p => !p.thought)?.text ?? parts[0]?.text) ?? ''
       if (!text) { lastErr = 'resposta vazia'; continue }
       return text
     } catch (e: unknown) {

@@ -4,6 +4,7 @@
     "app/api/pauta/synthesize/route.ts": { "maxDuration": 60 },
     "app/api/pauta/generate/route.ts": { "maxDuration": 60 },
     "app/api/painel/analisar-documento/route.ts": { "maxDuration": 30 },
-    "app/api/painel/assistente/route.ts": { "maxDuration": 30 }
+    "app/api/painel/assistente/route.ts": { "maxDuration": 30 },
+    "app/api/cron/analisar-conversas/route.ts": { "maxDuration": 60 }
   }
 }

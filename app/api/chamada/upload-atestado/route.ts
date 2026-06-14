@@ -6,11 +6,35 @@ const MAX_MB = 10
 
 // Rotação de chaves free tier — nunca usa chave paga
 function getGeminiKeys(): string[] {
-  const keys: string[] = []
-  if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY)
-  if (process.env.GOOGLE_AI_KEY_2) keys.push(process.env.GOOGLE_AI_KEY_2)
-  if (process.env.GOOGLE_AI_KEY_3) keys.push(process.env.GOOGLE_AI_KEY_3)
-  return keys.filter(Boolean)
+  return [
+    process.env.GOOGLE_AI_KEY,
+    process.env.GOOGLE_AI_KEY_2,
+    process.env.GOOGLE_AI_KEY_3,
+    process.env.GOOGLE_AI_KEY_4,
+    process.env.GOOGLE_AI_KEY_5,
+    process.env.GOOGLE_AI_KEY_6,
+    process.env.GOOGLE_AI_KEY_7,
+    process.env.GOOGLE_AI_KEY_8,
+    process.env.GOOGLE_AI_KEY_9,
+    process.env.GOOGLE_AI_KEY_10,
+  ].filter(Boolean) as string[]
+}
+
+// AQ. keys precisam de header x-goog-api-key; AIzaSy usam ?key= param
+function geminiRequest(apiKey: string, body: object): Promise<Response> {
+  const base = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  if (apiKey.startsWith('AQ.')) {
+    return fetch(base, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    })
+  }
+  return fetch(`${base}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
 }
 
 const ERRO_LIMITE = 'No momento o sistema não consegue receber o atestado. Entre em contato com a secretaria.'
@@ -123,18 +147,13 @@ Regras:
 - Preencha só campos que consiga ler com certeza; coloque null nos demais`
 
   for (const key of keys) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`
     try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { inline_data: { mime_type: mimeType || 'image/jpeg', data: base64 } },
-            { text: prompt },
-          ]}],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 600 },
-        }),
+      const res = await geminiRequest(key, {
+        contents: [{ parts: [
+          { inline_data: { mime_type: mimeType || 'image/jpeg', data: base64 } },
+          { text: prompt },
+        ]}],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 600 },
       })
 
       // 429 = rate limit desta chave → tenta a próxima

@@ -8,6 +8,13 @@ const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
   process.env.GOOGLE_AI_KEY_2,
   process.env.GOOGLE_AI_KEY_3,
+  process.env.GOOGLE_AI_KEY_4,
+  process.env.GOOGLE_AI_KEY_5,
+  process.env.GOOGLE_AI_KEY_6,
+  process.env.GOOGLE_AI_KEY_7,
+  process.env.GOOGLE_AI_KEY_8,
+  process.env.GOOGLE_AI_KEY_9,
+  process.env.GOOGLE_AI_KEY_10,
 ].filter(Boolean)
 
 // Aceita: admin, secretaria OU professor com acesso à turma
@@ -56,17 +63,27 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
   "avaliacao": "como o professor vai avaliar o progresso"
 }`
 
+// AQ. keys precisam de header x-goog-api-key; AIzaSy usam ?key= param
+function geminiRequest(apiKey: string, body: object): Promise<Response> {
+  const base = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+  if (apiKey.startsWith('AQ.')) {
+    return fetch(base, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    })
+  }
+  return fetch(`${base}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
 async function chamarGemini(parts: object[]): Promise<{ resumo: string; conteudo: any }> {
   for (const key of GEMINI_KEYS) {
     try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts }] }),
-        }
-      )
+      const res = await geminiRequest(key as string, { contents: [{ parts }] })
       if (!res.ok) continue
       const data = await res.json()
       const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
