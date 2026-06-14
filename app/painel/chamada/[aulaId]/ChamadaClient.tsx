@@ -121,12 +121,20 @@ export default function ChamadaClient({
   }
 
   async function marcarExperimental(expId: string, novoStatus: StatusExperimental) {
+    const statusAnterior = experimentais.find(e => e.id === expId)?.status
     setExperimentais(prev => prev.map(e => e.id === expId ? { ...e, status: novoStatus } : e))
-    await fetch('/api/experimentais', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: expId, status: novoStatus }),
-    })
+    try {
+      const res = await fetch('/api/experimentais', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: expId, status: novoStatus }),
+      })
+      if (!res.ok && statusAnterior) {
+        setExperimentais(prev => prev.map(e => e.id === expId ? { ...e, status: statusAnterior as StatusExperimental } : e))
+      }
+    } catch {
+      if (statusAnterior) setExperimentais(prev => prev.map(e => e.id === expId ? { ...e, status: statusAnterior as StatusExperimental } : e))
+    }
   }
 
   async function uploadAtestado(file: File): Promise<string | null> {
@@ -176,19 +184,32 @@ export default function ChamadaClient({
           observacao: regs[a.id]?.observacao || null,
         }))
 
-    await fetch('/api/chamada/salvar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        aulaId, presencas, profFaltou, atestado, substituto,
-        cpfSubstituto: cpfSub, celularSubstituto: celularSub,
-        motivoAusencia: motivo, termosAceitos: termos, atestadoUrl: urlFinal,
-      }),
-    })
+    let sucesso = false
+    try {
+      const res = await fetch('/api/chamada/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aulaId, presencas, profFaltou, atestado, substituto,
+          cpfSubstituto: cpfSub, celularSubstituto: celularSub,
+          motivoAusencia: motivo, termosAceitos: termos, atestadoUrl: urlFinal,
+        }),
+      })
+      if (res.ok) {
+        sucesso = true
+      } else if (!silencioso) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error ?? 'Erro ao salvar chamada. Tente novamente.')
+      }
+    } catch {
+      if (!silencioso) alert('Sem conexão ao salvar. Os dados foram preservados localmente.')
+    }
 
     if (!silencioso) setSalvando(false)
-    setSalvoLocalmente(true)
-    setTimeout(() => setSalvoLocalmente(false), 2000)
+    if (sucesso) {
+      setSalvoLocalmente(true)
+      setTimeout(() => setSalvoLocalmente(false), 2000)
+    }
   }
 
   async function salvar() {
@@ -203,11 +224,20 @@ export default function ChamadaClient({
 
   async function concluir() {
     await salvar()
-    await fetch('/api/chamada/salvar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aulaId, presencas: [], profFaltou: false, concluir: true }),
-    })
+    try {
+      const res = await fetch('/api/chamada/salvar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aulaId, presencas: [], profFaltou: false, concluir: true }),
+      })
+      if (!res.ok) {
+        alert('Erro ao concluir chamada. Tente novamente.')
+        return
+      }
+    } catch {
+      alert('Sem conexão. Tente concluir novamente quando online.')
+      return
+    }
     localStorage.removeItem(STORAGE_KEY(aulaId))
     localStorage.removeItem(`pendente_${aulaId}`)
     setConcluida(true)

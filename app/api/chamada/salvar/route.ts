@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
   // Substituto (professor faltou)
   if (profFaltou && professorIdEfetivo) {
-    await sb.from('substituicoes').upsert({
+    const { error: substError } = await sb.from('substituicoes').upsert({
       aula_id: aulaId,
       professor_ausente_id: professorIdEfetivo,
       professor_substituto_id: null,
@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       registrado_por: user.id,
       atestado_url: atestadoUrl || null,
     } as any, { onConflict: 'aula_id' })
+    if (substError) return NextResponse.json({ error: `Erro ao registrar substituição: ${substError.message}` }, { status: 500 })
   }
 
   // Conclui a aula se pedido

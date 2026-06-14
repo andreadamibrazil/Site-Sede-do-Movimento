@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const { data: buckets } = await sb.storage.listBuckets()
   if (!buckets?.find(b => b.name === BUCKET)) {
-    await sb.storage.createBucket(BUCKET, { public: true })
+    await sb.storage.createBucket(BUCKET, { public: false })
   }
 
   const { error } = await sb.storage
@@ -68,9 +68,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(path)
+  // Bucket privado (dados médicos sensíveis) — URL assinada com 1 ano de validade
+  const { data: signedData, error: signErr } = await sb.storage
+    .from(BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 365)
 
-  return NextResponse.json({ url: publicUrl, legivel: true, dados: analise.dados })
+  if (signErr || !signedData) return NextResponse.json({ error: 'Erro ao gerar URL do atestado' }, { status: 500 })
+
+  return NextResponse.json({ url: signedData.signedUrl, legivel: true, dados: analise.dados })
 }
 
 // --- Tipos ---

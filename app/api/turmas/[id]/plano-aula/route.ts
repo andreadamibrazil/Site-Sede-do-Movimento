@@ -6,8 +6,8 @@ import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 const GEMINI_KEYS = [
   process.env.GOOGLE_AI_KEY,
-  process.env.GOOGLE_AI_API_KEY_2,
-  process.env.GOOGLE_AI_API_KEY_3,
+  process.env.GOOGLE_AI_KEY_2,
+  process.env.GOOGLE_AI_KEY_3,
 ].filter(Boolean)
 
 // Aceita: admin, secretaria OU professor com acesso à turma
@@ -162,6 +162,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: turma_id } = await params
+
+  const guard = await verificarAcesso(turma_id)
+  if (!guard.ok) return guard.response!
+
   const sb = createServiceClient()
 
   const { data } = await sb

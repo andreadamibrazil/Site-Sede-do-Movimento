@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 async function whatsapp(celular: string, mensagem: string) {
@@ -21,6 +21,15 @@ async function checkAuth(): Promise<NextResponse | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })
+
+  // Não basta ter sessão Google — precisa ser admin, secretaria ou professor ativo
+  const sb = createServiceClient()
+  const [{ data: perfil }, { data: prof }] = await Promise.all([
+    sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
+    sb.from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+  ])
+  if (!perfil && !prof) return NextResponse.json({ error: 'acesso negado' }, { status: 403 })
+
   return null
 }
 
