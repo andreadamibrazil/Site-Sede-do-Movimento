@@ -105,7 +105,11 @@ async function professorMiddleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL('/professor/login', request.url));
+  if (!user) {
+    const loginUrl = new URL('/professor/login', request.url)
+    loginUrl.searchParams.set('next', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
   return response;
 }

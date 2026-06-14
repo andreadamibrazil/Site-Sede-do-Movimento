@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/professor'
 
   if (code) {
     const cookieStore = await cookies()
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
         .eq('ativo', true)
         .maybeSingle()
 
-      if (prof) return NextResponse.redirect(`${origin}/professor`)
+      if (prof) return NextResponse.redirect(`${origin}${next}`)
     }
 
     // Não é professor — volta para login com erro

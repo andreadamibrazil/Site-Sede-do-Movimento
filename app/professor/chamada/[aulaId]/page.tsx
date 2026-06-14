@@ -33,14 +33,19 @@ export default async function ProfessorChamadaPage({
   // Dados da aula — verifica se é do professor
   const { data: aula } = await service
     .from('aulas')
-    .select('*, turmas(nome, modalidades(nome)), professores(nome), salas(nome)')
+    .select('*, turmas(nome, professor_id, modalidades(nome)), professores(nome), salas(nome)')
     .eq('id', aulaId)
     .single()
 
   if (!aula) notFound()
 
-  // Admin vê qualquer aula; professor só acessa as suas
-  if (!isAdmin && aula.professor_id !== professor.id) {
+  // Admin vê qualquer aula; professor só acessa as suas.
+  // aulas.professor_id não é preenchido no fluxo normal — checa também turmas.professor_id
+  const pertenceAoProfessor =
+    aula.professor_id === professor.id ||
+    (aula.turmas as any)?.professor_id === professor.id
+
+  if (!isAdmin && !pertenceAoProfessor) {
     redirect('/professor')
   }
 
