@@ -69,6 +69,18 @@ export async function editarTurma(
   const { error } = await supabase.from('turmas').update(data as any).eq('id', turmaId)
   if (error) throw new Error(error.message)
 
+  // Propaga mudança de professor para aulas futuras desta turma (aulas passadas ficam
+  // com o professor original — a geração de folha usa turma como fallback para cobrir isso)
+  if ('professor_id' in data) {
+    const hoje = new Date().toISOString().slice(0, 10)
+    await (supabase as any)
+      .from('aulas')
+      .update({ professor_id: data.professor_id ?? null })
+      .eq('turma_id', turmaId)
+      .gte('data', hoje)
+      .neq('status', 'cancelada')
+  }
+
   if (horarios !== undefined) {
     await supabase.from('turma_horarios').delete().eq('turma_id', turmaId)
     if (horarios.length) {
