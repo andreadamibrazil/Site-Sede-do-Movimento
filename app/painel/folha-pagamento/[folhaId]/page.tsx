@@ -290,6 +290,7 @@ export default async function FolhaDetalhePage({
           <ComprovanteBtn
             folhaId={folha.id}
             comprovanteAtual={folha.comprovante_url ?? null}
+            comprovanteDados={folha.comprovante_dados ?? null}
             drivePdfUrl={folha.drive_pdf_url ?? null}
           />
         </div>
