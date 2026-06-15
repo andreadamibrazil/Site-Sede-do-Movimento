@@ -52,13 +52,13 @@ export async function POST(req: NextRequest) {
     .gte('data', inicioStr)
     .lte('data', fimStr)
 
-  // Query 2: aulas via turma (quando professor_id não foi preenchido na aula)
+  // Query 2: aulas via turma (inclui independente do professor_id na aula — cobre casos onde
+  // a turma foi reatribuída a outro professor mas as aulas ainda têm o professor antigo)
   const { data: aulas2 } = turmaIds_prof.length > 0
     ? await sb
         .from('aulas')
         .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
         .in('turma_id', turmaIds_prof)
-        .is('professor_id', null)
         .neq('status', 'cancelada')
         .gte('data', inicioStr)
         .lte('data', fimStr)
