@@ -33,6 +33,16 @@ export async function POST(req: NextRequest) {
 
   const turmaIds_prof = (turmasDoProf ?? []).map((t: any) => t.id as string)
 
+  // Busca turmas via co-regência (turma_professores)
+  const { data: turmaProfs } = await (sb as any)
+    .from('turma_professores')
+    .select('turma_id')
+    .eq('professor_id', professor_id)
+
+  const turmaIds_coregencia = ((turmaProfs ?? []) as any[])
+    .map((t: any) => t.turma_id as string)
+    .filter((id: string) => !turmaIds_prof.includes(id))
+
   // Query 1: aulas com professor_id explícito
   const { data: aulas1 } = await sb
     .from('aulas')
@@ -54,9 +64,20 @@ export async function POST(req: NextRequest) {
         .lte('data', fimStr)
     : { data: [] }
 
+  // Query 3: aulas via co-regência (turma_professores — Maju/Morvan/Douglas style)
+  const { data: aulas3 } = turmaIds_coregencia.length > 0
+    ? await sb
+        .from('aulas')
+        .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
+        .in('turma_id', turmaIds_coregencia)
+        .neq('status', 'cancelada')
+        .gte('data', inicioStr)
+        .lte('data', fimStr)
+    : { data: [] }
+
   // Deduplica por id
   const aulaMap = new Map<string, any>()
-  for (const a of [...(aulas1 ?? []), ...(aulas2 ?? [])]) aulaMap.set(a.id, a)
+  for (const a of [...(aulas1 ?? []), ...(aulas2 ?? []), ...(aulas3 ?? [])]) aulaMap.set(a.id, a)
   const aulas = [...aulaMap.values()].sort((a, b) => a.data.localeCompare(b.data))
 
   // Substituições do professor neste mês (atestado, substituto ou falta injustificada)
