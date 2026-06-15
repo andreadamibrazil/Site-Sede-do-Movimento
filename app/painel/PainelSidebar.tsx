@@ -111,7 +111,6 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         <NavItem href="/painel/alunos"       icon="👥" label="Alunos"      collapsed={collapsed} />
         <NavItem href="/painel/turmas"       icon="🎓" label="Turmas"      collapsed={collapsed} />
         <NavItem href="/painel/agenda"       icon="📅" label="Agenda"      collapsed={collapsed} />
-        <NavItem href="/painel/financeiro"   icon="💰" label="Financeiro"  collapsed={collapsed} />
         <NavItem href="/painel/leads"        icon="🎯" label="Leads"       collapsed={collapsed} />
         <NavItem href="/painel/inteligencia" icon="🧠" label="Inteligência" collapsed={collapsed} />
         <NavItem href="/painel/relatorios"   icon="📋" label="Relatórios"  collapsed={collapsed} />
@@ -128,6 +127,7 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
             )}
             {collapsed && <div className="h-px bg-gray-100 mb-2 mx-1" />}
 
+            <NavItem href="/painel/financeiro"     icon="💰" label="Financeiro"  admin collapsed={collapsed} />
             <NavItem href="/painel/professores"     icon="👨‍🏫" label="Professores" admin collapsed={collapsed} />
             <NavItem href="/painel/folha-pagamento" icon="💵" label="Folha Pgto"  admin collapsed={collapsed} />
             <NavItem href="/painel/usuarios"        icon="🔑" label="Usuários"    admin collapsed={collapsed} />
