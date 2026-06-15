@@ -233,6 +233,18 @@ export default async function FolhaDetalhePage({
         </div>
       </div>
 
+      {/* Prévia do PDF */}
+      <div className="flex justify-end">
+        <a
+          href={`/api/folha-pagamento/${folha.id}/preview-pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-gray-500 hover:text-indigo-600 underline underline-offset-2"
+        >
+          📄 Ver prévia do PDF
+        </a>
+      </div>
+
       {/* Ação de assinatura — só para rascunho ou enviado */}
       {(folha.status === 'rascunho' || folha.status === 'enviado') && (
         <div className="bg-white border border-gray-200 rounded-xl p-5">

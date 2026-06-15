@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
   if (prof?.forma_pagamento === 'fixo_mensal') {
     const valorFixo = prof?.valor_base ?? 0
     if (valorFixo > 0) {
-      itens.push({ tipo: 'fixo', descricao: 'Coordenação / valor fixo mensal', valor: valorFixo, pago: true })
+      itens.push({ tipo: 'fixo', descricao: 'Valor fixo mensal', valor: valorFixo, pago: true })
       totalFixo = valorFixo
     }
   }
