@@ -1,12 +1,13 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import PainelSidebar from './PainelSidebar'
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/painel/login')
+  // O middleware já redireciona não-autenticados. Aqui só evitamos o loop
+  // de redirect que acontece quando o layout envolve /painel/login.
+  if (!user) return <>{children}</>
 
   const service = createServiceClient()
   const { data: perfil } = await service
