@@ -14,7 +14,7 @@ const MSG_PROFESSOR: Record<string, (p: string, t: string, h: string, email?: st
   apos_0min: (p, t, h, email) =>
     `Olá ${p}! ⏰\n\nSua aula de *${t}* (${h}) acabou de terminar.\n\nPor favor lance a chamada agora — leva menos de 1 minuto! 🙌\n\nAcesse: sededomovimento.art/professor\nEmail: *${email ?? 'seu email cadastrado'}*`,
 
-  apos_1dia: (p, t, h, _email) =>
+  apos_1dia: (p, t, h) =>
     `${p}, um ponto importante: a chamada de *${t}* (${h} de ontem) ainda não foi lançada.\n\nSe precisar de ajuda para acessar o sistema, fale com a secretaria. 🙏`,
 }
 
@@ -90,7 +90,6 @@ async function handler(req: NextRequest) {
     const fimAula = new Date(`${aula.data}T${aula.hora_fim}-03:00`)
     const diffMin = (agora.getTime() - fimAula.getTime()) / 60000
     const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)
-    const dataFormatada = new Date(aula.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
     const { data: jaSent } = await sb
       .from('lembretes_chamada')

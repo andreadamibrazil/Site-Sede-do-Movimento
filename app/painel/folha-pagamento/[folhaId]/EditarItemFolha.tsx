@@ -14,11 +14,9 @@ const MOTIVOS: { value: Motivo; label: string }[] = [
 
 export default function EditarItemFolha({
   itemId,
-  pago,
   folhaStatus,
 }: {
   itemId: string
-  pago: boolean
   folhaStatus: string
 }) {
   const [aberto, setAberto] = useState(false)

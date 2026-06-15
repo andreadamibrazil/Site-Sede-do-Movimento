@@ -125,7 +125,6 @@ export default async function FolhaDetalhePage({
                       <td className="px-2 py-2 text-right">
                         <EditarItemFolha
                           itemId={item.id}
-                          pago={item.pago}
                           folhaStatus={folha.status}
                         />
                       </td>
