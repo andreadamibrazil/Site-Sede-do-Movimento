@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Motivo = 'atestado' | 'falta_justificada' | 'engano' | 'dispensa'
 
 const MOTIVOS: { value: Motivo; label: string }[] = [
-  { value: 'atestado',         label: 'Atestado médico (pago)' },
+  { value: 'atestado',          label: 'Atestado médico (pago)' },
   { value: 'falta_justificada', label: 'Falta justificada (pago)' },
-  { value: 'engano',           label: 'Lançado por engano (remover)' },
-  { value: 'dispensa',         label: 'Dispensado neste dia (não pago)' },
+  { value: 'engano',            label: 'Lançado por engano (remover)' },
+  { value: 'dispensa',          label: 'Dispensado neste dia (não pago)' },
 ]
 
 export default function EditarItemFolha({
@@ -21,9 +21,19 @@ export default function EditarItemFolha({
 }) {
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(false)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
 
   const bloqueado = folhaStatus === 'assinado' || folhaStatus === 'pago'
+
+  function toggleMenu() {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    setAberto(v => !v)
+  }
 
   async function aplicar(motivo: Motivo) {
     if (bloqueado) return
@@ -48,9 +58,10 @@ export default function EditarItemFolha({
   if (bloqueado) return null
 
   return (
-    <div className="relative">
+    <div>
       <button
-        onClick={() => setAberto(v => !v)}
+        ref={btnRef}
+        onClick={toggleMenu}
         disabled={carregando}
         title="Editar este item"
         className="text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-30 text-xs px-1"
@@ -60,8 +71,11 @@ export default function EditarItemFolha({
 
       {aberto && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setAberto(false)} />
-          <div className="absolute right-0 top-6 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-52 text-xs">
+          <div className="fixed inset-0 z-40" onClick={() => setAberto(false)} />
+          <div
+            className="fixed z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-52 text-xs"
+            style={{ top: pos.top, right: pos.right }}
+          >
             {MOTIVOS.map(m => (
               <button
                 key={m.value}
