@@ -32,7 +32,7 @@ export async function PATCH(
   if (body.pago === false && item.pago === true) updates.valor = 0
   // Se reativando (pago true), não recalculamos — admin deve gerar novamente
 
-  await sb.from('itens_folha').update(updates).eq('id', itemId)
+  await (sb as any).from('itens_folha').update(updates).eq('id', itemId)
 
   await recalcularFolha(sb, item.folha_id)
 
