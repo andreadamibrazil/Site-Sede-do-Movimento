@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { gerarPDFFolha } from '@/lib/folha-pdf'
+import { uploadParaDrive, DRIVE_FOLDERS } from '@/lib/google-drive'
 
 const DOCUSEAL_URL = process.env.DOCUSEAL_URL
 const DOCUSEAL_KEY = process.env.DOCUSEAL_API_KEY
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 
   const { data: folha } = await sb
     .from('folhas_pagamento')
-    .select('*, professores(nome, email, cpf)')
+    .select('*, professores(nome, email, cpf, mei)')
     .eq('id', folha_id)
     .single()
 
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
   const pdfBytes = await gerarPDFFolha({
     professor: prof?.nome ?? '',
     cpf: prof?.cpf ?? undefined,
+    mei: prof?.mei ?? undefined,
     mes: nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1),
     valor_aulas: Number(folha.valor_aulas),
     valor_fixo: Number(folha.valor_fixo),
@@ -126,10 +128,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Erro ao criar documento no DocuSeal' }, { status: 500 })
   }
 
+  // Upload para o Google Drive (pasta: Pagamento Equipe / MM.YYYY)
+  let driveFileId: string | null = null
+  let drivePdfUrl: string | null = null
+  try {
+    const mesFolder = `${String(mesRef.getMonth() + 1).padStart(2, '0')}.${mesRef.getFullYear()}`
+    const nomeArquivo = `Folha - ${prof?.nome} - ${nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1)}.pdf`
+    const driveResult = await uploadParaDrive(
+      pdfBytes.buffer as ArrayBuffer,
+      nomeArquivo,
+      'application/pdf',
+      DRIVE_FOLDERS.pagamentoEquipe,
+      mesFolder,
+    )
+    driveFileId = driveResult.fileId
+    drivePdfUrl = driveResult.viewUrl
+    console.log(`[folha-pdf] Drive upload OK: ${drivePdfUrl}`)
+  } catch (driveErr) {
+    console.error('[folha-pdf] Drive upload FALHOU (não bloqueia envio):', driveErr)
+  }
+
   // Atualiza folha
   await sb.from('folhas_pagamento').update({
     status: 'enviado',
-    autentique_doc_id: String(resultado.submission_id), // reutiliza coluna para o ID DocuSeal
+    autentique_doc_id: String(resultado.submission_id),
+    ...(driveFileId ? { drive_pdf_id: driveFileId, drive_pdf_url: drivePdfUrl } : {}),
   }).eq('id', folha_id)
 
   return NextResponse.json({
@@ -139,5 +162,6 @@ export async function POST(req: NextRequest) {
     link_admin: resultado.link_admin,
     professor: prof?.nome,
     email: emailProf,
+    drive_url: drivePdfUrl,
   })
 }

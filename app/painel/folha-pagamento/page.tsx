@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import GerarFolhaBtn from './GerarFolhaBtn'
+import GerarTodosBtn from './GerarTodosBtn'
 import SeletorMes from './SeletorMes'
 import FaixasTurmasTab from './FaixasTurmasTab'
 import type { TurmaFaixaDado } from './FaixasTurmasTab'
@@ -144,7 +145,18 @@ export default async function FolhaPagamentoPage({
           <h1 className="text-xl font-semibold text-gray-900">Folha de Pagamento</h1>
           <p className="text-sm text-gray-500 mt-0.5 capitalize">{nomeMes}</p>
         </div>
-        <SeletorMes meses={meses} mesAtual={mesAtual} />
+        <div className="flex items-center gap-3">
+          {abaAtual !== 'faixas' && (
+            <GerarTodosBtn
+              professorIds={(professores ?? [])
+                .filter(p => !folhaPorProf[p.id])
+                .map(p => p.id)}
+              mes={mesAtual}
+              semFolha={(professores ?? []).filter(p => !folhaPorProf[p.id]).length}
+            />
+          )}
+          <SeletorMes meses={meses} mesAtual={mesAtual} />
+        </div>
       </div>
 
       {/* Totais do mês */}

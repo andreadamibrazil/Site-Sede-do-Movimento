@@ -1,49 +1,28 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Cron a cada 5 minutos — dispara WhatsApp para professor + secretaria
-// quando chamada não foi lançada após o fim da aula.
+// Cron a cada 5 minutos — dispara WhatsApp para professor quando chamada não foi lançada.
 //
-// Tom: cuidado com o aluno e benefício do professor — sem linguagem de desconto.
-//
-// Sequência:
-//   -5 min  → professor: lembrete gentil
-//   0 min   → secretaria: alerta imediato / professor: importância da chamada + email de login
-//   +2h     → professor: impacto no aluno + crescimento da turma
-//   +1 dia  → professor: secretaria acompanhando, pede regularização
-//   +2 dias → professor: pedido de contato com secretaria
+// Sequência (máx. 2 avisos por aula):
+//   0 min  → professor: "sua aula acabou, lance a chamada"
+//   +1 dia → professor: "o ponto é importante" → depois marca professor ausente automaticamente
 
 // Número da secretaria (env var, pode ter vários separados por vírgula)
 const CELULARES_SECRETARIA = (process.env.CELULAR_SECRETARIA ?? '').split(',').filter(Boolean)
 
 const MSG_PROFESSOR: Record<string, (p: string, t: string, h: string, email?: string) => string> = {
-  antes_5min: (p, t, h, email) =>
-    `Olá ${p}! 📋\n\nSua aula de *${t}* (${h}) está quase no fim.\n\nLance a chamada logo que terminar — leva menos de 1 minuto e faz toda a diferença para os seus alunos! 🙌\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
-
   apos_0min: (p, t, h, email) =>
-    `Olá ${p}! ⏰\n\nSua aula de *${t}* (${h}) acabou de terminar.\n\nPor favor lance a chamada agora. Isso é muito importante:\n\n• A família acompanha a presença do aluno em tempo real\n• Faltas sem registro prejudicam o histórico e o boletim do aluno\n• Sua turma engajada cresce — e isso é bom para você e para a Sede 💪\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
+    `Olá ${p}! ⏰\n\nSua aula de *${t}* (${h}) acabou de terminar.\n\nPor favor lance a chamada agora — leva menos de 1 minuto! 🙌\n\nAcesse: sededomovimento.art/professor\nEmail: *${email ?? 'seu email cadastrado'}*`,
 
-  apos_2h: (p, t, h, email) =>
-    `${p}, a chamada de *${t}* (${h}) ainda não foi lançada. ⚠️\n\nSabemos que a rotina é corrida, mas registrar a presença dos alunos é fundamental:\n\n• Os responsáveis dependem disso para acompanhar os filhos\n• Faltas recorrentes são um sinal de que o aluno precisa de atenção\n• Quanto mais sua turma cresce e engaja, mais reconhecemos isso no seu valor de hora/aula 🌟\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
-
-  apos_1dia: (p, t, h, email) =>
-    `${p}, ainda precisamos da chamada de *${t}* (${h} de ontem). 🙏\n\nA secretaria está acompanhando e pode te ajudar se precisar de algo.\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
-
-  apos_2dias: (p, t, h, email) =>
-    `${p}, a chamada de *${t}* (${h}) está há 2 dias sem registro.\n\nPrecisamos resolver isso juntos — entre em contato com a secretaria para regularizar.\n\nAcesse com: *${email ?? 'seu email cadastrado'}*\nsededomovimento.art/professor`,
+  apos_1dia: (p, t, h, _email) =>
+    `${p}, um ponto importante: a chamada de *${t}* (${h} de ontem) ainda não foi lançada.\n\nSe precisar de ajuda para acessar o sistema, fale com a secretaria. 🙏`,
 }
 
-const MSG_SECRETARIA = (prof: string, turma: string, hora: string, data: string) =>
-  `🔔 *Chamada em aberto*\n\nProfessor: *${prof}*\nTurma: *${turma}*\nHorário: ${hora} · ${data}\n\nA aula terminou e a chamada ainda não foi lançada. Cobre agora! 📞`
-
-type Janela = { tipo: string; minutos: number; alertaSecretaria?: boolean }
+type Janela = { tipo: string; minutos: number; marcarAusenteApos?: boolean }
 
 const JANELAS: Janela[] = [
-  { tipo: 'antes_5min', minutos: -5 },
-  { tipo: 'apos_0min',  minutos: 0,    alertaSecretaria: true },
-  { tipo: 'apos_2h',    minutos: 120 },
-  { tipo: 'apos_1dia',  minutos: 1440 },
-  { tipo: 'apos_2dias', minutos: 2880 },
+  { tipo: 'apos_0min', minutos: 0 },
+  { tipo: 'apos_1dia', minutos: 1440, marcarAusenteApos: true },
 ]
 
 async function whatsapp(celular: string, mensagem: string) {
@@ -89,7 +68,7 @@ async function handler(req: NextRequest) {
   const sb = createServiceClient()
   const agora = new Date()
   const tresDiasAtras = new Date(agora)
-  tresDiasAtras.setDate(tresDiasAtras.getDate() - 3)
+  tresDiasAtras.setDate(tresDiasAtras.getDate() - 2)
 
   // Professor vem via turmas.professor_id — aulas.professor_id não é preenchido no fluxo normal
   const { data: aulas } = await sb
@@ -135,12 +114,25 @@ async function handler(req: NextRequest) {
       enviados++
       log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${prof.nome} (${turma?.nome}) · ${prof.celular}`)
 
-      if (janela.alertaSecretaria && CELULARES_SECRETARIA.length > 0) {
-        if (!dryRun) {
-          const msgSec = MSG_SECRETARIA(prof.nome, turma?.nome ?? '?', horaFormatada, dataFormatada)
-          for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
+      // Após apos_1dia (último aviso): marcar professor ausente automaticamente
+      if (janela.marcarAusenteApos && turma?.professor_id) {
+        const { data: subExist } = await sb
+          .from('substituicoes')
+          .select('id')
+          .eq('aula_id', aula.id)
+          .maybeSingle()
+
+        if (!subExist && !dryRun) {
+          await sb.from('substituicoes').insert({
+            aula_id: aula.id,
+            professor_ausente_id: turma.professor_id,
+            tem_atestado: false,
+            motivo: 'chamada_nao_lancada',
+          })
+          log.push(`  → professor marcado ausente (chamada não lançada após 24h)`)
+        } else if (!subExist && dryRun) {
+          log.push(`  → [DRY] marcaria professor ausente`)
         }
-        log.push(`  → secretaria ${dryRun ? '[DRY] não alertada' : 'alertada'}`)
       }
     }
   }

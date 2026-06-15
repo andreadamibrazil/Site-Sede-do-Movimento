@@ -32,6 +32,7 @@ export const DRIVE_FOLDERS = {
   sedePlanos:         '1OaRG3Y1fY1OhxJlOTmGqIjOilHxgg0jJ',
   sedeDocumentos:     '1ZbyCo0AiWU4JnE0BL7pNpszexZET7Jhh',
   sedeFolhas:         '1X80AuqquHqMuvpOI4uck92jjWiQQwUJm',
+  pagamentoEquipe:    '1G5i5SZV7D13dDWEm49w6LGc-c3kxZDSy',
   sedeOutros:         '1wlO2D70B1ML-Die-mKdK2gkX3AWAaVLm',
   movirio:            '1JO7KCDfpaSyQaDlovZFzneio1y7xus-u',
   viva:               '1Gi6cSB6lMwBs84NE4BEEQEjvwmUxf_E5',

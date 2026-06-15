@@ -2,6 +2,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import EnviarAssinarBtn from './EnviarAssinarBtn'
+import EditarItemFolha from './EditarItemFolha'
+import ComprovanteBtn from './ComprovanteBtn'
 
 export default async function FolhaDetalhePage({
   params,
@@ -17,7 +19,7 @@ export default async function FolhaDetalhePage({
 
   const { data: folha } = await service
     .from('folhas_pagamento')
-    .select('*, professores(nome, celular, cpf, valor_base, forma_pagamento)')
+    .select('*, professores(nome, celular, cpf, mei, email, valor_base, forma_pagamento)')
     .eq('id', folhaId)
     .single()
 
@@ -68,6 +70,7 @@ export default async function FolhaDetalhePage({
             <h1 className="text-xl font-semibold text-gray-900">{prof?.nome}</h1>
             <p className="text-sm text-gray-500 mt-0.5 capitalize">Folha de pagamento — {mes}</p>
             {prof?.cpf && <p className="text-xs text-gray-400 mt-1">CPF: {prof.cpf}</p>}
+            {prof?.mei && <p className="text-xs text-gray-400">MEI/CNPJ: {prof.mei}</p>}
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold text-gray-900">
@@ -108,7 +111,7 @@ export default async function FolhaDetalhePage({
                     ? new Date(item.data_aula + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
                     : '—'
                   return (
-                    <tr key={item.id} className={`${!item.pago ? 'opacity-40' : ''}`}>
+                    <tr key={item.id} className={`${!item.pago ? 'opacity-50' : ''}`}>
                       <td className="px-4 py-2 text-gray-600">{data}</td>
                       <td className="px-4 py-2 text-gray-500">
                         {item.hora_inicio?.slice(0,5)}–{item.hora_fim?.slice(0,5)}
@@ -117,7 +120,14 @@ export default async function FolhaDetalhePage({
                       <td className="px-4 py-2 text-right text-gray-700 font-medium">
                         {item.pago
                           ? Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : <span className="text-red-400">Falta s/ justificativa</span>}
+                          : <span className="text-red-400">Não pago</span>}
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <EditarItemFolha
+                          itemId={item.id}
+                          pago={item.pago}
+                          folhaStatus={folha.status}
+                        />
                       </td>
                     </tr>
                   )
@@ -197,6 +207,28 @@ export default async function FolhaDetalhePage({
             className="text-xs text-green-600 underline mt-1 inline-block"
           >
             Ver documento assinado →
+          </a>
+        </div>
+      )}
+
+      {/* Comprovante de pagamento — visível sempre que assinado ou pago */}
+      {(folha.status === 'assinado' || folha.status === 'pago') && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-900">Comprovante de pagamento</h2>
+          <ComprovanteBtn
+            folhaId={folha.id}
+            comprovanteAtual={folha.comprovante_url ?? null}
+            drivePdfUrl={folha.drive_pdf_url ?? null}
+          />
+        </div>
+      )}
+
+      {/* Link para PDF no Drive (rascunho/enviado) */}
+      {folha.drive_pdf_url && folha.status !== 'assinado' && folha.status !== 'pago' && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
+          📁 PDF salvo no Drive:{' '}
+          <a href={folha.drive_pdf_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+            ver arquivo →
           </a>
         </div>
       )}

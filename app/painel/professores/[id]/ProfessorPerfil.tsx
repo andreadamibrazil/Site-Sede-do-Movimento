@@ -15,13 +15,14 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
 
   const [email, setEmail] = useState(professor.email ?? '')
   const [celular, setCelular] = useState(professor.celular ?? '')
+  const [mei, setMei] = useState(professor.mei ?? '')
   const [salvandoEmail, setSalvandoEmail] = useState(false)
   const [emailSalvo, setEmailSalvo] = useState(false)
 
   async function salvarAcesso() {
     setSalvandoEmail(true)
     try {
-      await atualizarAcessoProfessor(professor.id, { email: email.trim(), celular: celular.trim() })
+      await atualizarAcessoProfessor(professor.id, { email: email.trim(), celular: celular.trim(), mei: mei.trim() || null })
       setEmailSalvo(true)
       setTimeout(() => setEmailSalvo(false), 3000)
       router.refresh()
@@ -66,6 +67,15 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
               value={celular}
               onChange={e => setCelular(e.target.value)}
               placeholder="(21) 99999-9999"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">MEI / CNPJ (para folha)</label>
+            <input
+              value={mei}
+              onChange={e => setMei(e.target.value)}
+              placeholder="00.000.000/0000-00"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>

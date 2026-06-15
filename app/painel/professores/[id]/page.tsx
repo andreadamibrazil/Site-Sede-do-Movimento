@@ -9,7 +9,7 @@ export default async function ProfessorPage({ params }: { params: Promise<{ id: 
 
   const { data: prof } = await sb
     .from('professores')
-    .select('id, nome, email, celular, cpf, forma_pagamento, valor_base, ativo, observacoes')
+    .select('id, nome, email, celular, cpf, mei, forma_pagamento, valor_base, ativo, observacoes')
     .eq('id', id)
     .single()
 

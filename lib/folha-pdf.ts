@@ -18,6 +18,7 @@ interface ItemFolha {
 interface FolhaPDF {
   professor: string
   cpf?: string
+  mei?: string
   mes: string       // ex: "Maio 2026"
   valor_aulas: number
   valor_fixo: number
@@ -67,8 +68,10 @@ export async function gerarPDFFolha(data: FolhaPDF): Promise<Uint8Array> {
 
   // Dados do professor
   texto(p, MARGEM, y, data.professor, 14, fontB)
-  if (data.cpf) texto(p, MARGEM, y - 16, `CPF: ${data.cpf}`, 9, fontR, CINZA)
-  y -= 40
+  let yProf = y - 16
+  if (data.cpf) { texto(p, MARGEM, yProf, `CPF: ${data.cpf}`, 9, fontR, CINZA); yProf -= 14 }
+  if (data.mei) { texto(p, MARGEM, yProf, `MEI/CNPJ: ${data.mei}`, 9, fontR, CINZA); yProf -= 14 }
+  y = yProf - 10
 
   // Aulas por turma
   const porTurma: Record<string, ItemFolha[]> = {}
