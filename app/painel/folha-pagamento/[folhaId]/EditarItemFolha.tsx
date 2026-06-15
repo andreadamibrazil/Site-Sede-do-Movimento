@@ -17,10 +17,12 @@ export default function EditarItemFolha({
   itemId,
   folhaStatus,
   pago,
+  descricao,
 }: {
   itemId: string
   folhaStatus: string
   pago?: boolean
+  descricao?: string | null
 }) {
   const [aberto, setAberto] = useState(false)
   const [carregando, setCarregando] = useState(false)
@@ -90,7 +92,11 @@ export default function EditarItemFolha({
             onClick={restaurar}
             className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors text-indigo-700 font-medium"
           >
-            ↩ Restaurar aula (desfazer)
+            {descricao === 'feriado'
+                  ? '✓ Dispensa remunerada (pagar)'
+                  : descricao === 'sem_chamada'
+                  ? '✓ Confirmar presença (pagar)'
+                  : '↩ Restaurar aula (desfazer)'}
           </button>
         ) : (
           MOTIVOS.map(m => (

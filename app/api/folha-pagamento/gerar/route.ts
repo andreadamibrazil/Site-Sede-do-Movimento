@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { FERIADOS_RJ } from '@/lib/feriados'
 
 // POST /api/folha-pagamento/gerar — restrito a admins
 export async function POST(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const [ano, mesNum] = mes.split('-').map(Number)
   const inicioMes = new Date(ano, mesNum - 1, 1)
-  const fimMes = new Date(ano, mesNum, 0) // último dia
+  const fimMes = new Date(ano, mesNum, 0)
   const inicioStr = inicioMes.toISOString().slice(0, 10)
   const fimStr = fimMes.toISOString().slice(0, 10)
 
@@ -24,17 +25,42 @@ export async function POST(req: NextRequest) {
     .eq('mes_referencia', inicioStr)
     .eq('status', 'rascunho')
 
-  // Busca aulas do professor no mês
-  const { data: aulas } = await sb
+  // Busca turmas do professor (para fallback quando aulas.professor_id não está preenchido)
+  const { data: turmasDoProf } = await sb
+    .from('turmas')
+    .select('id')
+    .eq('professor_id', professor_id)
+
+  const turmaIds_prof = (turmasDoProf ?? []).map((t: any) => t.id as string)
+
+  // Query 1: aulas com professor_id explícito
+  const { data: aulas1 } = await sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
     .eq('professor_id', professor_id)
-    .eq('status', 'concluida')
+    .neq('status', 'cancelada')
     .gte('data', inicioStr)
     .lte('data', fimStr)
 
-  // Busca substituições (faltas sem atestado = não pago)
-  const aulaIds = (aulas ?? []).map((a: any) => a.id)
+  // Query 2: aulas via turma (quando professor_id não foi preenchido na aula)
+  const { data: aulas2 } = turmaIds_prof.length > 0
+    ? await sb
+        .from('aulas')
+        .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
+        .in('turma_id', turmaIds_prof)
+        .is('professor_id', null)
+        .neq('status', 'cancelada')
+        .gte('data', inicioStr)
+        .lte('data', fimStr)
+    : { data: [] }
+
+  // Deduplica por id
+  const aulaMap = new Map<string, any>()
+  for (const a of [...(aulas1 ?? []), ...(aulas2 ?? [])]) aulaMap.set(a.id, a)
+  const aulas = [...aulaMap.values()].sort((a, b) => a.data.localeCompare(b.data))
+
+  // Substituições do professor neste mês (atestado, substituto ou falta injustificada)
+  const aulaIds = aulas.map((a: any) => a.id)
   const { data: substituicoes } = aulaIds.length > 0
     ? await sb.from('substituicoes')
         .select('aula_id, tem_atestado, professor_substituto_id')
@@ -42,13 +68,15 @@ export async function POST(req: NextRequest) {
         .eq('professor_ausente_id', professor_id)
     : { data: [] }
 
-  const faltasInjustificadas = new Set(
-    (substituicoes ?? [])
-      .filter((s: any) => !s.tem_atestado && !s.professor_substituto_id)
-      .map((s: any) => s.aula_id)
-  )
+  const substituicoesMap: Record<string, { tem_atestado: boolean; professor_substituto_id: string | null }> = {}
+  for (const s of (substituicoes ?? [])) {
+    substituicoesMap[(s as any).aula_id] = {
+      tem_atestado: (s as any).tem_atestado,
+      professor_substituto_id: (s as any).professor_substituto_id,
+    }
+  }
 
-  // Faixas de hora/aula (globais + específicas por turma)
+  // Faixas de hora/aula
   const { data: faixas } = await sb
     .from('faixas_hora_aula')
     .select('*')
@@ -63,41 +91,70 @@ export async function POST(req: NextRequest) {
       numAlunos >= f.min_alunos && (f.max_alunos === null || numAlunos <= f.max_alunos)
     ) ?? pool[0]
     const valorHora = faixa?.valor_hora ?? 31.50
-    const piso = pool.sort((a: any, b: any) => a.min_alunos - b.min_alunos)[0]?.valor_hora ?? 31.50
+    const piso = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)[0]?.valor_hora ?? 31.50
     return { valor: valorHora, bonus: Math.max(0, valorHora - piso) }
   }
 
-  // Para cada turma, conta alunos com mês completo
-  const turmaIds = [...new Set((aulas ?? []).map((a: any) => a.turma_id as string))]
+  // Conta alunos matriculados por turma no mês
+  const turmaIds = [...new Set(aulas.map((a: any) => a.turma_id as string))]
   const alunosPorTurma: Record<string, number> = {}
-
   for (const turmaId of turmaIds) {
     const { count } = await sb
       .from('matricula_turmas')
       .select('id', { count: 'exact', head: true })
       .eq('turma_id', turmaId)
-      .lte('data_entrada', inicioStr)      // entrou antes ou no início do mês
-      .or(`data_saida.is.null,data_saida.gte.${fimStr}`) // ainda ativo no fim do mês
-    alunosPorTurma[turmaId as string] = count ?? 0
+      .lte('data_entrada', inicioStr)
+      .or(`data_saida.is.null,data_saida.gte.${fimStr}`)
+    alunosPorTurma[turmaId] = count ?? 0
   }
 
-  // Busca valor fixo do professor (coordenação etc)
+  // Valor fixo do professor
   const { data: prof } = await sb
     .from('professores')
     .select('nome, valor_base, forma_pagamento')
     .eq('id', professor_id)
     .single()
 
-  // Monta itens
+  // Monta itens — inclui TODAS as aulas (concluídas e sem chamada)
   const itens: any[] = []
   let totalAulas = 0
 
-  for (const aula of (aulas ?? [])) {
-    const pago = !faltasInjustificadas.has(aula.id)
+  for (const aula of aulas) {
+    const sub = substituicoesMap[aula.id]
+    const isConcluida = aula.status === 'concluida'
+    const nomeFeriado = FERIADOS_RJ[aula.data]
+
+    // Determina motivo e se deve pagar
+    let pago: boolean
+    let motivo: string | null = null
+
+    if (sub) {
+      if (sub.tem_atestado) {
+        // Professor faltou mas tem atestado — recebe normalmente
+        pago = true
+        motivo = 'atestado'
+      } else if (sub.professor_substituto_id) {
+        // Professor mandou substituto — recebe normalmente
+        pago = true
+        motivo = 'substituicao'
+      } else {
+        // Falta injustificada — não pago
+        pago = false
+        motivo = 'falta_injustificada'
+      }
+    } else if (!isConcluida) {
+      // Aula não concluída (chamada não lançada) — admin decide
+      pago = false
+      motivo = nomeFeriado ? 'feriado' : 'sem_chamada'
+    } else {
+      // Aula concluída normalmente — pago
+      pago = true
+      motivo = null
+    }
+
     const numAlunos = alunosPorTurma[aula.turma_id] ?? 0
     const { valor: valorHora, bonus: bonusHora } = calcularValorHora(numAlunos, aula.turma_id)
 
-    // Calcula horas (diferença entre hora_fim e hora_inicio)
     const [hi, mi] = (aula.hora_inicio ?? '00:00').split(':').map(Number)
     const [hf, mf] = (aula.hora_fim ?? '00:00').split(':').map(Number)
     const horasAula = ((hf * 60 + mf) - (hi * 60 + mi)) / 60
@@ -116,7 +173,7 @@ export async function POST(req: NextRequest) {
       valor_hora_base: 31.50,
       bonus_hora: bonusHora,
       valor_hora_efetivo: valorHora,
-      descricao: (aula.turmas as any)?.nome,
+      descricao: motivo,
       valor,
       pago,
     })
@@ -124,7 +181,7 @@ export async function POST(req: NextRequest) {
     totalAulas += valor
   }
 
-  // Valor fixo (coordenação, etc)
+  // Valor fixo (coordenação etc)
   let totalFixo = 0
   if (prof?.forma_pagamento === 'fixo_mensal') {
     const valorFixo = prof?.valor_base ?? 0
@@ -136,7 +193,6 @@ export async function POST(req: NextRequest) {
 
   const totalGeral = Math.round((totalAulas + totalFixo) * 100) / 100
 
-  // Cria folha
   const { data: folha, error } = await sb
     .from('folhas_pagamento')
     .insert({
@@ -152,7 +208,6 @@ export async function POST(req: NextRequest) {
 
   if (error || !folha) return NextResponse.json({ error: error?.message ?? 'Erro ao criar folha' }, { status: 500 })
 
-  // Insere itens
   if (itens.length > 0) {
     await sb.from('itens_folha').insert(itens.map((i: any) => ({ ...i, folha_id: folha.id })))
   }
@@ -166,5 +221,6 @@ export async function POST(req: NextRequest) {
     total_fixo: totalFixo,
     total: totalGeral,
     num_itens: itens.length,
+    aulas_encontradas: aulas.length,
   })
 }
