@@ -16,13 +16,22 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
   const [email, setEmail] = useState(professor.email ?? '')
   const [celular, setCelular] = useState(professor.celular ?? '')
   const [mei, setMei] = useState(professor.mei ?? '')
+  const [valorTransporte, setValorTransporte] = useState(
+    professor.valor_transporte ? String(Number(professor.valor_transporte).toFixed(2)).replace('.', ',') : ''
+  )
   const [salvandoEmail, setSalvandoEmail] = useState(false)
   const [emailSalvo, setEmailSalvo] = useState(false)
 
   async function salvarAcesso() {
     setSalvandoEmail(true)
     try {
-      await atualizarAcessoProfessor(professor.id, { email: email.trim(), celular: celular.trim(), mei: mei.trim() || null })
+      const transporte = valorTransporte ? Number(valorTransporte.replace(',', '.')) : null
+      await atualizarAcessoProfessor(professor.id, {
+        email: email.trim(),
+        celular: celular.trim(),
+        mei: mei.trim() || null,
+        valor_transporte: transporte && transporte > 0 ? transporte : null,
+      })
       setEmailSalvo(true)
       setTimeout(() => setEmailSalvo(false), 3000)
       router.refresh()
@@ -76,6 +85,20 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
               value={mei}
               onChange={e => setMei(e.target.value)}
               placeholder="00.000.000/0000-00"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Transporte mensal (R$)
+              <span className="text-gray-400 font-normal ml-1">— incluído automaticamente na folha</span>
+            </label>
+            <input
+              value={valorTransporte}
+              onChange={e => setValorTransporte(e.target.value)}
+              placeholder="0,00"
+              type="text"
+              inputMode="decimal"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>

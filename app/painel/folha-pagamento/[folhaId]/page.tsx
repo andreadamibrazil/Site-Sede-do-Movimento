@@ -3,6 +3,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import EnviarAssinarBtn from './EnviarAssinarBtn'
 import EditarItemFolha from './EditarItemFolha'
+import AdicionarAvulsoBtn from './AdicionarAvulsoBtn'
+import RemoverAvulsoBtn from './RemoverAvulsoBtn'
 import ComprovanteBtn from './ComprovanteBtn'
 import { FERIADOS_RJ } from '@/lib/feriados'
 
@@ -46,6 +48,9 @@ export default async function FolhaDetalhePage({
   }
 
   const itensFixos = (itens ?? []).filter((i: any) => i.tipo === 'fixo')
+  const itensAvulso = (itens ?? []).filter((i: any) => i.tipo === 'avulso')
+  const totalAvulso = itensAvulso.reduce((sum: number, i: any) => sum + (i.valor ?? 0), 0)
+  const totalFixoReal = itensFixos.reduce((sum: number, i: any) => sum + (i.valor ?? 0), 0)
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
@@ -181,16 +186,45 @@ export default async function FolhaDetalhePage({
         </div>
       )}
 
+      {/* Lançamentos avulsos */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+          <p className="font-medium text-gray-900 text-sm">Lançamentos avulsos</p>
+          <AdicionarAvulsoBtn folhaId={folha.id} folhaStatus={folha.status} />
+        </div>
+        {itensAvulso.length === 0 ? (
+          <div className="px-4 py-3 text-xs text-gray-400">
+            Nenhum lançamento avulso. Use para workshops, transporte, horas extras, etc.
+          </div>
+        ) : (
+          itensAvulso.map((item: any) => (
+            <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-2">
+              <p className="text-sm text-gray-700 flex-1">{item.descricao}</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </p>
+              <RemoverAvulsoBtn itemId={item.id} folhaStatus={folha.status} />
+            </div>
+          ))
+        )}
+      </div>
+
       {/* Resumo */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-2">
         <div className="flex justify-between text-sm text-gray-700">
           <span>Aulas realizadas ({(itens ?? []).filter((i: any) => i.tipo === 'aula' && i.pago !== false).length})</span>
           <span>{Number(folha.valor_aulas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
         </div>
-        {Number(folha.valor_fixo) > 0 && (
+        {totalFixoReal > 0 && (
           <div className="flex justify-between text-sm text-gray-700">
             <span>Valores fixos</span>
-            <span>{Number(folha.valor_fixo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+            <span>{totalFixoReal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          </div>
+        )}
+        {totalAvulso > 0 && (
+          <div className="flex justify-between text-sm text-gray-700">
+            <span>Lançamentos avulsos</span>
+            <span>{totalAvulso.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
           </div>
         )}
         <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-indigo-200">

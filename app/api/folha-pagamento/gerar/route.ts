@@ -130,9 +130,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Valor fixo do professor
-  const { data: prof } = await sb
+  const { data: prof } = await (sb as any)
     .from('professores')
-    .select('nome, valor_base, forma_pagamento')
+    .select('nome, valor_base, forma_pagamento, valor_transporte')
     .eq('id', professor_id)
     .single()
 
@@ -210,6 +210,13 @@ export async function POST(req: NextRequest) {
       itens.push({ tipo: 'fixo', descricao: 'Coordenação / valor fixo mensal', valor: valorFixo, pago: true })
       totalFixo = valorFixo
     }
+  }
+
+  // Transporte mensal (campo valor_transporte no perfil do professor)
+  const valorTransporte = Number((prof as any)?.valor_transporte ?? 0)
+  if (valorTransporte > 0) {
+    itens.push({ tipo: 'fixo', descricao: 'Transporte / passagem mensal', valor: valorTransporte, pago: true })
+    totalFixo += valorTransporte
   }
 
   const totalGeral = Math.round((totalAulas + totalFixo) * 100) / 100
