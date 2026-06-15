@@ -18,7 +18,7 @@ export async function PATCH(
 
   const { data: item, error: fetchErr } = await sb
     .from('itens_folha')
-    .select('id, folha_id, tipo, valor, pago')
+    .select('id, folha_id, tipo, valor, pago, valor_hora_efetivo, horas_aula')
     .eq('id', itemId)
     .single()
 
@@ -26,11 +26,19 @@ export async function PATCH(
 
   const updates: Record<string, any> = {}
   if (typeof body.pago === 'boolean') updates.pago = body.pago
-  if (typeof body.descricao === 'string') updates.descricao = body.descricao
 
-  // Se mudando pago para false, zera o valor
-  if (body.pago === false && item.pago === true) updates.valor = 0
-  // Se reativando (pago true), não recalculamos — admin deve gerar novamente
+  // descricao_motivo é o campo enviado pelo componente; null limpa o motivo
+  if ('descricao_motivo' in body) updates.descricao = body.descricao_motivo ?? null
+
+  // Zerando: pago false → zera valor
+  if (body.pago === false && item.pago !== false) updates.valor = 0
+
+  // Restaurando: pago true → recalcula valor a partir da taxa horária armazenada
+  if (body.pago === true && item.pago === false) {
+    const vh = Number(item.valor_hora_efetivo ?? 0)
+    const h = Number(item.horas_aula ?? 0)
+    if (vh > 0 && h > 0) updates.valor = Math.round(vh * h * 100) / 100
+  }
 
   await (sb as any).from('itens_folha').update(updates).eq('id', itemId)
 

@@ -111,21 +111,26 @@ export default async function FolhaDetalhePage({
                     ? new Date(item.data_aula + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
                     : '—'
                   return (
-                    <tr key={item.id} className={`${!item.pago ? 'opacity-50' : ''}`}>
+                    <tr key={item.id} className={`${item.pago === false ? 'opacity-60' : ''}`}>
                       <td className="px-4 py-2 text-gray-600">{data}</td>
                       <td className="px-4 py-2 text-gray-500">
                         {item.hora_inicio?.slice(0,5)}–{item.hora_fim?.slice(0,5)}
                       </td>
                       <td className="px-4 py-2 text-gray-500">{Number(item.horas_aula ?? 0).toFixed(1).replace('.',',')}h</td>
                       <td className="px-4 py-2 text-right text-gray-700 font-medium">
-                        {item.pago
-                          ? Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                          : <span className="text-red-400">Não pago</span>}
+                        {item.pago === false ? (
+                          <span className="text-red-400 text-xs">
+                            {({ atestado: 'Atestado', falta_justificada: 'Falta justificada', engano: 'Engano', dispensa: 'Dispensado' } as Record<string,string>)[item.descricao] ?? 'Não pago'}
+                          </span>
+                        ) : (
+                          Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+                        )}
                       </td>
                       <td className="px-2 py-2 text-right">
                         <EditarItemFolha
                           itemId={item.id}
                           folhaStatus={folha.status}
+                          pago={item.pago}
                         />
                       </td>
                     </tr>
