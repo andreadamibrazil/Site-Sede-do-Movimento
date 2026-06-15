@@ -157,7 +157,7 @@ export default async function FolhaDetalhePage({
       {/* Resumo */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-2">
         <div className="flex justify-between text-sm text-gray-700">
-          <span>Aulas realizadas</span>
+          <span>Aulas realizadas ({(itens ?? []).filter((i: any) => i.tipo === 'aula' && i.pago !== false).length})</span>
           <span>{Number(folha.valor_aulas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
         </div>
         {Number(folha.valor_fixo) > 0 && (

@@ -53,7 +53,7 @@ export default function EditarItemFolha({
         onClick={() => setAberto(v => !v)}
         disabled={carregando}
         title="Editar este item"
-        className="text-gray-300 hover:text-gray-500 transition-colors disabled:opacity-30 text-xs px-1"
+        className="text-indigo-400 hover:text-indigo-600 transition-colors disabled:opacity-30 text-xs px-1"
       >
         ···
       </button>

@@ -11,11 +11,10 @@ export default function EnviarAssinarBtn({
 }) {
   const [enviando, setEnviando] = useState(false)
   const [emailInput, setEmailInput] = useState(emailProfessor ?? '')
-  const [precisaEmail, setPrecisaEmail] = useState(!emailProfessor)
   const [resultado, setResultado] = useState<{ link?: string; erro?: string } | null>(null)
 
   async function enviar() {
-    if (!emailInput) { setPrecisaEmail(true); return }
+    if (!emailInput) return
     setEnviando(true)
     const res = await fetch('/api/folha-pagamento/enviar-assinar', {
       method: 'POST',
@@ -27,8 +26,7 @@ export default function EnviarAssinarBtn({
     if (json.ok) {
       setResultado({ link: json.link_professor })
     } else {
-      if (json.precisa_email) setPrecisaEmail(true)
-      else setResultado({ erro: json.error })
+      setResultado({ erro: json.error })
     }
   }
 
@@ -60,18 +58,16 @@ export default function EnviarAssinarBtn({
 
   return (
     <div className="space-y-3">
-      {precisaEmail && (
-        <div>
-          <label className="text-xs font-medium text-gray-700 block mb-1">Email do professor</label>
-          <input
-            type="email"
-            value={emailInput}
-            onChange={e => setEmailInput(e.target.value)}
-            placeholder="professor@email.com"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-      )}
+      <div>
+        <label className="text-xs font-medium text-gray-700 block mb-1">Email do professor</label>
+        <input
+          type="email"
+          value={emailInput}
+          onChange={e => setEmailInput(e.target.value)}
+          placeholder="professor@email.com"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
       <button
         onClick={enviar}
         disabled={enviando}
