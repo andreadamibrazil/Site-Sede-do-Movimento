@@ -48,7 +48,7 @@ export default function ProfessorPerfil({ professor, turmas }: { professor: any;
           )}
         </div>
         <p className="text-xs text-gray-400">
-          O professor acessa o portal em <strong>sededomovimento.art/painel</strong> com o email cadastrado aqui.
+          O professor acessa o portal em <strong>sededomovimento.art/professor</strong> com o email cadastrado aqui.
         </p>
         <div className="space-y-3">
           <div>

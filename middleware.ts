@@ -68,6 +68,14 @@ async function painelMiddleware(request: NextRequest) {
       return response
     }
 
+    // Apenas admin e secretaria podem acessar /painel — qualquer outro perfil é redirecionado
+    if (perfil.perfil !== 'admin' && perfil.perfil !== 'secretaria') {
+      const { data: prof } = await sb
+        .from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle()
+      if (prof) return NextResponse.redirect(new URL('/professor', request.url))
+      return NextResponse.redirect(new URL('/painel/login', request.url))
+    }
+
     // Secretaria: bloqueia só seção admin/ferramentas
     const ADMIN_PATHS = [
       '/painel/professores', '/painel/folha-pagamento', '/painel/usuarios',
