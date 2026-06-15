@@ -132,16 +132,37 @@ export async function gerarPDFFolha(data: FolhaPDF): Promise<Uint8Array> {
     }
   }
 
+  // Lançamentos avulsos (workshop, transporte avulso, horas extras, etc.)
+  const avulsos = data.itens.filter(i => i.tipo === 'avulso')
+  if (avulsos.length > 0) {
+    if (y < 100) { const np = novaPage(); p = np.p; y = np.y }
+    p.drawRectangle({ x: MARGEM, y: y - 4, width: LARGURA - 2 * MARGEM, height: 16, color: rgb(0.96, 0.96, 0.96) })
+    texto(p, MARGEM + 6, y, 'Lançamentos avulsos', 10, fontB, ESCURO)
+    y -= 20
+    for (const item of avulsos) {
+      texto(p, MARGEM + 10, y, item.descricao ?? 'Avulso', 9, fontR, CINZA)
+      texto(p, LARGURA - MARGEM - 70, y, BRL(item.valor), 9, fontR, ESCURO)
+      y -= 16
+    }
+  }
+
   // Total
+  const totalAvulso = avulsos.reduce((s, i) => s + (i.pago ? i.valor : 0), 0)
+  const totalFixoReal = fixos.reduce((s, i) => s + (i.pago ? i.valor : 0), 0)
   y -= 10
   linha(p, y)
   y -= 20
-  if (data.valor_fixo > 0) {
+  if (totalFixoReal > 0) {
     texto(p, MARGEM, y, 'Subtotal aulas:', 9, fontR, CINZA)
     texto(p, LARGURA - MARGEM - 70, y, BRL(data.valor_aulas), 9, fontR, CINZA)
     y -= 14
     texto(p, MARGEM, y, 'Subtotal fixo:', 9, fontR, CINZA)
-    texto(p, LARGURA - MARGEM - 70, y, BRL(data.valor_fixo), 9, fontR, CINZA)
+    texto(p, LARGURA - MARGEM - 70, y, BRL(totalFixoReal), 9, fontR, CINZA)
+    y -= 14
+  }
+  if (totalAvulso > 0) {
+    texto(p, MARGEM, y, 'Lançamentos avulsos:', 9, fontR, CINZA)
+    texto(p, LARGURA - MARGEM - 70, y, BRL(totalAvulso), 9, fontR, CINZA)
     y -= 14
   }
   texto(p, MARGEM, y, 'TOTAL A RECEBER', 12, fontB, ESCURO)
