@@ -14,11 +14,10 @@ export default function AdicionarAvulsoBtn({
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
   const router = useRouter()
 
   if (folhaStatus === 'assinado' || folhaStatus === 'pago') return null
-
-  const [erro, setErro] = useState<string | null>(null)
 
   async function salvar() {
     const valorNum = Number(valor.trim().replace(',', '.'))

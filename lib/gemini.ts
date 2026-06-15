@@ -76,3 +76,42 @@ export async function callGemini(
 export async function generateWithFallback(prompt: string): Promise<string> {
   return callGemini(prompt)
 }
+
+/** Gemini Vision — analisa imagem ou PDF em base64 */
+export async function callGeminiVision(
+  fileBase64: string,
+  mimeType: string,
+  prompt: string,
+  opts: { model?: string; maxOutputTokens?: number } = {}
+): Promise<string> {
+  const { model = GEMINI_MODEL, maxOutputTokens = 1024 } = opts
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+  const keys = getKeys()
+  if (!keys.length) throw new Error('Nenhuma chave Gemini configurada')
+
+  const body = {
+    contents: [{ parts: [{ inlineData: { mimeType, data: fileBase64 } }, { text: prompt }] }],
+    generationConfig: { maxOutputTokens, temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } },
+  }
+
+  let lastErr = ''
+  for (let i = 0; i < keys.length; i++) {
+    try {
+      const res = await makeRequest(url, keys[i], body)
+      if (res.status === 429 || res.status === 401 || res.status === 403) {
+        lastErr = `HTTP ${res.status} (key ${i + 1})`
+        continue
+      }
+      if (!res.ok) { lastErr = `HTTP ${res.status}`; continue }
+      const data = await res.json()
+      type Part = { thought?: boolean; text?: string }
+      const parts: Part[] = data?.candidates?.[0]?.content?.parts ?? []
+      const text: string = (parts.find(p => !p.thought)?.text ?? parts[0]?.text) ?? ''
+      if (!text) { lastErr = 'resposta vazia'; continue }
+      return text
+    } catch (e: unknown) {
+      lastErr = e instanceof Error ? e.message : String(e)
+    }
+  }
+  throw new Error(`Gemini Vision indisponível após ${keys.length} chaves: ${lastErr}`)
+}
