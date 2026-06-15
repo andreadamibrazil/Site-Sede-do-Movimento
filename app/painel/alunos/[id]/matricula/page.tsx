@@ -24,7 +24,7 @@ export default async function NovaMatriculaPage({
       .select(`
         id, nome, preco_padrao, capacidade, nivel, faixa_etaria_min, faixa_etaria_max,
         modalidades(id, nome),
-        professores(nome),
+        professores!professor_id(nome),
         salas(nome),
         turma_horarios(dia_semana, hora_inicio, hora_fim),
         matricula_turmas(id)

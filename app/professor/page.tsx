@@ -63,7 +63,7 @@ export default async function ProfessorPage() {
     .select(`
       id, nome, nivel, capacidade,
       modalidades(nome),
-      professores(nome),
+      professores!professor_id(nome),
       turma_horarios(dia_semana, hora_inicio, hora_fim),
       matricula_turmas(
         matriculas(status, alunos(id, nome, status_financeiro))

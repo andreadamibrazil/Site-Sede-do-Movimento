@@ -73,7 +73,7 @@ async function handler(req: NextRequest) {
   // Professor vem via turmas.professor_id — aulas.professor_id não é preenchido no fluxo normal
   const { data: aulas } = await sb
     .from('aulas')
-    .select('id, data, hora_inicio, hora_fim, status, turma_id, turmas!inner(nome, professor_id, professores(nome, celular, email, ativo))')
+    .select('id, data, hora_inicio, hora_fim, status, turma_id, turmas!inner(nome, professor_id, professores!professor_id(nome, celular, email, ativo))')
     .neq('status', 'cancelada')
     .neq('status', 'concluida')
     .gte('data', tresDiasAtras.toISOString().slice(0, 10))

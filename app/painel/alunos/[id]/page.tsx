@@ -36,7 +36,7 @@ export default async function AlunoPage({
       *,
       matricula_turmas(
         turma_id, data_entrada, data_saida,
-        turmas(nome, modalidades(nome), professores(nome))
+        turmas(nome, modalidades(nome), professores!professor_id(nome))
       )
     `)
     .eq('aluno_id', id)

@@ -38,7 +38,7 @@ export default async function AgendaPage() {
     .from('aulas')
     .select(`
       id, data, hora_inicio, hora_fim, status, chamada_concluida_em,
-      turmas(id, nome, preco_padrao, modalidades(nome), professores(id, nome), salas(id, nome)),
+      turmas(id, nome, preco_padrao, modalidades(nome), professores!professor_id(id, nome), salas(id, nome)),
       presencas(id)
     `)
     .gte('data', inicioStr)

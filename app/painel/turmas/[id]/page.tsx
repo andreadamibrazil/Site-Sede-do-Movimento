@@ -17,7 +17,7 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
     .select(`
       *,
       modalidades(nome),
-      professores(nome),
+      professores!professor_id(nome),
       salas(nome)
     `)
     .eq('id', id)

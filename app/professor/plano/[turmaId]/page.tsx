@@ -25,7 +25,7 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
 
   const turmaQuery = sb
     .from('turmas')
-    .select('id, nome, professores(nome)')
+    .select('id, nome, professores!professor_id(nome)')
     .eq('id', turmaId)
   if (!isAdmin) turmaQuery.eq('professor_id', professor.id)
   const { data: turma } = await turmaQuery.single()
