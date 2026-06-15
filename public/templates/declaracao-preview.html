@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview — Declaração de Matrícula · Sede do Movimento</title>
+  <style>
+    @page { margin: 2.5cm 2cm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 13px; line-height: 1.85; color: #111;
+           max-width: 720px; margin: 0 auto; padding: 32px 24px; }
+
+    .toolbar { background: #4f46e5; color: white; border-radius: 10px; padding: 12px 18px;
+               display: flex; align-items: center; justify-content: space-between;
+               margin-bottom: 28px; font-family: system-ui, sans-serif; font-size: 13px; }
+    .toolbar strong { font-size: 14px; }
+    .toolbar small { opacity: 0.8; display: block; margin-top: 2px; font-size: 11px; }
+    .btn-print { background: white; color: #4f46e5; border: none; border-radius: 7px;
+                 padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-print:hover { background: #f0f0ff; }
+    @media print { .toolbar { display: none !important; } body { max-width: none; padding: 0; } }
+
+    .header { text-align: center; margin-bottom: 30px; }
+    .escola { font-size: 17px; font-weight: bold; letter-spacing: 2.5px; text-transform: uppercase; }
+    .escola-sub { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 0.5px; }
+    hr.topo { border: none; border-top: 2px solid #111; margin: 14px 0; }
+    hr.base { border: none; border-top: 1px solid #aaa; margin: 14px 0; }
+
+    h1 { font-size: 13.5px; text-transform: uppercase; letter-spacing: 2.5px;
+         text-align: center; margin: 20px 0 28px; }
+
+    .corpo { text-align: justify; line-height: 2; margin-bottom: 14px; }
+    .bold { font-weight: bold; }
+
+    .bloco-dados { margin: 20px 0; border-left: 3px solid #ddd; padding-left: 14px; }
+    .bloco-dados p { margin-bottom: 5px; font-size: 12.5px; }
+    .label { color: #555; min-width: 180px; display: inline-block; }
+
+    .rodape-texto { margin-top: 22px; font-size: 12px; color: #444; text-align: justify; line-height: 1.8; }
+    .data { text-align: right; margin: 36px 0 10px; font-size: 12px; color: #444; }
+
+    .assinatura-bloco { margin-top: 54px; display: flex; gap: 80px; }
+    .ass { flex: 1; text-align: center; }
+    .ass-linha { border-top: 1px solid #111; padding-top: 7px; font-size: 11px; line-height: 1.5; }
+    .ass-nome { font-weight: bold; font-size: 12px; }
+
+    .qr-area { margin-top: 30px; text-align: center; }
+    .qr-box { display: inline-block; border: 1px solid #ccc; border-radius: 6px; padding: 10px 16px;
+              font-size: 10px; color: #888; letter-spacing: 0.5px; }
+
+    .preview-badge { position: fixed; top: 12px; right: 12px; background: #f59e0b; color: white;
+                     font-family: system-ui; font-size: 11px; font-weight: bold; padding: 5px 10px;
+                     border-radius: 6px; letter-spacing: 0.5px; z-index: 999; }
+    @media print { .preview-badge { display: none; } }
+  </style>
+</head>
+<body>
+
+<div class="preview-badge">PREVIEW</div>
+
+<div class="toolbar">
+  <div>
+    <strong>📄 Preview — Declaração de Matrícula</strong>
+    <small>Dados de exemplo · No sistema real serão preenchidos automaticamente do banco de dados</small>
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+</div>
+
+<!-- ═══════════════ INÍCIO DO DOCUMENTO ═══════════════ -->
+
+<div class="header">
+  <div class="escola">Sede do Movimento</div>
+  <div class="escola-sub">Escola de Dança · Av. Paulo de Frontin, 698 · Rio Comprido · Rio de Janeiro, RJ</div>
+  <div class="escola-sub" style="margin-top:2px">CNPJ: 11.533.434/0001-73 · Tel: (21) 99999-0000</div>
+</div>
+<hr class="topo"/>
+
+<h1>Declaração de Matrícula</h1>
+
+<p class="corpo">
+  Declaramos, para os devidos fins, que <span class="bold">Ana Carolina Ferreira Lima</span>,
+  nascida em <span class="bold">14/03/2012</span>, CPF nº <span class="bold">000.000.000-00</span>,
+  cujo responsável legal é <span class="bold">Fernanda Souza Lima</span>,
+  encontra-se regularmente matriculada nesta escola desde
+  <span class="bold">março de 2024</span>, nas seguintes atividades:
+</p>
+
+<div class="bloco-dados">
+  <p><span class="label">Modalidades / Turmas:</span> <strong>Ballet Básico I · Jazz Básico II</strong></p>
+  <p><span class="label">Carga horária semanal:</span> 3 aulas — 1h30 cada</p>
+  <p><span class="label">Plano:</span> Plano Anual (Fidelidade 12x)</p>
+  <p><span class="label">Valor mensal:</span> R$ 420,00</p>
+  <p><span class="label">Vencimento:</span> Dia 10 de cada mês</p>
+  <p><span class="label">Responsável financeiro:</span> Fernanda Souza Lima — CPF 000.000.000-00</p>
+</div>
+
+<p class="corpo">
+  A aluna encontra-se com matrícula ativa e situação financeira regular perante esta instituição.
+</p>
+
+<p class="rodape-texto">
+  Esta declaração é emitida a pedido do(a) interessado(a), para fins de comprovação de vínculo com esta
+  instituição de ensino artístico, podendo ser apresentada a órgãos públicos, escolares, judiciais ou
+  quaisquer entidades que a requeiram.
+</p>
+
+<div class="data">Rio de Janeiro, 15 de junho de 2026.</div>
+
+<div class="assinatura-bloco">
+  <div class="ass">
+    <div class="ass-linha">
+      <div class="ass-nome">Carlos Augusto da Silva Fontinelle</div>
+      <div>Diretor — Sede do Movimento</div>
+      <div style="font-size:10px;color:#777">CNPJ: 11.533.434/0001-73</div>
+    </div>
+  </div>
+</div>
+
+<hr class="base" style="margin-top:40px"/>
+
+<div class="qr-area">
+  <div class="qr-box">
+    Autenticidade verificável em sededomovimento.art · Código: DM-2026-000123
+  </div>
+</div>
+
+<!-- ═══════════════ FIM DO DOCUMENTO ═══════════════ -->
+
+</body>
+</html>
