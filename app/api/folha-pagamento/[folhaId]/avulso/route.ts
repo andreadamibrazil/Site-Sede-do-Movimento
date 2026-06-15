@@ -13,7 +13,8 @@ export async function POST(
   const { folhaId } = await params
   const { descricao, valor } = await req.json()
 
-  if (!descricao?.trim() || !valor || Number(valor) <= 0) {
+  const numValor = Number(String(valor).replace(',', '.'))
+  if (!descricao?.trim() || !valor || isNaN(numValor) || numValor <= 0) {
     return NextResponse.json({ error: 'descricao e valor são obrigatórios' }, { status: 400 })
   }
 
@@ -34,7 +35,7 @@ export async function POST(
     folha_id: folhaId,
     tipo: 'avulso',
     descricao: descricao.trim(),
-    valor: Math.round(Number(valor) * 100) / 100,
+    valor: Math.round(numValor * 100) / 100,
     pago: true,
   })
 

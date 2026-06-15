@@ -18,15 +18,24 @@ export default function AdicionarAvulsoBtn({
 
   if (folhaStatus === 'assinado' || folhaStatus === 'pago') return null
 
+  const [erro, setErro] = useState<string | null>(null)
+
   async function salvar() {
-    if (!descricao.trim() || !valor) return
+    const valorNum = Number(valor.trim().replace(',', '.'))
+    if (!descricao.trim() || isNaN(valorNum) || valorNum <= 0) return
     setSalvando(true)
+    setErro(null)
     try {
-      await fetch(`/api/folha-pagamento/${folhaId}/avulso`, {
+      const res = await fetch(`/api/folha-pagamento/${folhaId}/avulso`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descricao, valor: Number(valor.replace(',', '.')) }),
+        body: JSON.stringify({ descricao, valor: valorNum }),
       })
+      if (!res.ok) {
+        const json = await res.json()
+        setErro(json.error ?? 'Erro ao adicionar item')
+        return
+      }
       setDescricao('')
       setValor('')
       setAberto(false)
@@ -74,7 +83,7 @@ export default function AdicionarAvulsoBtn({
       />
       <button
         onClick={salvar}
-        disabled={salvando || !descricao.trim() || !valor}
+        disabled={salvando || !descricao.trim() || isNaN(Number(valor.trim().replace(',', '.'))) || Number(valor.trim().replace(',', '.')) <= 0}
         className="bg-indigo-600 text-white text-sm px-3 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40"
       >
         {salvando ? '...' : 'Adicionar'}
@@ -85,6 +94,7 @@ export default function AdicionarAvulsoBtn({
       >
         ✕
       </button>
+      {erro && <p className="w-full text-xs text-red-500 mt-1">{erro}</p>}
     </div>
   )
 }

@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Transporte mensal (campo valor_transporte no perfil do professor)
-  const valorTransporte = Number((prof as any)?.valor_transporte ?? 0)
+  const valorTransporte = Math.round(Number((prof as any)?.valor_transporte ?? 0) * 100) / 100
   if (valorTransporte > 0) {
     itens.push({ tipo: 'fixo', descricao: 'Transporte / passagem mensal', valor: valorTransporte, pago: true })
     totalFixo += valorTransporte

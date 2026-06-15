@@ -49,8 +49,8 @@ export default async function FolhaDetalhePage({
 
   const itensFixos = (itens ?? []).filter((i: any) => i.tipo === 'fixo')
   const itensAvulso = (itens ?? []).filter((i: any) => i.tipo === 'avulso')
-  const totalAvulso = itensAvulso.reduce((sum: number, i: any) => sum + (i.valor ?? 0), 0)
-  const totalFixoReal = itensFixos.reduce((sum: number, i: any) => sum + (i.valor ?? 0), 0)
+  const totalAvulso = itensAvulso.reduce((sum: number, i: any) => sum + (i.pago ? (i.valor ?? 0) : 0), 0)
+  const totalFixoReal = itensFixos.reduce((sum: number, i: any) => sum + (i.pago ? (i.valor ?? 0) : 0), 0)
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">

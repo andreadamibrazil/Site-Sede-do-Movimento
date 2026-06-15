@@ -59,11 +59,14 @@ export async function DELETE(
 
   const { data: item } = await sb
     .from('itens_folha')
-    .select('folha_id')
+    .select('folha_id, tipo')
     .eq('id', itemId)
     .single()
 
   if (!item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
+  if ((item as any).tipo !== 'avulso') {
+    return NextResponse.json({ error: 'Apenas itens avulsos podem ser removidos' }, { status: 403 })
+  }
 
   const folhaId = item.folha_id
   await sb.from('itens_folha').delete().eq('id', itemId)
@@ -91,6 +94,10 @@ async function recalcularFolha(sb: any, folhaId: string) {
 
   await sb
     .from('folhas_pagamento')
-    .update({ valor_aulas: valorAulas, valor_fixo: valorFixo, valor_total: valorTotal })
+    .update({
+      valor_aulas: Math.round(valorAulas * 100) / 100,
+      valor_fixo: Math.round(valorFixo * 100) / 100,
+      valor_total: valorTotal,
+    })
     .eq('id', folhaId)
 }
