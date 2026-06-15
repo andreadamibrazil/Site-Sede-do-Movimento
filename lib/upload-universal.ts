@@ -5,6 +5,7 @@
  */
 
 import { uploadParaDrive, DRIVE_FOLDERS, DriveUploadResult } from '@/lib/google-drive'
+import { callGeminiVision } from '@/lib/gemini'
 
 const ALERT_EMAIL = 'andreadami@sededomovimento.art'
 
@@ -74,9 +75,6 @@ async function extrairComGemini(
 ): Promise<Record<string, unknown> | null> {
   if (!GEMINI_SUPORTADOS.has(mimeType)) return null
 
-  const keys = [process.env.GOOGLE_AI_KEY, process.env.GOOGLE_AI_KEY_2].filter(Boolean) as string[]
-  if (!keys.length) return null
-
   const base64 = Buffer.from(buffer).toString('base64')
 
   const promptPorTipo: Record<string, string> = {
@@ -91,29 +89,13 @@ async function extrairComGemini(
 Retorne SOMENTE JSON válido neste formato: ${schema}
 Omita campos que não conseguir extrair. Sem markdown, sem texto extra.`
 
-  for (const key of keys) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }] }],
-            generationConfig: { responseMimeType: 'application/json' },
-          }),
-        }
-      )
-      if (!res.ok) continue
-      const data = await res.json()
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      if (!text) continue
-      return JSON.parse(text) as Record<string, unknown>
-    } catch {
-      continue
-    }
+  try {
+    const raw = await callGeminiVision(base64, mimeType, prompt)
+    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    return JSON.parse(cleaned) as Record<string, unknown>
+  } catch {
+    return null
   }
-  return null
 }
 
 export async function uploadUniversal(

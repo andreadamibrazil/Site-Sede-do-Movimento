@@ -1,41 +1,9 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { callGeminiVision } from '@/lib/gemini'
 
 const BUCKET = 'atestados'
 const MAX_MB = 10
-
-// Rotação de chaves free tier — nunca usa chave paga
-function getGeminiKeys(): string[] {
-  return [
-    process.env.GOOGLE_AI_KEY,
-    process.env.GOOGLE_AI_KEY_2,
-    process.env.GOOGLE_AI_KEY_3,
-    process.env.GOOGLE_AI_KEY_4,
-    process.env.GOOGLE_AI_KEY_5,
-    process.env.GOOGLE_AI_KEY_6,
-    process.env.GOOGLE_AI_KEY_7,
-    process.env.GOOGLE_AI_KEY_8,
-    process.env.GOOGLE_AI_KEY_9,
-    process.env.GOOGLE_AI_KEY_10,
-  ].filter(Boolean) as string[]
-}
-
-// AQ. keys precisam de header x-goog-api-key; AIzaSy usam ?key= param
-function geminiRequest(apiKey: string, body: object): Promise<Response> {
-  const base = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-  if (apiKey.startsWith('AQ.')) {
-    return fetch(base, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify(body),
-    })
-  }
-  return fetch(`${base}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
 
 const ERRO_LIMITE = 'No momento o sistema não consegue receber o atestado. Entre em contato com a secretaria.'
 
@@ -118,12 +86,7 @@ type Analise = {
   motivo_rejeicao?: string | null
 }
 
-// --- Lógica Gemini com rotação de chaves ---
-
 async function analisarAtestado(buf: Buffer, mimeType: string): Promise<Analise> {
-  const keys = getGeminiKeys()
-  if (!keys.length) return { legivel: false, eh_atestado: false, limiteAtingido: true, dados: {} }
-
   const base64 = buf.toString('base64')
   const prompt = `Analise este documento médico.
 
@@ -146,35 +109,12 @@ Regras:
 - Não é atestado médico: eh_atestado=false, motivo_rejeicao explicando
 - Preencha só campos que consiga ler com certeza; coloque null nos demais`
 
-  for (const key of keys) {
-    try {
-      const res = await geminiRequest(key, {
-        contents: [{ parts: [
-          { inline_data: { mime_type: mimeType || 'image/jpeg', data: base64 } },
-          { text: prompt },
-        ]}],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 600 },
-      })
-
-      // 429 = rate limit desta chave → tenta a próxima
-      if (res.status === 429) continue
-
-      if (!res.ok) {
-        // Outro erro → tenta próxima chave
-        continue
-      }
-
-      const data = await res.json()
-      const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      const match = text.match(/\{[\s\S]*\}/)
-      if (!match) continue
-
-      return JSON.parse(match[0]) as Analise
-    } catch {
-      continue
-    }
+  try {
+    const raw = await callGeminiVision(base64, mimeType || 'image/jpeg', prompt, { maxOutputTokens: 600 })
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) return { legivel: false, eh_atestado: false, limiteAtingido: false, dados: {} }
+    return JSON.parse(match[0]) as Analise
+  } catch {
+    return { legivel: false, eh_atestado: false, limiteAtingido: true, dados: {} }
   }
-
-  // Todas as chaves falharam ou atingiram o limite
-  return { legivel: false, eh_atestado: false, limiteAtingido: true, dados: {} }
 }

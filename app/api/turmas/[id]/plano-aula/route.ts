@@ -3,19 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadParaDrive, DRIVE_FOLDERS } from '@/lib/google-drive'
 import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
-
-const GEMINI_KEYS = [
-  process.env.GOOGLE_AI_KEY,
-  process.env.GOOGLE_AI_KEY_2,
-  process.env.GOOGLE_AI_KEY_3,
-  process.env.GOOGLE_AI_KEY_4,
-  process.env.GOOGLE_AI_KEY_5,
-  process.env.GOOGLE_AI_KEY_6,
-  process.env.GOOGLE_AI_KEY_7,
-  process.env.GOOGLE_AI_KEY_8,
-  process.env.GOOGLE_AI_KEY_9,
-  process.env.GOOGLE_AI_KEY_10,
-].filter(Boolean)
+import { callGemini, callGeminiVision } from '@/lib/gemini'
 
 // Aceita: admin, secretaria OU professor com acesso à turma
 async function verificarAcesso(turmaId: string): Promise<{ ok: boolean; response?: NextResponse }> {
@@ -68,38 +56,6 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
   "avaliacao": "como o professor vai avaliar o progresso"
 }`
 
-// AQ. keys precisam de header x-goog-api-key; AIzaSy usam ?key= param
-function geminiRequest(apiKey: string, body: object): Promise<Response> {
-  const base = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
-  if (apiKey.startsWith('AQ.')) {
-    return fetch(base, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify(body),
-    })
-  }
-  return fetch(`${base}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
-
-async function chamarGemini(parts: object[]): Promise<{ resumo: string; conteudo: any }> {
-  for (const key of GEMINI_KEYS) {
-    try {
-      const res = await geminiRequest(key as string, { contents: [{ parts }] })
-      if (!res.ok) continue
-      const data = await res.json()
-      const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-      const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned)
-      return { resumo: parsed.resumo ?? '', conteudo: parsed }
-    } catch { continue }
-  }
-  throw new Error('Gemini indisponível')
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: turma_id } = await params
 
@@ -131,12 +87,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const base64 = Buffer.from(buffer).toString('base64')
 
     // PDF é processado em memória pelo Gemini e descartado — não vai para o Supabase Storage
-    const resultado = await chamarGemini([
-      { inline_data: { mime_type: 'application/pdf', data: base64 } },
-      { text: PROMPT_EXTRACAO },
-    ])
-    resumo = resultado.resumo
-    conteudo = resultado.conteudo
+    const rawPdf = await callGeminiVision(base64, 'application/pdf', PROMPT_EXTRACAO)
+    const parsedPdf = JSON.parse(rawPdf.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    resumo = parsedPdf.resumo ?? ''
+    conteudo = parsedPdf
     textoOriginal = `[PDF: ${arquivo.name}]`
 
     // Upload para o Drive: Sites/Sede do Movimento/Planos de Aula/{turma}/
@@ -156,9 +110,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     dataFim = body.data_fim ?? null
     if (!textoOriginal?.trim()) return NextResponse.json({ error: 'Texto do plano é obrigatório' }, { status: 400 })
 
-    const resultado = await chamarGemini([{ text: `${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}` }])
-    resumo = resultado.resumo
-    conteudo = resultado.conteudo
+    const rawTxt = await callGemini(`${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}`)
+    const parsedTxt = JSON.parse(rawTxt.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    resumo = parsedTxt.resumo ?? ''
+    conteudo = parsedTxt
   }
 
   const { data, error } = await sb

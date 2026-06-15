@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_KEY ?? process.env.GOOGLE_AI_API_KEY ?? "");
+import { callGeminiVision } from "@/lib/gemini";
 
 // URL da API externa (planilha de pauta) definida no servidor — nunca vinda do cliente
 const EXTERNAL_API_URL = process.env.PAUTA_IMAGE_API_URL;
@@ -74,8 +72,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Gemini como fallback (ou primário quando PAUTA_IMAGE_API_URL não está configurado)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-
     const imgResponse = await fetch(imageUrl);
     if (!imgResponse.ok) {
       return NextResponse.json({ error: "Não foi possível buscar a imagem" }, { status: 400 });
@@ -107,12 +103,7 @@ Exemplos de tom:
 ✅ "Espetáculo Arcanum 2025 da Sede do Movimento no Teatro João Caetano, Rio de Janeiro — dança, teatro e música em uma experiência única"
 ❌ "Uma imagem mostrando..." (genérico demais)`;
 
-    const result = await model.generateContent([
-      { text: prompt },
-      { inlineData: { mimeType, data: imgBase64 } },
-    ]);
-
-    const description = result.response.text().trim();
+    const description = (await callGeminiVision(imgBase64, mimeType, prompt)).trim();
     return NextResponse.json({ description });
 
   } catch (err) {
