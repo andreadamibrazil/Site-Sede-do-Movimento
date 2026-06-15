@@ -106,31 +106,6 @@ export async function GET(req: NextRequest) {
     checks.google_drive = { ok: false, detail: 'GOOGLE_DRIVE_CLIENT_ID ou REFRESH_TOKEN não configurados' }
   }
 
-  // 6. Resend (email) — chave pode ser restrita a envio; 401 com "restricted_api_key" = ok
-  const resendKey = process.env.RESEND_API_KEY
-  if (resendKey) {
-    try {
-      const t = Date.now()
-      const res = await fetch('https://api.resend.com/domains', {
-        headers: { Authorization: `Bearer ${resendKey}` },
-        signal: AbortSignal.timeout(5000),
-      })
-      let detail = `HTTP ${res.status}`
-      let ok = res.ok
-      if (res.status === 401) {
-        const body = await res.json().catch(() => ({}))
-        if (body?.name === 'restricted_api_key') {
-          ok = true
-          detail = 'chave válida (restrita a envio)'
-        }
-      }
-      checks.resend_email = { ok, detail, latencyMs: Date.now() - t }
-    } catch (e) {
-      checks.resend_email = { ok: false, detail: String(e) }
-    }
-  } else {
-    checks.resend_email = { ok: false, detail: 'RESEND_API_KEY não configurado' }
-  }
 
   const allOk = Object.values(checks).every(c => c.ok)
   const totalMs = Date.now() - t0
