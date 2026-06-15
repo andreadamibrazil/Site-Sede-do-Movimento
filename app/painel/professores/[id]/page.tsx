@@ -7,7 +7,7 @@ export default async function ProfessorPage({ params }: { params: Promise<{ id: 
   const { id } = await params
   const sb = createServiceClient()
 
-  const { data: prof } = await sb
+  const { data: prof } = await (sb as any)
     .from('professores')
     .select('id, nome, email, celular, cpf, mei, forma_pagamento, valor_base, ativo, observacoes')
     .eq('id', id)

@@ -8,7 +8,7 @@ export async function atualizarAcessoProfessor(
   data: { email?: string | null; celular?: string | null; mei?: string | null }
 ) {
   const supabase = createServiceClient()
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('professores')
     .update({ email: data.email || null, celular: data.celular || null, mei: data.mei || null })
     .eq('id', professorId)

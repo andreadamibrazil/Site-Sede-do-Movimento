@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
   // 2. Supabase — colunas MEI e comprovante (migration aplicada?)
   try {
     const sb = createServiceClient()
-    const { error: e1 } = await sb.from('professores').select('mei').limit(1)
-    const { error: e2 } = await sb.from('folhas_pagamento').select('comprovante_url,drive_pdf_url').limit(1)
+    const { error: e1 } = await (sb as any).from('professores').select('mei').limit(1)
+    const { error: e2 } = await (sb as any).from('folhas_pagamento').select('comprovante_url,drive_pdf_url').limit(1)
     checks.migration_mei_comprovante = {
       ok: !e1 && !e2,
       detail: e1 ? `professores.mei: ${e1.message}` : e2 ? `folhas_pagamento.comprovante_url: ${e2.message}` : 'OK',

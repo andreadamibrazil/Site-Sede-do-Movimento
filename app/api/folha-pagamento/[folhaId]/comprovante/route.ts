@@ -18,7 +18,7 @@ export async function PATCH(
   }
   if (comprovante_url) updates.comprovante_adicionado_em = new Date().toISOString()
 
-  await sb.from('folhas_pagamento').update(updates).eq('id', folhaId)
+  await (sb as any).from('folhas_pagamento').update(updates).eq('id', folhaId)
 
   return NextResponse.json({ ok: true })
 }
