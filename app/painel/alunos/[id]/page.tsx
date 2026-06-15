@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import AlunoTabs from './AlunoTabs'
 import BotaoExcluirAluno from './BotaoExcluirAluno'
 import BotaoDeclaracao from './BotaoDeclaracao'
+import BotaoTermoAditivo from './BotaoTermoAditivo'
 import BotaoEnviarContrato from './BotaoEnviarContrato'
 
 export default async function AlunoPage({
@@ -122,6 +123,7 @@ export default async function AlunoPage({
             <BotaoEnviarContrato alunoId={id} emailDestino={emailContrato} />
           )}
           <BotaoDeclaracao alunoId={id} />
+          <BotaoTermoAditivo alunoId={id} />
           <BotaoExcluirAluno alunoId={id} alunoNome={aluno.nome} />
           <a
             href={`/painel/alunos/${id}/matricula`}
