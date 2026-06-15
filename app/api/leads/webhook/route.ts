@@ -12,8 +12,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 function normalizarCelular(phone: string): string {
   const n = phone.replace(/\D/g, '')
-  // Remove código do país se presente (55 + DDD + número)
-  if (n.startsWith('55') && n.length >= 12) return n.slice(2)
+  if (n.length === 13 && n.startsWith('55')) return n.slice(2)               // 55+DDD+9+8 → 11
+  if (n.length === 14 && n.startsWith('55')) return n.slice(2, 13)           // 55+12dig → strip 55+last
+  if (n.length === 12 && n.startsWith('55')) return n.slice(2, 4) + '9' + n.slice(4) // 55+DDD+8 → add 9
+  if (n.length === 12) return n.slice(0, 11)                                 // trailing digit → strip
+  if (n.length === 10) return n.slice(0, 2) + '9' + n.slice(2)              // DDD+8 → add 9
   return n
 }
 

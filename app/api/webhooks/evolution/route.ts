@@ -7,14 +7,17 @@ import { NextRequest, NextResponse } from 'next/server'
 
 function jidToCelular(jid: string): string | null {
   // "5521982399484@s.whatsapp.net" → "21982399484"
-  // JIDs @lid são opacos e tratados separadamente via resolvelidCelular()
   if (jid?.endsWith('@lid')) return null
   const raw = jid?.split('@')[0]
   if (!raw) return null
-  const digits = raw.replace(/\D/g, '')
-  if (digits.startsWith('55') && digits.length === 13) return digits.slice(2)
-  if (digits.length === 11) return digits
-  return digits.length >= 10 ? digits : null
+  const d = raw.replace(/\D/g, '')
+  if (d.length === 13 && d.startsWith('55')) return d.slice(2)               // 55+DDD+9+8 → 11
+  if (d.length === 14 && d.startsWith('55')) return d.slice(2, 13)           // 55+12dig → strip 55+last
+  if (d.length === 12 && d.startsWith('55')) return d.slice(2, 4) + '9' + d.slice(4) // 55+DDD+8 → add 9
+  if (d.length === 12) return d.slice(0, 11)                                 // trailing digit → strip
+  if (d.length === 11) return d
+  if (d.length === 10) return d.slice(0, 2) + '9' + d.slice(2)              // DDD+8 → add 9
+  return d.length >= 10 ? d.slice(0, 11) : null
 }
 
 async function resolveLidCelular(lid: string, instance: string): Promise<string | null> {

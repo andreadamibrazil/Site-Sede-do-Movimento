@@ -4,9 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 function normalizarCelular(cel: string): string {
   const d = cel.replace(/\D/g, '')
-  if (d.length === 13 && d.startsWith('55')) return d.slice(2)        // 55+DDD+9digits → 11
-  if (d.length === 12 && d.startsWith('55')) return d.slice(2, 4) + '9' + d.slice(4) // 55+DDD+8digits → add 9
-  if (d.length === 10) return d.slice(0, 2) + '9' + d.slice(2)        // DDD+8digits → add 9
+  if (d.length === 13 && d.startsWith('55')) return d.slice(2)               // 55+DDD+9+8 → 11
+  if (d.length === 14 && d.startsWith('55')) return d.slice(2, 13)           // 55+12dig → strip 55+last
+  if (d.length === 12 && d.startsWith('55')) return d.slice(2, 4) + '9' + d.slice(4) // 55+DDD+8 → add 9
+  if (d.length === 12) return d.slice(0, 11)                                 // trailing digit → strip
+  if (d.length === 10) return d.slice(0, 2) + '9' + d.slice(2)              // DDD+8 → add 9
   return d // 11 dígitos (correto) ou inválido — retorna como está
 }
 

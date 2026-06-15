@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PlanoAula from './PlanoAula'
+import BotaoReativarTurma from './BotaoReativarTurma'
+import BotaoRemoverAluno from './BotaoRemoverAluno'
 
 const DIAS_LABEL: Record<string, string> = {
   segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta',
@@ -33,15 +35,18 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
 
   const { data: matriculaTurmas } = await supabase
     .from('matricula_turmas')
-    .select('matriculas(aluno_id, status, alunos(nome, status_financeiro))')
+    .select('id, matriculas(aluno_id, status, alunos(id, nome, status_financeiro))')
     .eq('turma_id', id)
     .is('data_saida', null)
 
-  const alunos = matriculaTurmas
-    ?.map(mt => (mt.matriculas as any))
-    .filter(m => m?.status === 'ativa')
-    .map(m => m.alunos)
-    .filter(Boolean) ?? []
+  const alunos = (matriculaTurmas ?? [])
+    .filter(mt => (mt.matriculas as any)?.status === 'ativa')
+    .map(mt => {
+      const a = (mt.matriculas as any)?.alunos
+      if (!a) return null
+      return { matriculaTurmaId: mt.id as string, id: a.id as string, nome: a.nome as string, status_financeiro: a.status_financeiro as string | null }
+    })
+    .filter((a): a is NonNullable<typeof a> => a !== null)
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -59,6 +64,7 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
           }`}>
             {turma.status}
           </span>
+          {turma.status !== 'ativa' && <BotaoReativarTurma turmaId={id} />}
           <a
             href={`/painel/turmas/${id}/editar`}
             className="text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 px-3 py-1 rounded-lg"
@@ -109,8 +115,8 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
         ) : (
           <table className="w-full text-sm">
             <tbody className="divide-y divide-gray-100">
-              {alunos.map((a: any, i: number) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
+              {alunos.map((a, i) => (
+                <tr key={a.matriculaTurmaId || i} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 font-medium text-gray-900">{a.nome}</td>
                   <td className="px-5 py-3">
                     {a.status_financeiro === 'inadimplente' && (
@@ -121,7 +127,10 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
                     )}
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <a href={`/painel/alunos/${a.id}`} className="text-xs text-indigo-600 hover:text-indigo-700">Ver →</a>
+                    <div className="flex items-center justify-end gap-3">
+                      <a href={`/painel/alunos/${a.id}`} className="text-xs text-indigo-600 hover:text-indigo-700">Ver →</a>
+                      <BotaoRemoverAluno matriculaTurmaId={a.matriculaTurmaId} alunoNome={a.nome} turmaId={id} />
+                    </div>
                   </td>
                 </tr>
               ))}

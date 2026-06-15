@@ -3,6 +3,25 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+export async function atualizarStatusTurma(turmaId: string, status: 'ativa' | 'suspensa' | 'encerrada') {
+  const supabase = createServiceClient()
+  const { error } = await supabase.from('turmas').update({ status }).eq('id', turmaId)
+  if (error) throw new Error(error.message)
+  revalidatePath('/painel/turmas')
+  revalidatePath(`/painel/turmas/${turmaId}`)
+}
+
+export async function removerAlunoDaTurma(matriculaTurmaId: string, turmaId: string) {
+  const supabase = createServiceClient()
+  const hoje = new Date().toISOString().split('T')[0]
+  const { error } = await supabase
+    .from('matricula_turmas')
+    .update({ data_saida: hoje })
+    .eq('id', matriculaTurmaId)
+  if (error) throw new Error(error.message)
+  revalidatePath(`/painel/turmas/${turmaId}`)
+}
+
 export async function atualizarPrecoPadrao(turmaId: string, preco: number) {
   const supabase = createServiceClient()
   const { error } = await supabase
