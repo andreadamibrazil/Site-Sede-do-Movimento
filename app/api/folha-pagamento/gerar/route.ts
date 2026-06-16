@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Conta alunos matriculados por turma no mês — paralelo para evitar N+1 queries
+  // Critério: entrou até o fim do mês E (ainda não saiu OU saiu após o início do mês)
   const turmaIds = [...new Set(aulas.map((a: any) => a.turma_id as string))]
   const contagensParalelas = await Promise.all(
     turmaIds.map(async (turmaId) => {
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
         .from('matricula_turmas')
         .select('id', { count: 'exact', head: true })
         .eq('turma_id', turmaId)
+        .lte('data_entrada', fimStr)
         .or(`data_saida.is.null,data_saida.gte.${inicioStr}`)
       return [turmaId, count ?? 0] as const
     })

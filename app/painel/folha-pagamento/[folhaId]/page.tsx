@@ -6,6 +6,7 @@ import EditarItemFolha from './EditarItemFolha'
 import AdicionarAvulsoBtn from './AdicionarAvulsoBtn'
 import RemoverAvulsoBtn from './RemoverAvulsoBtn'
 import ComprovanteBtn from './ComprovanteBtn'
+import RecalcularFolhaBtn from './RecalcularFolhaBtn'
 import { FERIADOS_RJ } from '@/lib/feriados'
 
 export default async function FolhaDetalhePage({
@@ -86,6 +87,14 @@ export default async function FolhaDetalhePage({
           </div>
         </div>
       </div>
+
+      {/* Recalcular — só para rascunho */}
+      {folha.status === 'rascunho' && (
+        <RecalcularFolhaBtn
+          professorId={folha.professor_id}
+          mesReferencia={folha.mes_referencia}
+        />
+      )}
 
       {/* Aulas por turma */}
       {Object.values(porTurma).map(({ nome, itens: aulasT, total }) => {
