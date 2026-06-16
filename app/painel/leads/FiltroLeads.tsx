@@ -67,7 +67,7 @@ export default function FiltroLeads({ statusAtual, temperaturaAtual, modalidadeA
         })}
       </div>
 
-      {/* Status + Modalidade */}
+      {/* Status */}
       <div className="flex flex-wrap gap-2 items-center">
         <select
           value={statusAtual || 'todos'}
@@ -80,20 +80,39 @@ export default function FiltroLeads({ statusAtual, temperaturaAtual, modalidadeA
             </option>
           ))}
         </select>
-
-        {modalidades.length > 0 && (
-          <select
-            value={modalidadeAtual || ''}
-            onChange={e => update('modalidade', e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="">Todas as modalidades</option>
-            {modalidades.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        )}
       </div>
+
+      {/* Modalidade como chips */}
+      {modalidades.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => update('modalidade', '')}
+            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              !modalidadeAtual
+                ? 'border-indigo-500 ring-1 ring-indigo-500 bg-gray-100 text-gray-600'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            Todas
+          </button>
+          {modalidades.map(m => {
+            const ativo = modalidadeAtual === m
+            return (
+              <button
+                key={m}
+                onClick={() => update('modalidade', ativo ? '' : m)}
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  ativo
+                    ? 'border-indigo-500 ring-1 ring-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {m}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

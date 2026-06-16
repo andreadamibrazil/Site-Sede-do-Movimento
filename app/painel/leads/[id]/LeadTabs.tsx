@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { atualizarLead, adicionarNota, removerNota } from './actions'
+import { atualizarLead, adicionarNota, removerNota, analisarLeadAgora } from './actions'
 
 type Nota = { id: string; texto: string; data: string }
 
@@ -94,7 +94,7 @@ export default function LeadTabs({
         ))}
       </div>
 
-      {abaAtiva === 'analise'   && <AbaAnalise analise={analise} analisadoEm={analisadoEm} analiseCron={analiseCron} />}
+      {abaAtiva === 'analise'   && <AbaAnalise analise={analise} analisadoEm={analisadoEm} analiseCron={analiseCron} leadId={lead.id as string} />}
       {abaAtiva === 'historico' && <AbaHistorico historico={historicoAnalises} />}
       {abaAtiva === 'notas'     && <AbaNotas notas={notas} leadId={lead.id as string} />}
       {abaAtiva === 'dados'     && <AbaDados lead={lead} modalidades={modalidades} />}
@@ -108,17 +108,64 @@ function AbaAnalise({
   analise,
   analisadoEm,
   analiseCron,
+  leadId,
 }: {
   analise: unknown
   analisadoEm: string | null
   analiseCron: Record<string, unknown> | null
+  leadId: string
 }) {
+  const router = useRouter()
+  const [analisando, setAnalisando] = useState(false)
+  const [resultadoAnalise, setResultadoAnalise] = useState<{ ok: boolean; temperatura?: string; erro?: string } | null>(null)
+
+  async function handleAnalisar() {
+    setAnalisando(true)
+    setResultadoAnalise(null)
+    try {
+      const res = await analisarLeadAgora(leadId)
+      setResultadoAnalise(res)
+      if (res.ok) router.refresh()
+    } finally {
+      setAnalisando(false)
+    }
+  }
+
   const a = analise as Record<string, unknown> | null
+
+  const botaoAnalisar = (
+    <div className="flex items-center justify-end gap-3">
+      {resultadoAnalise && !resultadoAnalise.ok && (
+        <p className="text-xs text-red-500">{resultadoAnalise.erro}</p>
+      )}
+      {resultadoAnalise?.ok && (
+        <p className="text-xs text-green-600">Análise concluída! Temperatura: {resultadoAnalise.temperatura}</p>
+      )}
+      <button
+        onClick={handleAnalisar}
+        disabled={analisando}
+        className="text-xs bg-white border border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+      >
+        {analisando ? 'Analisando…' : '↺ Analisar Agora'}
+      </button>
+    </div>
+  )
 
   if (analiseCron) {
     const temp = analiseCron.temperatura as string
     return (
       <div className="space-y-4">
+        {/* Ação sugerida em destaque */}
+        {!!analiseCron.acao_sugerida && (
+          <div className="flex items-start gap-3 bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+            <div className="text-indigo-400 text-base mt-0.5 shrink-0">→</div>
+            <div>
+              <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wider mb-0.5">Próxima ação</p>
+              <p className="text-sm text-indigo-900 font-medium leading-snug">{analiseCron.acao_sugerida as string}</p>
+            </div>
+          </div>
+        )}
+
         <div className={`border rounded-xl p-5 space-y-3 ${TEMP_CLASS[temp] ?? 'bg-gray-50 border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">
@@ -126,17 +173,12 @@ function AbaAnalise({
             </span>
             {!!analiseCron.ultima_analise && (
               <span className="text-xs opacity-60">
-                Analisado em {new Date(analiseCron.ultima_analise as string).toLocaleString('pt-BR')}
+                {new Date(analiseCron.ultima_analise as string).toLocaleString('pt-BR')}
               </span>
             )}
           </div>
           {!!analiseCron.resumo && (
             <p className="text-sm leading-relaxed">{analiseCron.resumo as string}</p>
-          )}
-          {!!analiseCron.acao_sugerida && (
-            <p className="text-xs font-medium opacity-80">
-              Próxima ação: {analiseCron.acao_sugerida as string}
-            </p>
           )}
           {Array.isArray(analiseCron.objecoes) && (analiseCron.objecoes as string[]).length > 0 && (
             <div className="flex flex-wrap gap-1 pt-1">
@@ -150,28 +192,41 @@ function AbaAnalise({
         </div>
 
         {a && !a.skip && <AnaliseDetalhadaV2 analise={a} analisadoEm={analisadoEm} />}
+
+        {botaoAnalisar}
       </div>
     )
   }
 
   if (!a) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-10 text-center space-y-2">
-        <p className="text-gray-400 text-sm">Nenhuma análise disponível para este contato.</p>
-        <p className="text-gray-300 text-xs">A análise ocorre automaticamente 24h após a primeira mensagem.</p>
+      <div className="space-y-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center space-y-2">
+          <p className="text-gray-400 text-sm">Nenhuma análise disponível para este contato.</p>
+          <p className="text-gray-300 text-xs">A análise ocorre automaticamente 24h após a primeira mensagem.</p>
+        </div>
+        {botaoAnalisar}
       </div>
     )
   }
 
   if (a.skip) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
-        <p className="text-gray-400 text-sm">Conversa sem texto para analisar.</p>
+      <div className="space-y-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+          <p className="text-gray-400 text-sm">Conversa sem texto para analisar.</p>
+        </div>
+        {botaoAnalisar}
       </div>
     )
   }
 
-  return <AnaliseDetalhadaV2 analise={a} analisadoEm={analisadoEm} />
+  return (
+    <div className="space-y-4">
+      <AnaliseDetalhadaV2 analise={a} analisadoEm={analisadoEm} />
+      {botaoAnalisar}
+    </div>
+  )
 }
 
 function AnaliseDetalhadaV2({ analise, analisadoEm }: { analise: Record<string, unknown>; analisadoEm: string | null }) {
@@ -429,6 +484,8 @@ function AbaDados({ lead, modalidades }: { lead: Record<string, unknown>; modali
     modalidade_interesse: (lead.modalidade_interesse as string) ?? '',
     como_conheceu:        (lead.como_conheceu        as string) ?? '',
     status:               (lead.status               as string) ?? 'novo',
+    horario_preferido:    (lead.horario_preferido    as string) ?? '',
+    dia_experimental:     (lead.dia_experimental     as string) ?? '',
   })
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -458,13 +515,19 @@ function AbaDados({ lead, modalidades }: { lead: Record<string, unknown>; modali
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dados do lead</h2>
           <button onClick={() => setEditando(true)} className="text-xs text-indigo-600 hover:underline">Editar</button>
         </div>
-        <Row label="Nome"          value={(lead.nome as string)                 ?? '—'} />
-        <Row label="Celular"       value={(lead.celular as string)              ?? '—'} />
-        <Row label="Email"         value={(lead.email as string)                ?? '—'} />
-        <Row label="Modalidade"    value={(lead.modalidade_interesse as string) ?? '—'} />
-        <Row label="Como conheceu" value={(lead.como_conheceu as string)        ?? '—'} />
-        <Row label="Status"        value={(lead.status as string)               ?? '—'} />
-        <Row label="Entrada"       value={fmtData(lead.created_at as string)} />
+        <Row label="Nome"              value={(lead.nome as string)                 ?? '—'} />
+        <Row label="Celular"           value={(lead.celular as string)              ?? '—'} />
+        <Row label="Email"             value={(lead.email as string)                ?? '—'} />
+        <Row label="Modalidade"        value={(lead.modalidade_interesse as string) ?? '—'} />
+        <Row label="Como conheceu"     value={(lead.como_conheceu as string)        ?? '—'} />
+        <Row label="Status"            value={(lead.status as string)               ?? '—'} />
+        {!!(lead.horario_preferido) && (
+          <Row label="Horário preferido" value={lead.horario_preferido as string} />
+        )}
+        {!!(lead.dia_experimental) && (
+          <Row label="Dia experimental"  value={lead.dia_experimental as string} />
+        )}
+        <Row label="Entrada"           value={fmtData(lead.created_at as string)} />
       </div>
     )
   }
@@ -484,10 +547,12 @@ function AbaDados({ lead, modalidades }: { lead: Record<string, unknown>; modali
       {erro && <p className="text-xs text-red-500">{erro}</p>}
       <div className="space-y-3">
         {[
-          { label: 'Nome',          key: 'nome' },
-          { label: 'Celular',       key: 'celular' },
-          { label: 'Email',         key: 'email' },
-          { label: 'Como conheceu', key: 'como_conheceu' },
+          { label: 'Nome',              key: 'nome' },
+          { label: 'Celular',           key: 'celular' },
+          { label: 'Email',             key: 'email' },
+          { label: 'Como conheceu',     key: 'como_conheceu' },
+          { label: 'Horário preferido', key: 'horario_preferido' },
+          { label: 'Dia experimental',  key: 'dia_experimental' },
         ].map(({ label, key }) => (
           <div key={key} className="flex items-center gap-4">
             <span className="text-sm text-gray-500 w-36 shrink-0">{label}</span>
