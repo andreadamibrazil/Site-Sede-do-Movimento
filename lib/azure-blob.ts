@@ -79,3 +79,27 @@ export async function markAnalyzed(
   data.ultima_analise_idx = analyzedUpToIdx
   await writeBlob(instance, celular, data)
 }
+
+// Merge em lote — lê o blob uma vez, adiciona todas as mensagens novas, grava uma vez
+export async function mergeBlobMessages(
+  instance: string,
+  celular: string,
+  messages: Record<string, unknown>[],
+): Promise<{ added: number; total: number }> {
+  const data = await readBlob(instance, celular)
+  const existingIds = new Set(data.messages.map((m: any) => m.id).filter(Boolean))
+  let added = 0
+  for (const msg of messages) {
+    if (!existingIds.has(msg.id)) {
+      data.messages.push(msg)
+      existingIds.add(msg.id)
+      added++
+    }
+  }
+  if (added > 0) {
+    // Ordena por timestamp para manter histórico cronológico
+    data.messages.sort((a: any, b: any) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
+    await writeBlob(instance, celular, data)
+  }
+  return { added, total: data.messages.length }
+}
