@@ -1,5 +1,6 @@
-"use client";
-
+import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import { Check } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import ContactForm from "@/components/sections/ContactForm";
@@ -12,9 +13,17 @@ const values = [
   "Comunidade artística vibrante",
 ];
 
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("contato/trabalhe-conosco", {
+    title: "Trabalhe Conosco",
+    description: "Faça parte da equipe da Sede do Movimento. Vagas para educadores artísticos, professores de dança, teatro, música e área cultural no Rio de Janeiro.",
+  });
+}
+
 export default function TrabalheConoscoPage() {
   return (
     <>
+      <BreadcrumbSchema items={[{ label: "Contato", href: "/contato" }, { label: "Trabalhe Conosco" }]} />
       <PageHero
         eyebrow="Venha para o Time"
         title="Trabalhe Conosco"

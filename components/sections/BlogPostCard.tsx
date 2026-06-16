@@ -20,8 +20,14 @@ const categoryColor: Record<string, "primary" | "accent" | "secondary" | "succes
   Eventos: "warning",
 };
 
+const formatoEmoji: Record<string, string> = {
+  noticia: "📰", curiosidade: "🔍", conquista: "🏆",
+  bastidores: "🎭", historia: "📖", entrevista: "🎤", beneficios: "💡",
+};
+
 export default function BlogPostCard({ post, variant = "vertical" }: BlogPostCardProps) {
   const imageUrl = post.coverImage ? urlFor(post.coverImage).width(600).height(400).url() : null;
+  const emoji = post.formato ? formatoEmoji[post.formato] : null;
 
   if (variant === "horizontal") {
     return (
@@ -34,7 +40,10 @@ export default function BlogPostCard({ post, variant = "vertical" }: BlogPostCar
           )}
         </div>
         <div className="flex flex-col justify-center py-3 pr-4">
-          <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs" className="mb-2 w-fit">{post.category}</Badge>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs">{post.category}</Badge>
+            {emoji && <span className="text-sm" title={post.formato}>{emoji}</span>}
+          </div>
           <h3 className="font-bold text-gray-900 text-sm leading-snug mb-1 line-clamp-2 group-hover:text-brand-purple-600 transition-colors">{post.title}</h3>
           <p className="text-gray-400 text-xs">{formatDateShort(post.publishedAt)}</p>
         </div>
@@ -50,9 +59,16 @@ export default function BlogPostCard({ post, variant = "vertical" }: BlogPostCar
         ) : (
           <PlaceholderImage className="w-full h-full rounded-none border-none" label={post.title} />
         )}
+        {emoji && (
+          <span className="absolute top-3 left-3 text-lg bg-white/90 rounded-full w-8 h-8 flex items-center justify-center shadow-sm">
+            {emoji}
+          </span>
+        )}
       </div>
       <div className="p-5">
-        <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs" className="mb-3">{post.category}</Badge>
+        <div className="flex items-center gap-2 mb-3">
+          <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs">{post.category}</Badge>
+        </div>
         <h3 className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2 group-hover:text-brand-purple-600 transition-colors">{post.title}</h3>
         <p className="text-gray-400 text-sm line-clamp-2 mb-4 leading-relaxed">{post.excerpt}</p>
         <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-50">

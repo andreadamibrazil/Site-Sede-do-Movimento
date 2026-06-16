@@ -70,7 +70,7 @@ export const postBySlugQuery = groq`
 `;
 
 export const postSlugsQuery = groq`
-  *[_type == "post" && defined(slug.current)] { "slug": slug.current }
+  *[_type == "post" && defined(slug.current)] { "slug": slug.current, _updatedAt }
 `;
 
 // ─── Espetáculos ─────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ export const allGalleryAlbumsQuery = groq`
   *[_type == "galleryAlbum" && active == true] | order(order asc) {
     _id, title, "slug": slug.current, description,
     coverImage, category, year, featured, order,
-    "photoCount": count(photos)
+    "photoCount": count(photos), _updatedAt
   }
 `;
 

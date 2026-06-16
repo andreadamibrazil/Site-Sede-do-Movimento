@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, Tag, Share2, ExternalLink, LinkIcon } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, Tag, Share2, ExternalLink, LinkIcon, Lightbulb, BarChart2, Quote, Zap, MessageSquare } from "lucide-react";
 import { PortableText } from "@portabletext/react";
 import PageHero from "@/components/sections/PageHero";
 import BlogPostCard from "@/components/sections/BlogPostCard";
@@ -19,6 +19,7 @@ import { siteConfig } from "@/lib/constants/siteConfig";
 import { cn } from "@/lib/utils/cn";
 import BlogPostSchema from "@/components/schema/BlogPostSchema";
 import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
+import { getYoutubeEmbedUrl } from "@/lib/utils/youtubeUtils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -30,6 +31,23 @@ const categoryColor: Record<string, "primary" | "accent" | "secondary" | "succes
   Resultados: "success",
   Espetáculos: "accent",
   Eventos: "warning",
+};
+
+const formatoLabel: Record<string, { label: string; emoji: string; className: string }> = {
+  noticia:      { label: "Notícia",      emoji: "📰", className: "bg-gray-100 text-gray-700" },
+  curiosidade:  { label: "Curiosidade",  emoji: "🔍", className: "bg-indigo-50 text-indigo-700" },
+  conquista:    { label: "Conquista",    emoji: "🏆", className: "bg-yellow-50 text-yellow-700" },
+  bastidores:   { label: "Bastidores",   emoji: "🎭", className: "bg-pink-50 text-pink-700" },
+  historia:     { label: "História",     emoji: "📖", className: "bg-amber-50 text-amber-700" },
+  entrevista:   { label: "Entrevista",   emoji: "🎤", className: "bg-green-50 text-green-700" },
+  beneficios:   { label: "Benefícios",   emoji: "💡", className: "bg-purple-50 text-purple-700" },
+};
+
+const calloutStyle: Record<string, { bg: string; border: string; icon: React.ReactNode }> = {
+  curiosidade: { bg: "bg-indigo-50",  border: "border-indigo-300", icon: <Lightbulb size={18} className="text-indigo-500 shrink-0 mt-0.5" /> },
+  stat:        { bg: "bg-blue-50",    border: "border-blue-300",   icon: <BarChart2 size={18} className="text-blue-500 shrink-0 mt-0.5" /> },
+  citacao:     { bg: "bg-purple-50",  border: "border-purple-300", icon: <Quote size={18} className="text-purple-500 shrink-0 mt-0.5" /> },
+  destaque:    { bg: "bg-yellow-50",  border: "border-yellow-400", icon: <Zap size={18} className="text-yellow-600 shrink-0 mt-0.5" /> },
 };
 
 export async function generateStaticParams() {
@@ -195,12 +213,33 @@ export default async function BlogPostPage({ params }: PageProps) {
                 <Badge color={categoryColor[post.category] ?? "primary"} variant="subtle" size="xs">
                   {post.category}
                 </Badge>
+                {post.formato && formatoLabel[post.formato] && (
+                  <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold", formatoLabel[post.formato].className)}>
+                    {formatoLabel[post.formato].emoji} {formatoLabel[post.formato].label}
+                  </span>
+                )}
               </div>
 
               {/* Post title */}
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 leading-snug">
                 {post.title}
               </h1>
+
+              {/* YouTube video embed (quando youtubeVideo está preenchido e não há bloco youtubeEmbed no body) */}
+              {post.youtubeVideo && (() => {
+                const embedUrl = getYoutubeEmbedUrl(post.youtubeVideo);
+                return embedUrl ? (
+                  <div className="mb-8 rounded-2xl overflow-hidden aspect-video bg-black">
+                    <iframe
+                      src={embedUrl}
+                      title={post.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </div>
+                ) : null;
+              })()}
 
               {/* Article body */}
               <div
@@ -219,29 +258,101 @@ export default async function BlogPostPage({ params }: PageProps) {
                     components={{
                       types: {
                         image: ({ value }) => {
-                          const imgUrl = value?.asset
-                            ? urlFor(value).width(900).url()
-                            : null;
+                          const imgUrl = value?.asset ? urlFor(value).width(900).url() : null;
                           if (!imgUrl) return null;
                           return (
-                            <figure className="my-8">
-                              <div className="relative aspect-video rounded-xl overflow-hidden">
+                            <figure className="my-8 not-prose">
+                              <div className="relative aspect-video rounded-2xl overflow-hidden shadow-sm">
                                 <Image src={imgUrl} alt={value.alt ?? ""} fill className="object-cover" />
                               </div>
                               {value.caption && (
-                                <figcaption className="text-center text-sm text-gray-400 mt-2">
+                                <figcaption className="text-center text-sm text-gray-400 mt-3 italic">
                                   {value.caption}
                                 </figcaption>
                               )}
                             </figure>
                           );
                         },
+                        callout: ({ value }) => {
+                          const style = calloutStyle[value?.tipo ?? "curiosidade"] ?? calloutStyle.curiosidade;
+                          return (
+                            <div className={cn("not-prose my-8 rounded-2xl border-l-4 p-6 flex gap-4", style.bg, style.border)}>
+                              {style.icon}
+                              <div className="flex-1 min-w-0">
+                                {value?.titulo && (
+                                  <p className="font-extrabold text-gray-900 text-sm uppercase tracking-wide mb-1">
+                                    {value.emoji ? `${value.emoji} ` : ""}{value.titulo}
+                                  </p>
+                                )}
+                                <p className="text-gray-700 text-sm leading-relaxed">{value?.texto}</p>
+                              </div>
+                            </div>
+                          );
+                        },
+                        youtubeEmbed: ({ value }) => {
+                          const embedUrl = value?.url ? getYoutubeEmbedUrl(value.url) : null;
+                          if (!embedUrl) return null;
+                          return (
+                            <figure className="not-prose my-8">
+                              <div className="rounded-2xl overflow-hidden aspect-video bg-black shadow-sm">
+                                <iframe
+                                  src={embedUrl}
+                                  title={value?.legenda ?? "Vídeo da Sede do Movimento"}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="w-full h-full"
+                                />
+                              </div>
+                              {value?.legenda && (
+                                <figcaption className="text-center text-sm text-gray-400 mt-3 italic">
+                                  {value.legenda}
+                                </figcaption>
+                              )}
+                            </figure>
+                          );
+                        },
+                        ctaBlock: ({ value }) => (
+                          <div className="not-prose my-10 rounded-2xl bg-gradient-to-br from-brand-purple-700 to-brand-secondary p-8 text-center text-white shadow-brand-md">
+                            <p className="text-lg font-bold mb-4 text-white">
+                              {value?.texto ?? "Quer conhecer a Sede de perto?"}
+                            </p>
+                            <Link href={value?.botaoHref ?? "/contato"}>
+                              <button className="inline-flex items-center gap-2 bg-white text-brand-purple-700 font-extrabold px-6 py-3 rounded-full hover:bg-brand-light transition-colors text-sm">
+                                {value?.botaoLabel ?? "Faça uma aula experimental"}
+                              </button>
+                            </Link>
+                          </div>
+                        ),
                       },
                     }}
                   />
                 ) : (
                   <p className="text-gray-400 italic">Conteúdo em breve.</p>
                 )}
+              </div>
+
+              {/* ── CTA automático pós-artigo ───────────────────────── */}
+              <div className="mt-12 rounded-2xl bg-gradient-to-br from-brand-purple-700 to-brand-secondary p-8 text-center text-white shadow-brand-md">
+                <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-2">Sede do Movimento</p>
+                <h3 className="text-xl font-extrabold text-white mb-3 leading-snug">
+                  Quer fazer parte dessa história?
+                </h3>
+                <p className="text-white/80 text-sm leading-relaxed mb-6 max-w-sm mx-auto">
+                  Dança, teatro e música no mesmo lugar. Venha fazer uma aula experimental gratuita no Rio Comprido.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href={siteConfig.social.whatsapp} target="_blank" rel="noopener noreferrer">
+                    <button className="inline-flex items-center gap-2 bg-white text-brand-purple-700 font-extrabold px-6 py-3 rounded-full hover:bg-brand-light transition-colors text-sm w-full sm:w-auto justify-center">
+                      <MessageSquare size={16} />
+                      Agende via WhatsApp
+                    </button>
+                  </Link>
+                  <Link href="/ensino/horarios">
+                    <button className="inline-flex items-center gap-2 bg-white/10 border border-white/30 text-white font-semibold px-6 py-3 rounded-full hover:bg-white/20 transition-colors text-sm w-full sm:w-auto justify-center">
+                      Ver Horários
+                    </button>
+                  </Link>
+                </div>
               </div>
 
               {/* Tags */}
