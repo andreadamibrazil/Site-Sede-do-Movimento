@@ -37,18 +37,30 @@ export default async function LeadPage({
   // Análise incremental do cron (mais recente — com histórico de evolução)
   let historicoAnalises: unknown[] = []
   let analiseCron: Record<string, unknown> | null = null
-  let notas: Array<{ id: string; texto: string; data: string }> = []
   try {
     if (lead.observacoes) {
       const obs = JSON.parse(lead.observacoes as string)
       historicoAnalises = obs.historico_analises ?? []
       if (obs.temperatura) analiseCron = obs
-      notas = obs.notas ?? []
     }
   } catch { /* observacoes não é JSON */ }
 
-  // Modalidades da tabela oficial para seleção por chips
   const service = createServiceClient()
+
+  // Notas manuais — tabela dedicada (sem race condition com o cron de IA)
+  const { data: notasData } = await service
+    .from('lead_notas')
+    .select('id, texto, created_at')
+    .eq('lead_id', id)
+    .order('created_at', { ascending: false })
+
+  const notas = (notasData ?? []).map(n => ({
+    id: n.id,
+    texto: n.texto,
+    data: n.created_at,
+  }))
+
+  // Modalidades da tabela oficial para seleção por chips
   const { data: modalidadesData } = await service
     .from('modalidades')
     .select('nome')

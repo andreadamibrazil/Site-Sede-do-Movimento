@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -866,7 +891,12 @@ export type Database = {
         Row: {
           assinado_em: string | null
           autentique_doc_id: string | null
+          comprovante_adicionado_em: string | null
+          comprovante_dados: Json | null
+          comprovante_url: string | null
           created_at: string | null
+          drive_pdf_id: string | null
+          drive_pdf_url: string | null
           gerado_por: string | null
           id: string
           mes_referencia: string
@@ -881,7 +911,12 @@ export type Database = {
         Insert: {
           assinado_em?: string | null
           autentique_doc_id?: string | null
+          comprovante_adicionado_em?: string | null
+          comprovante_dados?: Json | null
+          comprovante_url?: string | null
           created_at?: string | null
+          drive_pdf_id?: string | null
+          drive_pdf_url?: string | null
           gerado_por?: string | null
           id?: string
           mes_referencia: string
@@ -896,7 +931,12 @@ export type Database = {
         Update: {
           assinado_em?: string | null
           autentique_doc_id?: string | null
+          comprovante_adicionado_em?: string | null
+          comprovante_dados?: Json | null
+          comprovante_url?: string | null
           created_at?: string | null
+          drive_pdf_id?: string | null
+          drive_pdf_url?: string | null
           gerado_por?: string | null
           id?: string
           mes_referencia?: string
@@ -1050,6 +1090,35 @@ export type Database = {
             columns: ["turma_id"]
             isOneToOne: false
             referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_notas: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          texto: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          texto: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notas_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -1348,6 +1417,303 @@ export type Database = {
         }
         Relationships: []
       }
+      movirio_atracoes: {
+        Row: {
+          cache: number | null
+          contato_produtor: string | null
+          contato_whatsapp: string | null
+          created_at: string | null
+          data_apresentacao: string | null
+          id: string
+          local: string | null
+          nome: string
+          notas: string | null
+          rider_tecnico: string | null
+          status_contrato: string | null
+          tipo: string | null
+        }
+        Insert: {
+          cache?: number | null
+          contato_produtor?: string | null
+          contato_whatsapp?: string | null
+          created_at?: string | null
+          data_apresentacao?: string | null
+          id?: string
+          local?: string | null
+          nome: string
+          notas?: string | null
+          rider_tecnico?: string | null
+          status_contrato?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          cache?: number | null
+          contato_produtor?: string | null
+          contato_whatsapp?: string | null
+          created_at?: string | null
+          data_apresentacao?: string | null
+          id?: string
+          local?: string | null
+          nome?: string
+          notas?: string | null
+          rider_tecnico?: string | null
+          status_contrato?: string | null
+          tipo?: string | null
+        }
+        Relationships: []
+      }
+      movirio_confirmacoes: {
+        Row: {
+          cnpj_cpf: string | null
+          comprovante_url: string | null
+          coreografias_json: Json | null
+          created_at: string | null
+          email_lookup: string | null
+          email_recibo: string | null
+          escola: string | null
+          id: string
+          id_protocolo: string
+          observacoes: string | null
+          responsavel: string | null
+          status: string | null
+          timestamp: string | null
+          valor_total: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cnpj_cpf?: string | null
+          comprovante_url?: string | null
+          coreografias_json?: Json | null
+          created_at?: string | null
+          email_lookup?: string | null
+          email_recibo?: string | null
+          escola?: string | null
+          id?: string
+          id_protocolo: string
+          observacoes?: string | null
+          responsavel?: string | null
+          status?: string | null
+          timestamp?: string | null
+          valor_total?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cnpj_cpf?: string | null
+          comprovante_url?: string | null
+          coreografias_json?: Json | null
+          created_at?: string | null
+          email_lookup?: string | null
+          email_recibo?: string | null
+          escola?: string | null
+          id?: string
+          id_protocolo?: string
+          observacoes?: string | null
+          responsavel?: string | null
+          status?: string | null
+          timestamp?: string | null
+          valor_total?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      movirio_habilitadas: {
+        Row: {
+          categoria: string | null
+          cnpj_cpf: string | null
+          dcod: string
+          email: string | null
+          escola: string | null
+          id: string
+          modalidade: string | null
+          mostra: string | null
+          nome: string | null
+          num_integrantes: number | null
+          responsavel: string | null
+          status_pagamento: string
+          tipo: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          cnpj_cpf?: string | null
+          dcod: string
+          email?: string | null
+          escola?: string | null
+          id?: string
+          modalidade?: string | null
+          mostra?: string | null
+          nome?: string | null
+          num_integrantes?: number | null
+          responsavel?: string | null
+          status_pagamento?: string
+          tipo?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          cnpj_cpf?: string | null
+          dcod?: string
+          email?: string | null
+          escola?: string | null
+          id?: string
+          modalidade?: string | null
+          mostra?: string | null
+          nome?: string | null
+          num_integrantes?: number | null
+          responsavel?: string | null
+          status_pagamento?: string
+          tipo?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      movirio_locais: {
+        Row: {
+          avaliacao: number | null
+          bairro: string | null
+          categoria: string | null
+          categorias: string[] | null
+          cep: string | null
+          cidade: string | null
+          created_at: string | null
+          dados_brutos: Json | null
+          descricao: string | null
+          endereco: string | null
+          fechado_permanente: boolean | null
+          fechado_temporario: boolean | null
+          google_maps_url: string | null
+          horarios: Json | null
+          id: string
+          image_url: string | null
+          lat: number | null
+          lng: number | null
+          nome: string
+          place_id: string | null
+          preco: string | null
+          rua: string | null
+          search_string: string | null
+          telefone: string | null
+          total_avaliacoes: number | null
+          website: string | null
+        }
+        Insert: {
+          avaliacao?: number | null
+          bairro?: string | null
+          categoria?: string | null
+          categorias?: string[] | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          dados_brutos?: Json | null
+          descricao?: string | null
+          endereco?: string | null
+          fechado_permanente?: boolean | null
+          fechado_temporario?: boolean | null
+          google_maps_url?: string | null
+          horarios?: Json | null
+          id?: string
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          nome: string
+          place_id?: string | null
+          preco?: string | null
+          rua?: string | null
+          search_string?: string | null
+          telefone?: string | null
+          total_avaliacoes?: number | null
+          website?: string | null
+        }
+        Update: {
+          avaliacao?: number | null
+          bairro?: string | null
+          categoria?: string | null
+          categorias?: string[] | null
+          cep?: string | null
+          cidade?: string | null
+          created_at?: string | null
+          dados_brutos?: Json | null
+          descricao?: string | null
+          endereco?: string | null
+          fechado_permanente?: boolean | null
+          fechado_temporario?: boolean | null
+          google_maps_url?: string | null
+          horarios?: Json | null
+          id?: string
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          nome?: string
+          place_id?: string | null
+          preco?: string | null
+          rua?: string | null
+          search_string?: string | null
+          telefone?: string | null
+          total_avaliacoes?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      movirio_patrocinadores: {
+        Row: {
+          categoria: string | null
+          cidade: string | null
+          conexao_movirio: string | null
+          contato_email: string | null
+          contato_nome: string | null
+          contato_whatsapp: string | null
+          contrapartida: string | null
+          created_at: string | null
+          id: string
+          nome: string
+          notas: string | null
+          o_que_vende: string | null
+          perfil: Json | null
+          resumo: string | null
+          status: string
+          updated_at: string | null
+          valor_estimado: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          cidade?: string | null
+          conexao_movirio?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_whatsapp?: string | null
+          contrapartida?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          notas?: string | null
+          o_que_vende?: string | null
+          perfil?: Json | null
+          resumo?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_estimado?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          cidade?: string | null
+          conexao_movirio?: string | null
+          contato_email?: string | null
+          contato_nome?: string | null
+          contato_whatsapp?: string | null
+          contrapartida?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          notas?: string | null
+          o_que_vende?: string | null
+          perfil?: Json | null
+          resumo?: string | null
+          status?: string
+          updated_at?: string | null
+          valor_estimado?: number | null
+        }
+        Relationships: []
+      }
       pagamentos: {
         Row: {
           codigo_asaas: string | null
@@ -1564,10 +1930,12 @@ export type Database = {
           email: string | null
           forma_pagamento: Database["public"]["Enums"]["forma_pagamento_professor"]
           id: string
+          mei: string | null
           nome: string
           observacoes: string | null
           updated_at: string
           valor_base: number | null
+          valor_transporte: number | null
         }
         Insert: {
           ativo?: boolean
@@ -1577,10 +1945,12 @@ export type Database = {
           email?: string | null
           forma_pagamento?: Database["public"]["Enums"]["forma_pagamento_professor"]
           id?: string
+          mei?: string | null
           nome: string
           observacoes?: string | null
           updated_at?: string
           valor_base?: number | null
+          valor_transporte?: number | null
         }
         Update: {
           ativo?: boolean
@@ -1590,10 +1960,12 @@ export type Database = {
           email?: string | null
           forma_pagamento?: Database["public"]["Enums"]["forma_pagamento_professor"]
           id?: string
+          mei?: string | null
           nome?: string
           observacoes?: string | null
           updated_at?: string
           valor_base?: number | null
+          valor_transporte?: number | null
         }
         Relationships: []
       }
@@ -2003,6 +2375,36 @@ export type Database = {
           },
         ]
       }
+      turma_professores: {
+        Row: {
+          professor_id: string
+          turma_id: string
+        }
+        Insert: {
+          professor_id: string
+          turma_id: string
+        }
+        Update: {
+          professor_id?: string
+          turma_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turma_professores_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turma_professores_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       turmas: {
         Row: {
           capacidade: number
@@ -2361,6 +2763,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       categoria_cobranca: [
@@ -2452,4 +2857,3 @@ export const Constants = {
     },
   },
 } as const
-
