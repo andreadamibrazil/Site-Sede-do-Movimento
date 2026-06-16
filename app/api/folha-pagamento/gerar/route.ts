@@ -137,7 +137,6 @@ export async function POST(req: NextRequest) {
         .from('matricula_turmas')
         .select('id', { count: 'exact', head: true })
         .eq('turma_id', turmaId)
-        .lte('data_entrada', fimStr)
         .or(`data_saida.is.null,data_saida.gte.${inicioStr}`)
       return [turmaId, count ?? 0] as const
     })
