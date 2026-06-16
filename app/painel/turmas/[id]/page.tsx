@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import PlanoAula from './PlanoAula'
 import BotaoReativarTurma from './BotaoReativarTurma'
 import BotaoRemoverAluno from './BotaoRemoverAluno'
+import AdicionarAlunosModal from './AdicionarAlunosModal'
 
 const DIAS_LABEL: Record<string, string> = {
   segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta',
@@ -109,6 +110,7 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-sm font-semibold text-gray-700">
             Alunos matriculados ({alunos.length})
           </h2>
+          <AdicionarAlunosModal turmaId={id} />
         </div>
         {alunos.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-8">Nenhum aluno nesta turma ainda.</p>
