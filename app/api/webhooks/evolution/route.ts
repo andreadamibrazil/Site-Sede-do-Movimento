@@ -1,7 +1,9 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { appendMessage } from '@/lib/azure-blob'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Webhook da Evolution API — recebe eventos de mensagem e salva na tabela conversas
+// Também grava no Azure Blob (fonte do cron de análise IA)
 // Configurar em cada instância Evolution: POST https://sededomovimento.art/api/webhooks/evolution
 // Header de autenticação: apikey = EVOLUTION_WEBHOOK_SECRET (env var)
 
@@ -101,6 +103,8 @@ export async function POST(req: NextRequest) {
       .eq('source', 'whatsapp')
       .maybeSingle()
 
+    const instance: string = body?.instance ?? 'sede-movimento'
+
     if (existing) {
       const msgs: any[] = Array.isArray(existing.messages) ? (existing.messages as any[]) : []
       // Evita duplicar mesma mensagem
@@ -109,6 +113,8 @@ export async function POST(req: NextRequest) {
         await sb.from('conversas')
           .update({ messages: msgs, updated_at: new Date().toISOString(), analisado_em: null })
           .eq('id', existing.id)
+        // Sincroniza com Azure Blob para o cron de análise IA conseguir ler
+        try { await appendMessage(instance, celular, messageEntry) } catch { /* sem Azure configurado — ignora */ }
       }
     } else {
       // Busca lead_id para vincular
@@ -123,8 +129,10 @@ export async function POST(req: NextRequest) {
         lead_id: lead?.id ?? null,
         source: 'whatsapp',
         messages: [messageEntry],
-        variables: { instance: body?.instance ?? null },
+        variables: { instance },
       })
+      // Sincroniza com Azure Blob para o cron de análise IA conseguir ler
+      try { await appendMessage(instance, celular, messageEntry) } catch { /* sem Azure configurado — ignora */ }
     }
   }
 
