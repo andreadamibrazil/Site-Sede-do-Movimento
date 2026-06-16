@@ -16,17 +16,22 @@ export default function EnviarAssinarBtn({
   async function enviar() {
     if (!emailInput) return
     setEnviando(true)
-    const res = await fetch('/api/folha-pagamento/enviar-assinar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folha_id: folhaId, professor_email: emailInput }),
-    })
-    const json = await res.json()
-    setEnviando(false)
-    if (json.ok) {
-      setResultado({ link: json.link_professor })
-    } else {
-      setResultado({ erro: json.error })
+    try {
+      const res = await fetch('/api/folha-pagamento/enviar-assinar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folha_id: folhaId, professor_email: emailInput }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (json.ok) {
+        setResultado({ link: json.link_professor })
+      } else {
+        setResultado({ erro: json.error ?? 'Erro desconhecido' })
+      }
+    } catch {
+      setResultado({ erro: 'Erro de conexão. Tente novamente.' })
+    } finally {
+      setEnviando(false)
     }
   }
 

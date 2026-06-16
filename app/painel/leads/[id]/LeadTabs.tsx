@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { atualizarLead } from './actions'
+import { atualizarLead, adicionarNota, removerNota } from './actions'
+
+type Nota = { id: string; texto: string; data: string }
 
 const ABAS = [
   { id: 'analise',  label: 'Análise IA' },
   { id: 'historico', label: 'Histórico' },
+  { id: 'notas',    label: 'Notas' },
   { id: 'dados',    label: 'Dados' },
 ]
 
@@ -53,6 +56,8 @@ export default function LeadTabs({
   analisadoEm,
   analiseCron,
   historicoAnalises,
+  modalidades,
+  notas,
 }: {
   abaAtiva: string
   lead: Record<string, unknown>
@@ -60,6 +65,8 @@ export default function LeadTabs({
   analisadoEm: string | null
   analiseCron: Record<string, unknown> | null
   historicoAnalises: unknown[]
+  modalidades: string[]
+  notas: Nota[]
 }) {
   const router   = useRouter()
   const pathname = usePathname()
@@ -78,13 +85,19 @@ export default function LeadTabs({
             }`}
           >
             {aba.label}
+            {aba.id === 'notas' && notas.length > 0 && (
+              <span className="ml-1.5 text-[10px] bg-indigo-100 text-indigo-600 rounded-full px-1.5 py-0.5">
+                {notas.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {abaAtiva === 'analise'   && <AbaAnalise analise={analise} analisadoEm={analisadoEm} analiseCron={analiseCron} />}
       {abaAtiva === 'historico' && <AbaHistorico historico={historicoAnalises} />}
-      {abaAtiva === 'dados'     && <AbaDados lead={lead} />}
+      {abaAtiva === 'notas'     && <AbaNotas notas={notas} leadId={lead.id as string} />}
+      {abaAtiva === 'dados'     && <AbaDados lead={lead} modalidades={modalidades} />}
     </div>
   )
 }
@@ -102,12 +115,10 @@ function AbaAnalise({
 }) {
   const a = analise as Record<string, unknown> | null
 
-  // Se temos dados do cron incremental, mostra o status atual primeiro
   if (analiseCron) {
     const temp = analiseCron.temperatura as string
     return (
       <div className="space-y-4">
-        {/* Status atual do cron */}
         <div className={`border rounded-xl p-5 space-y-3 ${TEMP_CLASS[temp] ?? 'bg-gray-50 border-gray-200'}`}>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">
@@ -138,13 +149,11 @@ function AbaAnalise({
           )}
         </div>
 
-        {/* Análise detalhada Gemini v2 (backup histórico) */}
         {a && !a.skip && <AnaliseDetalhadaV2 analise={a} analisadoEm={analisadoEm} />}
       </div>
     )
   }
 
-  // Sem dados do cron — mostra só Gemini v2
   if (!a) {
     return (
       <div className="bg-white border border-gray-200 rounded-xl p-10 text-center space-y-2">
@@ -256,29 +265,24 @@ function AbaHistorico({ historico }: { historico: unknown[] }) {
     )
   }
 
-  // Mais recente primeiro
   const sorted = [...historico].reverse() as Array<Record<string, unknown>>
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-400">{historico.length} análise(s) registrada(s)</p>
       <div className="relative">
-        {/* Linha vertical */}
         <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
-
         <div className="space-y-4">
           {sorted.map((entrada, i) => {
             const temp = entrada.temperatura as string
             return (
               <div key={i} className="flex gap-4 pl-2">
-                {/* Ícone na linha do tempo */}
                 <div className={`relative z-10 flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs
                   ${temp === 'quente' ? 'bg-red-100 border-red-300' :
                     temp === 'morno'  ? 'bg-orange-100 border-orange-300' :
                                        'bg-blue-50 border-blue-200'}`}>
                   {TEMP_ICON[temp] ?? '·'}
                 </div>
-
                 <div className="flex-1 min-w-0 bg-white border border-gray-200 rounded-xl p-4 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-xs font-semibold ${
@@ -295,15 +299,12 @@ function AbaHistorico({ historico }: { historico: unknown[] }) {
                         : '—'}
                     </span>
                   </div>
-
                   {!!entrada.resumo && (
                     <p className="text-sm text-gray-700 leading-snug">{entrada.resumo as string}</p>
                   )}
-
                   {!!entrada.mudanca && (
                     <p className="text-xs text-indigo-500 italic">{entrada.mudanca as string}</p>
                   )}
-
                   <p className="text-xs text-gray-400">
                     {entrada.mensagens_analisadas as number ?? 0} mensagens analisadas
                   </p>
@@ -317,11 +318,109 @@ function AbaHistorico({ historico }: { historico: unknown[] }) {
   )
 }
 
+// ── Aba Notas ─────────────────────────────────────────────────────────────────
+
+function AbaNotas({ notas: notasIniciais, leadId }: { notas: Nota[]; leadId: string }) {
+  const router = useRouter()
+  const [texto, setTexto] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [removendo, setRemovendo] = useState<string | null>(null)
+  const [erro, setErro] = useState('')
+
+  async function handleAdicionar() {
+    if (!texto.trim()) return
+    setSalvando(true)
+    setErro('')
+    try {
+      await adicionarNota(leadId, texto.trim())
+      setTexto('')
+      router.refresh()
+    } catch (e) {
+      setErro(String(e))
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  async function handleRemover(notaId: string) {
+    if (!confirm('Remover esta anotação?')) return
+    setRemovendo(notaId)
+    try {
+      await removerNota(leadId, notaId)
+      router.refresh()
+    } catch { /* silencioso */ } finally {
+      setRemovendo(null)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Campo para nova nota */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nova anotação</h3>
+        <textarea
+          value={texto}
+          onChange={e => setTexto(e.target.value)}
+          placeholder="Escreva uma anotação sobre este lead..."
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 resize-none text-gray-900"
+          rows={3}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAdicionar()
+          }}
+        />
+        {erro && <p className="text-xs text-red-500">{erro}</p>}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-300">Ctrl+Enter para salvar</span>
+          <button
+            onClick={handleAdicionar}
+            disabled={!texto.trim() || salvando}
+            className="text-xs bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+          >
+            {salvando ? 'Salvando…' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de notas */}
+      {notasIniciais.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
+          <p className="text-gray-400 text-sm">Nenhuma anotação ainda.</p>
+          <p className="text-gray-300 text-xs mt-1">Use o campo acima para registrar observações sobre este lead.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-400">{notasIniciais.length} anotação(ões)</p>
+          {notasIniciais.map(nota => (
+            <div key={nota.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">
+                  {new Date(nota.data).toLocaleString('pt-BR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </span>
+                <button
+                  onClick={() => handleRemover(nota.id)}
+                  disabled={removendo === nota.id}
+                  className="text-xs text-gray-300 hover:text-red-400 transition-colors disabled:opacity-40"
+                >
+                  {removendo === nota.id ? 'Removendo…' : 'Remover'}
+                </button>
+              </div>
+              <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{nota.texto}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Aba Dados ─────────────────────────────────────────────────────────────────
 
 const INP = 'w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-300'
 
-function AbaDados({ lead }: { lead: Record<string, unknown> }) {
+function AbaDados({ lead, modalidades }: { lead: Record<string, unknown>; modalidades: string[] }) {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState({
     nome:                 (lead.nome                 as string) ?? '',
@@ -388,7 +487,6 @@ function AbaDados({ lead }: { lead: Record<string, unknown> }) {
           { label: 'Nome',          key: 'nome' },
           { label: 'Celular',       key: 'celular' },
           { label: 'Email',         key: 'email' },
-          { label: 'Modalidade',    key: 'modalidade_interesse' },
           { label: 'Como conheceu', key: 'como_conheceu' },
         ].map(({ label, key }) => (
           <div key={key} className="flex items-center gap-4">
@@ -400,6 +498,34 @@ function AbaDados({ lead }: { lead: Record<string, unknown> }) {
             />
           </div>
         ))}
+
+        {/* Modalidade como chips clicáveis */}
+        <div className="flex items-start gap-4">
+          <span className="text-sm text-gray-500 w-36 shrink-0 pt-1">Modalidade</span>
+          <div className="flex flex-wrap gap-1.5">
+            {modalidades.map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, modalidade_interesse: f.modalidade_interesse === m ? '' : m }))}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  form.modalidade_interesse === m
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+            {/* Campo manual caso a modalidade não esteja na lista */}
+            {form.modalidade_interesse && !modalidades.includes(form.modalidade_interesse) && (
+              <span className="text-xs px-3 py-1 rounded-full border bg-amber-50 border-amber-200 text-amber-700">
+                {form.modalidade_interesse} (manual)
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500 w-36 shrink-0">Status</span>
           <select className={INP} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>

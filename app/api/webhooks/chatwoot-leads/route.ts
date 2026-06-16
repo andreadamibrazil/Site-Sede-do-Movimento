@@ -21,13 +21,15 @@ function normalizarCelular(phone: string | null | undefined): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  // Autenticação opcional via token secreto
+  // Autenticação obrigatória via token secreto
   const secret = process.env.CHATWOOT_WEBHOOK_SECRET?.trim()
-  if (secret) {
-    const token = req.headers.get('x-chatwoot-token')?.trim()
-    if (token !== secret) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[webhook/chatwoot] CHATWOOT_WEBHOOK_SECRET não configurada — endpoint bloqueado')
+    return NextResponse.json({ error: 'webhook not configured' }, { status: 503 })
+  }
+  const token = req.headers.get('x-chatwoot-token')?.trim()
+  if (token !== secret) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   let body: any

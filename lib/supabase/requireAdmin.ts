@@ -10,11 +10,11 @@ export async function requireAdmin() {
   const service = createServiceClient()
   const { data: perfil } = await service
     .from('perfis_usuario')
-    .select('perfil')
+    .select('perfil, ativo')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (perfil?.perfil !== 'admin') redirect('/painel')
+  if (perfil?.perfil !== 'admin' || !perfil?.ativo) redirect('/painel')
 
   return { user, isAdmin: true }
 }

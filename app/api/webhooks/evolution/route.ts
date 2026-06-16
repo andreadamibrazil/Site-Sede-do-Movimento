@@ -46,11 +46,13 @@ async function resolveLidCelular(lid: string, instance: string): Promise<string 
 export async function POST(req: NextRequest) {
   // Autenticação via apikey no header (padrão Evolution API)
   const secret = process.env.EVOLUTION_WEBHOOK_SECRET
-  if (secret) {
-    const apikey = req.headers.get('apikey') ?? req.headers.get('x-api-key')
-    if (apikey?.trim() !== secret.trim()) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[webhook/evolution] EVOLUTION_WEBHOOK_SECRET não configurada — endpoint bloqueado')
+    return NextResponse.json({ error: 'webhook not configured' }, { status: 503 })
+  }
+  const apikey = req.headers.get('apikey') ?? req.headers.get('x-api-key')
+  if (apikey?.trim() !== secret.trim()) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   let body: any

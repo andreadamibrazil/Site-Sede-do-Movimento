@@ -7,13 +7,15 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   // Verifica token de segurança — aceita via header X-Auth-Token OU query ?secret=
   const secret = process.env.DOCUSEAL_WEBHOOK_SECRET
-  if (secret) {
-    const headerToken = req.headers.get('x-auth-token') ?? req.headers.get('authorization')?.replace('Bearer ', '')
-    const queryToken = req.nextUrl.searchParams.get('secret')
-    const tokenRecebido = headerToken ?? queryToken
-    if (tokenRecebido !== secret) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-    }
+  if (!secret) {
+    console.error('[webhook/docuseal] DOCUSEAL_WEBHOOK_SECRET não configurada — endpoint bloqueado')
+    return NextResponse.json({ error: 'webhook not configured' }, { status: 503 })
+  }
+  const headerToken = req.headers.get('x-auth-token') ?? req.headers.get('authorization')?.replace('Bearer ', '')
+  const queryToken = req.nextUrl.searchParams.get('secret')
+  const tokenRecebido = headerToken ?? queryToken
+  if (tokenRecebido !== secret) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
   let body: any

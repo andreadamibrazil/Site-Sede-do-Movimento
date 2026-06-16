@@ -16,10 +16,18 @@ export default function RemoverAvulsoBtn({
   if (folhaStatus === 'assinado' || folhaStatus === 'pago') return null
 
   async function remover() {
+    if (!confirm('Remover este lançamento avulso?')) return
     setRemovendo(true)
     try {
-      await fetch(`/api/folha-pagamento/itens/${itemId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/folha-pagamento/itens/${itemId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        alert(json.error ?? 'Erro ao remover item')
+        return
+      }
       router.refresh()
+    } catch {
+      alert('Erro de conexão. Tente novamente.')
     } finally {
       setRemovendo(false)
     }

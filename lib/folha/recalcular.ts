@@ -1,0 +1,23 @@
+// Helper compartilhado para recalcular os totais de uma folha de pagamento
+// após qualquer alteração em itens_folha (edição, remoção, adição de avulso).
+export async function recalcularFolha(sb: any, folhaId: string) {
+  const { data: itens } = await sb
+    .from('itens_folha')
+    .select('tipo, valor, pago')
+    .eq('folha_id', folhaId)
+
+  let valorAulas = 0
+  let valorFixo = 0
+
+  for (const item of (itens ?? [])) {
+    const v = item.pago ? (item.valor ?? 0) : 0
+    if (item.tipo === 'aula') valorAulas += v
+    else valorFixo += v
+  }
+
+  await sb.from('folhas_pagamento').update({
+    valor_aulas: Math.round(valorAulas * 100) / 100,
+    valor_fixo:  Math.round(valorFixo  * 100) / 100,
+    valor_total: Math.round((valorAulas + valorFixo) * 100) / 100,
+  }).eq('id', folhaId)
+}

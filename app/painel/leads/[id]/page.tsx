@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import LeadTabs from './LeadTabs'
@@ -37,13 +37,25 @@ export default async function LeadPage({
   // Análise incremental do cron (mais recente — com histórico de evolução)
   let historicoAnalises: unknown[] = []
   let analiseCron: Record<string, unknown> | null = null
+  let notas: Array<{ id: string; texto: string; data: string }> = []
   try {
     if (lead.observacoes) {
       const obs = JSON.parse(lead.observacoes as string)
       historicoAnalises = obs.historico_analises ?? []
       if (obs.temperatura) analiseCron = obs
+      notas = obs.notas ?? []
     }
   } catch { /* observacoes não é JSON */ }
+
+  // Modalidades da tabela oficial para seleção por chips
+  const service = createServiceClient()
+  const { data: modalidadesData } = await service
+    .from('modalidades')
+    .select('nome')
+    .eq('ativo', true)
+    .order('nome')
+
+  const modalidades = (modalidadesData ?? []).map(m => m.nome)
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-5">
@@ -85,6 +97,8 @@ export default async function LeadPage({
         analisadoEm={conversa?.analisado_em ?? null}
         analiseCron={analiseCron}
         historicoAnalises={historicoAnalises}
+        modalidades={modalidades}
+        notas={notas}
       />
     </div>
   )

@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
+import { recalcularFolha } from '@/lib/folha/recalcular'
 import { NextRequest, NextResponse } from 'next/server'
 
 // POST /api/folha-pagamento/[folhaId]/avulso — adiciona item avulso (workshop, passagem, etc.)
@@ -44,26 +45,4 @@ export async function POST(
   await recalcularFolha(sb, folhaId)
 
   return NextResponse.json({ ok: true })
-}
-
-async function recalcularFolha(sb: any, folhaId: string) {
-  const { data: itens } = await sb
-    .from('itens_folha')
-    .select('tipo, valor, pago')
-    .eq('folha_id', folhaId)
-
-  let valorAulas = 0
-  let valorFixo = 0
-
-  for (const item of (itens ?? [])) {
-    const v = item.pago ? (item.valor ?? 0) : 0
-    if (item.tipo === 'aula') valorAulas += v
-    else valorFixo += v
-  }
-
-  await sb.from('folhas_pagamento').update({
-    valor_aulas: Math.round(valorAulas * 100) / 100,
-    valor_fixo: Math.round(valorFixo * 100) / 100,
-    valor_total: Math.round((valorAulas + valorFixo) * 100) / 100,
-  }).eq('id', folhaId)
 }

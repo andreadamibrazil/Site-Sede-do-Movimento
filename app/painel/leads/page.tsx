@@ -61,8 +61,8 @@ export default async function LeadsPage({
 
   let query = supabase
     .from('leads')
-    .select('id, nome, celular, email, modalidade_interesse, como_conheceu, status, observacoes, created_at', { count: 'exact' })
-    .order('created_at', { ascending: false })
+    .select('id, nome, celular, email, modalidade_interesse, como_conheceu, status, observacoes, created_at, updated_at', { count: 'exact' })
+    .order('updated_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (status && status !== 'todos') query = query.eq('status', status as 'novo' | 'em_contato' | 'experimental_agendada' | 'convertido' | 'perdido')
@@ -129,7 +129,7 @@ export default async function LeadsPage({
             </div>
             <div className="flex items-center gap-2">
               <Suspense><BuscaLead /></Suspense>
-              <BotaoNovoLead />
+              <BotaoNovoLead modalidades={modalidades} />
             </div>
           </div>
 

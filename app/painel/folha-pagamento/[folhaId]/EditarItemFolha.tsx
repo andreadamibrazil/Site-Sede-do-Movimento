@@ -54,28 +54,48 @@ export default function EditarItemFolha({
   async function aplicar(motivo: Motivo) {
     if (bloqueado) return
     setCarregando(true)
-    const devePagar = motivo === 'atestado' || motivo === 'falta_justificada'
-    await fetch(`/api/folha-pagamento/itens/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pago: devePagar, descricao_motivo: motivo }),
-    })
-    setCarregando(false)
-    setAberto(false)
-    router.refresh()
+    try {
+      const devePagar = motivo === 'atestado' || motivo === 'falta_justificada'
+      const res = await fetch(`/api/folha-pagamento/itens/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pago: devePagar, descricao_motivo: motivo }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        alert(json.error ?? 'Erro ao salvar')
+        return
+      }
+      setAberto(false)
+      router.refresh()
+    } catch {
+      alert('Erro de conexão. Tente novamente.')
+    } finally {
+      setCarregando(false)
+    }
   }
 
   async function restaurar() {
     if (bloqueado) return
     setCarregando(true)
-    await fetch(`/api/folha-pagamento/itens/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pago: true, descricao_motivo: null }),
-    })
-    setCarregando(false)
-    setAberto(false)
-    router.refresh()
+    try {
+      const res = await fetch(`/api/folha-pagamento/itens/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pago: true, descricao_motivo: null }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        alert(json.error ?? 'Erro ao restaurar')
+        return
+      }
+      setAberto(false)
+      router.refresh()
+    } catch {
+      alert('Erro de conexão. Tente novamente.')
+    } finally {
+      setCarregando(false)
+    }
   }
 
   if (bloqueado) return null

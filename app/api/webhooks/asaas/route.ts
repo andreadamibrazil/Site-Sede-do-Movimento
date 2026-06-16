@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
+  const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN
+  if (!webhookToken) {
+    console.error('[webhook/asaas] ASAAS_WEBHOOK_TOKEN não configurada — endpoint bloqueado')
+    return NextResponse.json({ error: 'webhook not configured' }, { status: 503 })
+  }
   const token = req.headers.get('asaas-access-token')
-  if (process.env.ASAAS_WEBHOOK_TOKEN && token !== process.env.ASAAS_WEBHOOK_TOKEN) {
+  if (token !== webhookToken) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 

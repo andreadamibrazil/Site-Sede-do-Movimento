@@ -8,11 +8,7 @@ const ORIGENS = [
   'Instagram', 'WhatsApp', 'Google', 'Festival', 'Outro',
 ]
 
-const MODALIDADES = [
-  'Ballet', 'Jazz', 'Contemporâneo', 'Hip Hop', 'Infantil', 'Baby Class', 'Adulto', 'Outro',
-]
-
-export default function BotaoNovoLead() {
+export default function BotaoNovoLead({ modalidades }: { modalidades: string[] }) {
   const router = useRouter()
   const [aberto, setAberto] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -103,15 +99,23 @@ export default function BotaoNovoLead() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Modalidade de interesse</label>
-                <select
-                  value={form.modalidade_interesse}
-                  onChange={e => set('modalidade_interesse', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="">Selecionar...</option>
-                  {MODALIDADES.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
+                <label className="text-xs font-medium text-gray-700 mb-2 block">Modalidade de interesse</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {modalidades.map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => set('modalidade_interesse', form.modalidade_interesse === m ? '' : m)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                        form.modalidade_interesse === m
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 bg-white'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

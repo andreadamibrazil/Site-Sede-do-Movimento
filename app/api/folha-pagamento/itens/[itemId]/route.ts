@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
+import { recalcularFolha } from '@/lib/folha/recalcular'
 import { NextRequest, NextResponse } from 'next/server'
 
 // PATCH /api/folha-pagamento/itens/[itemId] — toggle pago ou atualiza motivo
@@ -75,29 +76,3 @@ export async function DELETE(
   return NextResponse.json({ ok: true })
 }
 
-async function recalcularFolha(sb: any, folhaId: string) {
-  const { data: itens } = await sb
-    .from('itens_folha')
-    .select('tipo, valor, pago')
-    .eq('folha_id', folhaId)
-
-  let valorAulas = 0
-  let valorFixo = 0
-
-  for (const item of (itens ?? [])) {
-    const v = item.pago ? (item.valor ?? 0) : 0
-    if (item.tipo === 'aula') valorAulas += v
-    else valorFixo += v
-  }
-
-  const valorTotal = Math.round((valorAulas + valorFixo) * 100) / 100
-
-  await sb
-    .from('folhas_pagamento')
-    .update({
-      valor_aulas: Math.round(valorAulas * 100) / 100,
-      valor_fixo: Math.round(valorFixo * 100) / 100,
-      valor_total: valorTotal,
-    })
-    .eq('id', folhaId)
-}

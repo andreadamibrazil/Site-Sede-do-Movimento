@@ -15,11 +15,11 @@ export async function requireAdmin(): Promise<AdminGuardOk | AdminGuardFail> {
   const service = createServiceClient()
   const { data: perfil } = await service
     .from('perfis_usuario')
-    .select('perfil')
+    .select('perfil, ativo')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (perfil?.perfil !== 'admin') {
+  if (perfil?.perfil !== 'admin' || !perfil?.ativo) {
     return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
   }
 
@@ -38,11 +38,11 @@ export async function requireStaff(): Promise<AdminGuardOk | AdminGuardFail> {
   const service = createServiceClient()
   const { data: perfil } = await service
     .from('perfis_usuario')
-    .select('perfil')
+    .select('perfil, ativo')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (perfil?.perfil !== 'admin' && perfil?.perfil !== 'secretaria') {
+  if ((perfil?.perfil !== 'admin' && perfil?.perfil !== 'secretaria') || !perfil?.ativo) {
     return { ok: false, response: NextResponse.json({ error: 'acesso negado' }, { status: 403 }) }
   }
 

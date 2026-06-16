@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
       if (prof) return NextResponse.redirect(`${origin}${next}`)
     }
 
-    // Não é professor — volta para login com erro
+    // Não é professor — encerra sessão para não deixar cookie órfão
+    await supabase.auth.signOut()
     return NextResponse.redirect(`${origin}/professor/login?erro=acesso_negado`)
   }
 
