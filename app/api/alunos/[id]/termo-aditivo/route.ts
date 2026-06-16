@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     .select(`
       nome, data_nascimento, cpf, celular, email, endereco, bairro, cep,
       responsavel_principal_id,
-      responsaveis!alunos_responsavel_principal_id_fkey(nome, data_nascimento, cpf, celular, email),
+      responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(nome, data_nascimento, cpf, celular, email),
       matriculas(status, data_inicio, dia_vencimento, plano, valor_final)
     `)
     .eq('id', id)
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (!aluno) return NextResponse.json({ error: 'Aluno não encontrado' }, { status: 404 })
 
-  const resp = (aluno as any).responsaveis
+  const resp = (aluno as any).responsavel_principal
   const isMinor = !!aluno.responsavel_principal_id && !!resp
 
   const nomeSign = isMinor ? resp?.nome : aluno.nome

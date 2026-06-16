@@ -25,9 +25,15 @@ export async function POST(req: NextRequest) {
   const num = body.phone.replace(/\D/g, '')
   const numero = num.startsWith('55') ? num : `55${num}`
 
+  const evolutionUrl = process.env.EVOLUTION_API_URL
+  const evolutionKey = process.env.EVOLUTION_API_KEY
+  if (!evolutionUrl || !evolutionKey) {
+    return NextResponse.json({ error: 'WhatsApp não configurado no servidor' }, { status: 503 })
+  }
+
   try {
     const res = await fetch(
-      `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
+      `${evolutionUrl}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
       {
         method: 'POST',
         headers: {
