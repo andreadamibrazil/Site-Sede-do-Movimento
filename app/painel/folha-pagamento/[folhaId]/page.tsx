@@ -251,9 +251,9 @@ export default async function FolhaDetalhePage({
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Assinatura digital</h2>
           {folha.autentique_doc_id && (
             <p className="text-xs text-blue-600 mb-3">
-              📄 Documento já criado no Autentique —{' '}
+              📄 Documento já criado no DocuSeal —{' '}
               <a
-                href={`https://app.autentique.com.br/dashboard/documentos/${folha.autentique_doc_id}`}
+                href={`${process.env.NEXT_PUBLIC_DOCUSEAL_URL ?? 'https://docuseal.sededomovimento.art'}/submissions/${folha.autentique_doc_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline"
@@ -273,7 +273,7 @@ export default async function FolhaDetalhePage({
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
           <p className="text-sm font-medium text-green-800">✅ Folha assinada por ambas as partes</p>
           <a
-            href={`https://app.autentique.com.br/dashboard/documentos/${folha.autentique_doc_id}`}
+            href={`${process.env.NEXT_PUBLIC_DOCUSEAL_URL ?? 'https://docuseal.sededomovimento.art'}/submissions/${folha.autentique_doc_id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-green-600 underline mt-1 inline-block"

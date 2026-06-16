@@ -84,7 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     <p><span class="label">Modalidades / Turmas:</span> <span class="bold">${turmas || '—'}</span></p>
     ${matriculaAtiva ? `
     <p><span class="label">Plano:</span> ${PLANOS[matriculaAtiva.plano] ?? matriculaAtiva.plano}</p>
-    <p><span class="label">Valor mensal:</span> R$ ${Number(matriculaAtiva.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+    <p><span class="label">Valor mensal:</span> ${matriculaAtiva.valor_final != null ? `R$ ${Number(matriculaAtiva.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}</p>
     <p><span class="label">Vencimento:</span> Dia ${matriculaAtiva.dia_vencimento} de cada mês</p>
     ` : ''}
     ${resp?.nome ? `<p><span class="label">Responsável financeiro:</span> ${resp.nome}${resp.cpf ? ` — CPF ${resp.cpf}` : ''}</p>` : ''}

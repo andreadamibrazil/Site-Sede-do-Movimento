@@ -3,7 +3,7 @@ const API_KEY  = process.env.DOCUSEAL_API_KEY ?? ''
 
 // Mapa de templates — adicione uma linha para cada novo documento
 export const DOCUSEAL_TEMPLATES = {
-  contrato_matricula: Number(process.env.DOCUSEAL_TEMPLATE_CONTRATO ?? 1),
+  contrato_matricula: Number(process.env.DOCUSEAL_TEMPLATE_CONTRATO ?? 0),
   // termo_aditivo:     Number(process.env.DOCUSEAL_TEMPLATE_TERMO_ADITIVO ?? 0),
   // declaracao_aluno:  Number(process.env.DOCUSEAL_TEMPLATE_DECLARACAO ?? 0),
 }

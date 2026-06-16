@@ -25,6 +25,19 @@ export async function POST(req: NextRequest) {
     .eq('mes_referencia', inicioStr)
     .eq('status', 'rascunho')
 
+  // Se ainda existe folha (status != rascunho), não pode regenerar
+  const { data: existente } = await sb
+    .from('folhas_pagamento')
+    .select('id, status')
+    .eq('professor_id', professor_id)
+    .eq('mes_referencia', inicioStr)
+    .maybeSingle()
+  if (existente) {
+    return NextResponse.json({
+      error: `Folha com status "${existente.status}" não pode ser regenerada. Acesse a folha para editar ou marcar como rascunho primeiro.`,
+    }, { status: 409 })
+  }
+
   // Busca turmas do professor (para fallback quando aulas.professor_id não está preenchido)
   const { data: turmasDoProf } = await sb
     .from('turmas')
@@ -104,7 +117,7 @@ export async function POST(req: NextRequest) {
     .eq('ativo', true)
     .order('min_alunos')
 
-  function calcularValorHora(numAlunos: number, turmaId: string): { valor: number; bonus: number } {
+  function calcularValorHora(numAlunos: number, turmaId: string): { valor: number; bonus: number; piso: number } {
     const faixasTurma = (faixas ?? []).filter((f: any) => f.turma_id === turmaId)
     const faixasGlobais = (faixas ?? []).filter((f: any) => !f.turma_id)
     const pool = faixasTurma.length > 0 ? faixasTurma : faixasGlobais
@@ -113,21 +126,23 @@ export async function POST(req: NextRequest) {
     ) ?? pool[0]
     const valorHora = faixa?.valor_hora ?? 31.50
     const piso = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)[0]?.valor_hora ?? 31.50
-    return { valor: valorHora, bonus: Math.max(0, valorHora - piso) }
+    return { valor: valorHora, bonus: Math.max(0, valorHora - piso), piso }
   }
 
-  // Conta alunos matriculados por turma no mês
+  // Conta alunos matriculados por turma no mês — paralelo para evitar N+1 queries
   const turmaIds = [...new Set(aulas.map((a: any) => a.turma_id as string))]
-  const alunosPorTurma: Record<string, number> = {}
-  for (const turmaId of turmaIds) {
-    const { count } = await sb
-      .from('matricula_turmas')
-      .select('id', { count: 'exact', head: true })
-      .eq('turma_id', turmaId)
-      .lte('data_entrada', inicioStr)
-      .or(`data_saida.is.null,data_saida.gte.${fimStr}`)
-    alunosPorTurma[turmaId] = count ?? 0
-  }
+  const contagensParalelas = await Promise.all(
+    turmaIds.map(async (turmaId) => {
+      const { count } = await sb
+        .from('matricula_turmas')
+        .select('id', { count: 'exact', head: true })
+        .eq('turma_id', turmaId)
+        .lte('data_entrada', fimStr)
+        .or(`data_saida.is.null,data_saida.gte.${inicioStr}`)
+      return [turmaId, count ?? 0] as const
+    })
+  )
+  const alunosPorTurma: Record<string, number> = Object.fromEntries(contagensParalelas)
 
   // Valor fixo do professor
   const { data: prof } = await (sb as any)
@@ -174,7 +189,7 @@ export async function POST(req: NextRequest) {
     }
 
     const numAlunos = alunosPorTurma[aula.turma_id] ?? 0
-    const { valor: valorHora, bonus: bonusHora } = calcularValorHora(numAlunos, aula.turma_id)
+    const { valor: valorHora, bonus: bonusHora, piso: pisoHora } = calcularValorHora(numAlunos, aula.turma_id)
 
     const [hi, mi] = (aula.hora_inicio ?? '00:00').split(':').map(Number)
     const [hf, mf] = (aula.hora_fim ?? '00:00').split(':').map(Number)
@@ -191,7 +206,7 @@ export async function POST(req: NextRequest) {
       hora_fim: aula.hora_fim,
       horas_aula: horasAula,
       num_alunos_mes: numAlunos,
-      valor_hora_base: 31.50,
+      valor_hora_base: pisoHora,
       bonus_hora: bonusHora,
       valor_hora_efetivo: valorHora,
       descricao: motivo,
