@@ -7,6 +7,7 @@ import AdicionarAvulsoBtn from './AdicionarAvulsoBtn'
 import RemoverAvulsoBtn from './RemoverAvulsoBtn'
 import ComprovanteBtn from './ComprovanteBtn'
 import RecalcularFolhaBtn from './RecalcularFolhaBtn'
+import AjustarAlunosTurmaBtn from './AjustarAlunosTurmaBtn'
 import { FERIADOS_RJ } from '@/lib/feriados'
 
 export default async function FolhaDetalhePage({
@@ -38,14 +39,15 @@ export default async function FolhaDetalhePage({
   const prof = folha.professores as any
   const mes = new Date(folha.mes_referencia + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
-  // Agrupa aulas por turma
-  const porTurma: Record<string, { nome: string; itens: any[]; total: number }> = {}
+  // Agrupa aulas por turma (chave = turma_id para ser robusta a nomes duplicados)
+  const porTurma: Record<string, { nome: string; turmaId: string; itens: any[]; total: number }> = {}
   for (const item of (itens ?? [])) {
     if (item.tipo !== 'aula') continue
+    const turmaId = item.turma_id as string
     const nome = (item.turmas as any)?.nome ?? 'Turma'
-    if (!porTurma[nome]) porTurma[nome] = { nome, itens: [], total: 0 }
-    porTurma[nome].itens.push(item)
-    porTurma[nome].total += item.valor ?? 0
+    if (!porTurma[turmaId]) porTurma[turmaId] = { nome, turmaId, itens: [], total: 0 }
+    porTurma[turmaId].itens.push(item)
+    porTurma[turmaId].total += item.valor ?? 0
   }
 
   const itensFixos = (itens ?? []).filter((i: any) => i.tipo === 'fixo')
@@ -97,18 +99,23 @@ export default async function FolhaDetalhePage({
       )}
 
       {/* Aulas por turma */}
-      {Object.values(porTurma).map(({ nome, itens: aulasT, total }) => {
+      {Object.values(porTurma).map(({ nome, turmaId, itens: aulasT, total }) => {
         const primeiroItem = aulasT[0]
         const numAlunos = primeiroItem?.num_alunos_mes ?? 0
         const valorHora = primeiroItem?.valor_hora_efetivo ?? 0
         const bonus = primeiroItem?.bonus_hora ?? 0
         return (
-          <div key={nome} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div key={turmaId} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900 text-sm">{nome}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {numAlunos} aluno{numAlunos !== 1 ? 's' : ''} no mês ·{' '}
+                  <AjustarAlunosTurmaBtn
+                    folhaId={folhaId}
+                    turmaId={turmaId}
+                    numAlunos={numAlunos}
+                    folhaStatus={folha.status}
+                  />{' '}·{' '}
                   <span className="text-gray-600">R$ {Number(valorHora).toFixed(2).replace('.', ',')}/h</span>
                   {bonus > 0 && (
                     <span className="text-green-600 ml-1">(base R$31,50 + bônus R${Number(bonus).toFixed(2).replace('.', ',')})</span>
