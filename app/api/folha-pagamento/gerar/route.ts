@@ -47,14 +47,14 @@ export async function POST(req: NextRequest) {
   const turmaIds_prof = (turmasDoProf ?? []).map((t: any) => t.id as string)
 
   // Busca turmas via co-regência (turma_professores)
-  const { data: turmaProfs } = await (sb as any)
+  const { data: turmaProfs } = await sb
     .from('turma_professores')
     .select('turma_id')
     .eq('professor_id', professor_id)
 
-  const turmaIds_coregencia = ((turmaProfs ?? []) as any[])
-    .map((t: any) => t.turma_id as string)
-    .filter((id: string) => !turmaIds_prof.includes(id))
+  const turmaIds_coregencia = (turmaProfs ?? [])
+    .map((t) => t.turma_id)
+    .filter((id) => !turmaIds_prof.includes(id))
 
   // Query 1: aulas com professor_id explícito
   const { data: aulas1 } = await sb
@@ -104,9 +104,9 @@ export async function POST(req: NextRequest) {
 
   const substituicoesMap: Record<string, { tem_atestado: boolean; professor_substituto_id: string | null }> = {}
   for (const s of (substituicoes ?? [])) {
-    substituicoesMap[(s as any).aula_id] = {
-      tem_atestado: (s as any).tem_atestado,
-      professor_substituto_id: (s as any).professor_substituto_id,
+    substituicoesMap[s.aula_id] = {
+      tem_atestado: s.tem_atestado,
+      professor_substituto_id: s.professor_substituto_id,
     }
   }
 
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
   const alunosPorTurma: Record<string, number> = Object.fromEntries(contagensParalelas)
 
   // Valor fixo do professor
-  const { data: prof } = await (sb as any)
+  const { data: prof } = await sb
     .from('professores')
     .select('nome, valor_base, forma_pagamento, valor_transporte')
     .eq('id', professor_id)
@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Transporte mensal (campo valor_transporte no perfil do professor)
-  const valorTransporte = Math.round(Number((prof as any)?.valor_transporte ?? 0) * 100) / 100
+  const valorTransporte = Math.round(Number(prof?.valor_transporte ?? 0) * 100) / 100
   if (valorTransporte > 0) {
     itens.push({ tipo: 'fixo', descricao: 'Transporte / passagem mensal', valor: valorTransporte, pago: true })
     totalFixo += valorTransporte

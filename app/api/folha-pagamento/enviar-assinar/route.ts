@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   const { folha_id, professor_email, admin_email } = await req.json()
   if (!folha_id) return NextResponse.json({ error: 'folha_id obrigatório' }, { status: 400 })
 
-  const { data: folha } = await (sb as any)
+  const { data: folha } = await sb
     .from('folhas_pagamento')
     .select('*, professores(nome, email, cpf, mei)')
     .eq('id', folha_id)
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Atualiza folha
-  await (sb as any).from('folhas_pagamento').update({
+  await sb.from('folhas_pagamento').update({
     status: 'enviado',
     autentique_doc_id: String(resultado.submission_id),
     ...(driveFileId ? { drive_pdf_id: driveFileId, drive_pdf_url: drivePdfUrl } : {}),

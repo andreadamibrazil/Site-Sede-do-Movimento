@@ -12,7 +12,7 @@ export async function GET(
   if (!guard.ok) return guard.response
 
   const { folhaId } = await params
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   const { data: folha } = await sb
     .from('folhas_pagamento')

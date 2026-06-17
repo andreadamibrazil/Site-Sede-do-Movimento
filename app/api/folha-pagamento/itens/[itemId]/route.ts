@@ -41,7 +41,7 @@ export async function PATCH(
     if (vh > 0 && h > 0) updates.valor = Math.round(vh * h * 100) / 100
   }
 
-  await (sb as any).from('itens_folha').update(updates).eq('id', itemId)
+  await sb.from('itens_folha').update(updates).eq('id', itemId)
 
   await recalcularFolha(sb, item.folha_id)
 
@@ -65,7 +65,7 @@ export async function DELETE(
     .single()
 
   if (!item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
-  if ((item as any).tipo !== 'avulso') {
+  if (item.tipo !== 'avulso') {
     return NextResponse.json({ error: 'Apenas itens avulsos podem ser removidos' }, { status: 403 })
   }
 

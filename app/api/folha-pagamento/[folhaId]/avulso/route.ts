@@ -19,7 +19,7 @@ export async function POST(
     return NextResponse.json({ error: 'descricao e valor são obrigatórios' }, { status: 400 })
   }
 
-  const sb = createServiceClient() as any
+  const sb = createServiceClient()
 
   const { data: folha } = await sb
     .from('folhas_pagamento')

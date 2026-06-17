@@ -35,7 +35,7 @@ export async function POST(
   const { folhaId } = await params
   const sb = createServiceClient()
 
-  const { data: folha } = await (sb as any)
+  const { data: folha } = await sb
     .from('folhas_pagamento')
     .select('id, status, mes_referencia, professores(nome)')
     .eq('id', folhaId)
@@ -94,7 +94,7 @@ export async function POST(
   }
 
   // Salva URL imediatamente (não depende do Gemini)
-  await (sb as any).from('folhas_pagamento').update({
+  await sb.from('folhas_pagamento').update({
     comprovante_url: driveUrl,
     comprovante_adicionado_em: new Date().toISOString(),
   }).eq('id', folhaId)
@@ -113,9 +113,9 @@ export async function POST(
     geminiErro = String(err)
   }
 
-  // Salva dados do Gemini separado (coluna pode não existir ainda se migration pendente)
+  // Salva dados do Gemini
   if (dadosExtraidos) {
-    await (sb as any).from('folhas_pagamento')
+    await sb.from('folhas_pagamento')
       .update({ comprovante_dados: dadosExtraidos })
       .eq('id', folhaId)
   }
@@ -143,6 +143,6 @@ export async function PATCH(
   const updates: Record<string, any> = { comprovante_url: comprovante_url || null }
   if (comprovante_url) updates.comprovante_adicionado_em = new Date().toISOString()
 
-  await (sb as any).from('folhas_pagamento').update(updates).eq('id', folhaId)
+  await sb.from('folhas_pagamento').update(updates).eq('id', folhaId)
   return NextResponse.json({ ok: true })
 }
