@@ -10,9 +10,18 @@ export default async function OrganizationSchema() {
   const schema = {
     "@context": "https://schema.org",
     "@type": ["EducationalOrganization", "LocalBusiness"],
+    "@id": `${siteConfig.url}/#organization`,
     name: siteConfig.name,
+    alternateName: "Sede do Movimento — Escola de Artes Cênicas",
     description: siteConfig.description,
     url: siteConfig.url,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteConfig.url}/logo-sede.png`,
+      width: 512,
+      height: 512,
+    },
+    image: `${siteConfig.url}/og-image.jpg`,
     telephone: s?.phone ?? siteConfig.phone,
     email: s?.email ?? siteConfig.email,
     address: {
@@ -26,20 +35,51 @@ export default async function OrganizationSchema() {
     geo: {
       "@type": "GeoCoordinates",
       latitude: -22.9205,
-      longitude: -43.1930,
+      longitude: -43.193,
     },
+    hasMap: s?.googleMapsLink ?? "https://maps.google.com/?q=Sede+do+Movimento+Rio+Comprido+Rio+de+Janeiro",
     sameAs: [
       s?.instagram ?? siteConfig.social.instagram,
       s?.youtube ?? siteConfig.social.youtube,
       s?.facebook ?? siteConfig.social.facebook,
       s?.tiktok ?? siteConfig.social.tiktok,
     ].filter(Boolean),
-    hasMap: s?.googleMapsLink ?? siteConfig.social.whatsapp,
     priceRange: "$$",
     currenciesAccepted: "BRL",
-    paymentAccepted: "Dinheiro, Cartão de crédito, PIX",
-    openingHours: ["Mo-Fr 09:00-21:00", "Sa 09:00-17:00"],
-    image: `${siteConfig.url}/og-image.jpg`,
+    paymentAccepted: "Dinheiro, Cartão de crédito, PIX, Boleto",
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "09:00",
+        closes: "21:00",
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Saturday"],
+        opens: "09:00",
+        closes: "17:00",
+      },
+    ],
+    hasOfferCatalog: {
+      "@type": "OfferCatalog",
+      name: "Cursos e Modalidades",
+      itemListElement: [
+        { "@type": "Offer", itemOffered: { "@type": "Course", name: "Ballet Clássico", url: `${siteConfig.url}/ensino/modalidades` } },
+        { "@type": "Offer", itemOffered: { "@type": "Course", name: "Jazz", url: `${siteConfig.url}/ensino/modalidades` } },
+        { "@type": "Offer", itemOffered: { "@type": "Course", name: "Sapateado", url: `${siteConfig.url}/ensino/modalidades` } },
+        { "@type": "Offer", itemOffered: { "@type": "Course", name: "Teatro Musical", url: `${siteConfig.url}/ensino/modalidades` } },
+        { "@type": "Offer", itemOffered: { "@type": "Course", name: "Música", url: `${siteConfig.url}/ensino/modalidades` } },
+      ],
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      telephone: s?.phone ?? siteConfig.phone,
+      email: s?.email ?? siteConfig.email,
+      availableLanguage: "Portuguese",
+      areaServed: "BR",
+    },
   };
 
   return (

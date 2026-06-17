@@ -46,6 +46,26 @@ export const postType = defineType({
       validation: (r) => r.required(),
     }),
     defineField({
+      name: "formato",
+      title: "Formato do artigo",
+      type: "string",
+      group: "content",
+      description: "Badge visual que aparece no card e no topo do artigo.",
+      options: {
+        list: [
+          { title: "📰 Notícia", value: "noticia" },
+          { title: "🔍 Curiosidade", value: "curiosidade" },
+          { title: "🏆 Conquista", value: "conquista" },
+          { title: "🎭 Bastidores", value: "bastidores" },
+          { title: "📖 História", value: "historia" },
+          { title: "🎤 Entrevista", value: "entrevista" },
+          { title: "💡 Benefícios", value: "beneficios" },
+        ],
+        layout: "radio",
+      },
+      initialValue: "noticia",
+    }),
+    defineField({
       name: "publishedAt",
       title: "Data de publicação",
       type: "datetime",
@@ -146,23 +166,71 @@ export const postType = defineType({
           type: "image",
           options: { hotspot: true },
           fields: [
-            {
-              name: "alt",
-              type: "string",
-              title: "Texto alternativo",
-            },
-            {
-              name: "caption",
-              type: "string",
-              title: "Legenda",
-            },
-            {
-              name: "aiDescription",
-              type: "text",
-              title: "Descrição IA",
-              rows: 2,
-            },
+            { name: "alt", type: "string", title: "Texto alternativo" },
+            { name: "caption", type: "string", title: "Legenda" },
+            { name: "aiDescription", type: "text", title: "Descrição IA", rows: 2 },
           ],
+        },
+        {
+          type: "object",
+          name: "callout",
+          title: "Destaque / Curiosidade",
+          fields: [
+            {
+              name: "tipo",
+              type: "string",
+              title: "Tipo",
+              options: {
+                list: [
+                  { title: "🔍 Curiosidade", value: "curiosidade" },
+                  { title: "📊 Dado / Estatística", value: "stat" },
+                  { title: "💬 Citação", value: "citacao" },
+                  { title: "⚡ Destaque", value: "destaque" },
+                ],
+                layout: "radio",
+              },
+              initialValue: "curiosidade",
+            },
+            { name: "emoji", type: "string", title: "Emoji (opcional)", description: "Ex: 🎭 💃 🏆" },
+            { name: "titulo", type: "string", title: "Título (opcional)" },
+            { name: "texto", type: "text", title: "Texto", rows: 3, validation: (r) => r.required() },
+          ],
+          preview: {
+            select: { title: "titulo", subtitle: "texto" },
+            prepare: ({ title, subtitle }: { title?: string; subtitle?: string }) => ({
+              title: title ?? "Destaque",
+              subtitle: subtitle?.slice(0, 80),
+            }),
+          },
+        },
+        {
+          type: "object",
+          name: "youtubeEmbed",
+          title: "Vídeo YouTube (embutido)",
+          fields: [
+            { name: "url", type: "url", title: "Link do YouTube (watch ou youtu.be)", validation: (r) => r.required() },
+            { name: "legenda", type: "string", title: "Legenda (opcional)" },
+          ],
+          preview: {
+            select: { title: "legenda", subtitle: "url" },
+            prepare: ({ title, subtitle }: { title?: string; subtitle?: string }) => ({
+              title: title ?? "Vídeo YouTube",
+              subtitle: subtitle,
+            }),
+          },
+        },
+        {
+          type: "object",
+          name: "ctaBlock",
+          title: "Chamada para Ação (CTA inline)",
+          fields: [
+            { name: "texto", type: "string", title: "Texto", initialValue: "Quer conhecer a Sede de perto?" },
+            { name: "botaoLabel", type: "string", title: "Texto do botão", initialValue: "Faça uma aula experimental" },
+            { name: "botaoHref", type: "string", title: "Link do botão", initialValue: "/contato" },
+          ],
+          preview: {
+            select: { title: "texto" },
+          },
         },
       ],
     }),

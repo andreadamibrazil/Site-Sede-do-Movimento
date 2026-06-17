@@ -1,10 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error("NEXTAUTH_SECRET não configurado — obrigatório em produção");
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({

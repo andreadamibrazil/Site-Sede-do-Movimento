@@ -1,5 +1,6 @@
-"use client";
-
+import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import { ShieldCheck, Lock, Clock } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import ContactForm from "@/components/sections/ContactForm";
@@ -26,9 +27,17 @@ const commitments = [
   },
 ];
 
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("contato/ouvidoria", {
+    title: "Ouvidoria",
+    description: "Canal de escuta da Sede do Movimento. Registre sugestões, críticas e elogios com total sigilo e conformidade com a LGPD.",
+  });
+}
+
 export default function OuvidoriaPage() {
   return (
     <>
+      <BreadcrumbSchema items={[{ label: "Contato", href: "/contato" }, { label: "Ouvidoria" }]} />
       <PageHero
         eyebrow="Canal de Escuta"
         title="Ouvidoria"

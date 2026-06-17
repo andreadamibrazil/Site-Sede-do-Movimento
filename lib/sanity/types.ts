@@ -41,6 +41,7 @@ export interface SanityPost {
   author: SanityAuthor;
   publishedAt: string;
   category: string;
+  formato?: "noticia" | "curiosidade" | "conquista" | "bastidores" | "historia" | "entrevista" | "beneficios";
   tags: string[];
   readingTime: number;
   body?: unknown[];

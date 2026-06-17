@@ -1,5 +1,6 @@
-"use client";
-
+import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import Link from "next/link";
 import {
   Phone,
@@ -63,9 +64,17 @@ const subPages = [
   },
 ];
 
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("contato", {
+    title: "Contato",
+    description: "Entre em contato com a Sede do Movimento. Envie uma mensagem, ligue, ou venha nos visitar no Rio Comprido, Rio de Janeiro.",
+  });
+}
+
 export default function ContatoPage() {
   return (
     <>
+      <BreadcrumbSchema items={[{ label: "Contato" }]} />
       <PageHero
         eyebrow="Fale Conosco"
         title="Contato"

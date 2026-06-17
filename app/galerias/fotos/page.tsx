@@ -1,3 +1,6 @@
+import { Metadata } from "next";
+import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import Link from "next/link";
 import { Tv } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
@@ -16,12 +19,20 @@ const breadcrumbs = [
   { label: "Fotos" },
 ];
 
+export async function generateMetadata(): Promise<Metadata> {
+  return getPageMetadata("galerias/fotos", {
+    title: "Galeria de Fotos",
+    description: "Galeria de fotos da Sede do Movimento. Registros dos espetáculos, aulas e momentos especiais da escola de artes cênicas no Rio de Janeiro.",
+  });
+}
+
 export default async function FotosPage() {
   const { data } = await sanityFetch({ query: allGalleryAlbumsQuery });
   const albums = (data as SanityGalleryAlbum[]) ?? [];
 
   return (
     <>
+      <BreadcrumbSchema items={[{ label: "Galerias", href: "/galerias" }, { label: "Fotos" }]} />
       <PageHero
         title="Galeria de Fotos"
         eyebrow="Fotos"
