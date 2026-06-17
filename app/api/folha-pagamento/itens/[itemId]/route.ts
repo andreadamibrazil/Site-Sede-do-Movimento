@@ -25,7 +25,7 @@ export async function PATCH(
 
   if (fetchErr || !item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
 
-  const updates: Record<string, any> = {}
+  const updates: { pago?: boolean; descricao?: string | null; valor?: number } = {}
   if (typeof body.pago === 'boolean') updates.pago = body.pago
 
   // descricao_motivo é o campo enviado pelo componente; null limpa o motivo

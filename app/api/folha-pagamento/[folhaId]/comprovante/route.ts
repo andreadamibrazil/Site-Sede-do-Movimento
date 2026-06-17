@@ -1,6 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { NextRequest, NextResponse } from 'next/server'
+import type { Json } from '@/lib/supabase/types'
 import { uploadParaDrive, DRIVE_FOLDERS } from '@/lib/google-drive'
 import { callGeminiVision } from '@/lib/gemini'
 
@@ -100,7 +101,7 @@ export async function POST(
   }).eq('id', folhaId)
 
   // Extração com Gemini (falha silenciosa — URL já foi salva)
-  let dadosExtraidos: Record<string, any> | null = null
+  let dadosExtraidos: Json | null = null
   let geminiErro: string | null = null
   try {
     const raw = await callGeminiVision(base64, mimeType, PROMPT_COMPROVANTE)
