@@ -136,36 +136,6 @@ export default async function BlogPostPage({ params }: PageProps) {
       />
       <BreadcrumbSchema items={[{ label: "Blog", href: "/blog" }, { label: post.title }]} />
 
-      {/* Structured Data — links circulares para SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Article",
-            headline: post.seoTitle ?? post.title,
-            description: post.seoDescription ?? post.excerpt,
-            author: {
-              "@type": "Person",
-              name: post.author?.name ?? "Redação Sede",
-            },
-            publisher: {
-              "@type": "Organization",
-              name: "Sede do Movimento",
-              url: siteConfig.url,
-              sameAs: [
-                siteConfig.social.instagram,
-                siteConfig.social.youtube,
-                siteConfig.social.facebook,
-              ],
-            },
-            datePublished: post.publishedAt,
-            url: `${siteConfig.url}/blog/${post.slug}`,
-            ...(coverImageUrl && { image: coverImageUrl }),
-          }),
-        }}
-      />
-
       <PageHero
         title={post.title}
         eyebrow={post.category}

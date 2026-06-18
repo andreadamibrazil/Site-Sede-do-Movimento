@@ -14,7 +14,7 @@ export default function BlogPostSchema({ title, excerpt, publishedAt, authorName
 
   const schema = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     headline: title,
     ...(excerpt && { description: excerpt }),
     ...(publishedAt && { datePublished: publishedAt }),
@@ -31,6 +31,16 @@ export default function BlogPostSchema({ title, excerpt, publishedAt, authorName
         "@type": "ImageObject",
         url: `${siteConfig.url}/icon.png`,
       },
+      sameAs: [
+        siteConfig.social.instagram,
+        siteConfig.social.youtube,
+        siteConfig.social.facebook,
+      ],
+    },
+    isPartOf: {
+      "@type": "Blog",
+      name: `Blog — ${siteConfig.name}`,
+      url: `${siteConfig.url}/blog`,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
