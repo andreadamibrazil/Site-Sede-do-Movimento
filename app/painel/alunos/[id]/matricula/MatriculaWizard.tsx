@@ -10,8 +10,9 @@ const DIAS_LABEL: Record<string, string> = {
 }
 
 const PLANOS = [
-  { id: 'mensal',     label: 'Mensal',     meses: 1,  descricao: 'Sem fidelidade' },
-  { id: 'fidelidade', label: 'Fidelidade', meses: 12, descricao: '12 meses — contrato anual' },
+  { id: 'mensal',        label: 'Mensal',        meses: 1,    descricao: 'Sem fidelidade' },
+  { id: 'fidelidade',    label: 'Fidelidade',    meses: 12,   descricao: '12 meses — contrato anual' },
+  { id: 'personalizado', label: 'Personalizado', meses: null, descricao: 'Migração NextFit — meses livres' },
 ]
 
 const DESCONTOS = [
@@ -66,6 +67,7 @@ export default function MatriculaWizard({
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1)
   const [turmasSelecionadas, setTurmasSelecionadas] = useState<string[]>([])
   const [plano, setPlano] = useState('mensal')
+  const [mesesPersonalizado, setMesesPersonalizado] = useState('4')
   const [tipoDesconto, setTipoDesconto] = useState('')
   const [percentualDesconto, setPercentualDesconto] = useState('')
   const [diaVencimento, setDiaVencimento] = useState('10')
@@ -97,6 +99,10 @@ export default function MatriculaWizard({
   const [valorOverride, setValorOverride] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+
+  const mesesEfetivos = plano === 'personalizado'
+    ? (Number(mesesPersonalizado) || 1)
+    : (PLANOS.find(p => p.id === plano)?.meses ?? 1)
 
   // Turmas selecionadas com dados
   const turmasSel = turmas.filter(t => turmasSelecionadas.includes(t.id))
@@ -132,6 +138,7 @@ export default function MatriculaWizard({
         alunoWhatsapp: celular,
         turmaIds: turmasSelecionadas,
         plano,
+        mesesPersonalizado: plano === 'personalizado' ? (Number(mesesPersonalizado) || 1) : undefined,
         dataInicio,
         diaVencimento: Number(diaVencimento),
         valorFinal,
@@ -257,7 +264,7 @@ export default function MatriculaWizard({
           <h2 className="text-sm font-semibold text-gray-700">Plano e desconto</h2>
 
           {/* Plano */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {PLANOS.map(p => (
               <button
                 key={p.id}
@@ -268,10 +275,29 @@ export default function MatriculaWizard({
               >
                 <p className={`text-sm font-semibold ${plano === p.id ? 'text-indigo-700' : 'text-gray-900'}`}>{p.label}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{p.descricao}</p>
-                <p className="text-xs font-medium text-gray-500 mt-1">{p.meses} mensalidade{p.meses > 1 ? 's' : ''}</p>
+                {p.meses !== null && (
+                  <p className="text-xs font-medium text-gray-500 mt-1">{p.meses} mensalidade{p.meses > 1 ? 's' : ''}</p>
+                )}
               </button>
             ))}
           </div>
+
+          {/* Meses livres — só aparece no plano personalizado */}
+          {plano === 'personalizado' && (
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Quantos meses restantes? <span className="text-gray-400">(meses que faltam vencer no contrato original)</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={24}
+                value={mesesPersonalizado}
+                onChange={e => setMesesPersonalizado(e.target.value)}
+                className="w-32 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          )}
 
           {/* Desconto */}
           <div className="grid grid-cols-2 gap-4">
@@ -441,7 +467,7 @@ export default function MatriculaWizard({
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 space-y-1">
             <p className="text-xs text-blue-700 font-medium">
-              Ao confirmar serão geradas {PLANOS.find(p => p.id === plano)?.meses} mensalidade{(PLANOS.find(p => p.id === plano)?.meses ?? 1) > 1 ? 's' : ''} de R$ {valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} cada.
+              Ao confirmar serão geradas {mesesEfetivos} mensalidade{mesesEfetivos > 1 ? 's' : ''} de R$ {valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} cada.
             </p>
             {(() => {
               const pagador = pagadoresDisponiveis.find(r => r.id === responsavelFinanceiroId) ?? pagadoresDisponiveis[0]

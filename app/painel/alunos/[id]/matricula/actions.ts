@@ -10,6 +10,7 @@ type MatriculaDados = {
   alunoWhatsapp: string | null
   turmaIds: string[]
   plano: string
+  mesesPersonalizado?: number
   dataInicio: string
   diaVencimento: number
   valorFinal: number
@@ -92,6 +93,7 @@ async function enviarContratoDocuSeal(
   const duracaoLabel: Record<string, string> = {
     mensal: '1 mês', trimestral: '3 meses',
     semestral: '6 meses', anual: '12 meses', fidelidade: '12 meses',
+    personalizado: `${dados.mesesPersonalizado ?? 1} ${(dados.mesesPersonalizado ?? 1) === 1 ? 'mês' : 'meses'} (migração)`,
   }
   const dataContrato = new Date().toLocaleDateString('pt-BR')
 
@@ -139,7 +141,9 @@ async function enviarContratoDocuSeal(
 
 export async function criarMatricula(dados: MatriculaDados) {
   const supabase = createServiceClient()
-  const meses = dados.plano === 'fidelidade' ? 12 : 1
+  const meses = dados.plano === 'fidelidade' ? 12
+    : dados.plano === 'personalizado' ? (dados.mesesPersonalizado ?? 1)
+    : 1
 
   const { data: matricula, error: errMat } = await supabase
     .from('matriculas')
