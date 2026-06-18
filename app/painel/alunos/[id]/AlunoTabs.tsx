@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade } from '../actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade } from '../actions'
 
 const ABAS = [
   { id: 'dados',         label: 'Dados pessoais' },
@@ -527,6 +527,10 @@ function AbaFinanceiro({ mensalidades, alunoId }: { mensalidades: any[]; alunoId
   const [baixando, setBaixando] = useState<string | null>(null)
   const [forma, setForma] = useState('pix')
   const [salvandoBaixa, setSalvandoBaixa] = useState(false)
+  const [renegociando, setRenegociando] = useState<string | null>(null)
+  const [valorReneg, setValorReneg] = useState('')
+  const [motivoReneg, setMotivoReneg] = useState('')
+  const [salvandoReneg, setSalvandoReneg] = useState(false)
 
   const semAsaas = mensalidades.filter(
     m => !m.codigo_asaas && ['aberta', 'em_atraso'].includes(m.status),
@@ -553,6 +557,25 @@ function AbaFinanceiro({ mensalidades, alunoId }: { mensalidades: any[]; alunoId
     setSalvandoBaixa(false)
     setBaixando(null)
     router.refresh()
+  }
+
+  async function handleReneg(mensalidadeId: string) {
+    const v = parseFloat(valorReneg.replace(',', '.'))
+    if (!v || v <= 0) return
+    setSalvandoReneg(true)
+    await renegociarMensalidade(mensalidadeId, v, motivoReneg, alunoId)
+    setSalvandoReneg(false)
+    setRenegociando(null)
+    setValorReneg('')
+    setMotivoReneg('')
+    router.refresh()
+  }
+
+  function abrirReneg(id: string, valorAtual: number) {
+    setBaixando(null)
+    setValorReneg(String(valorAtual))
+    setMotivoReneg('')
+    setRenegociando(renegociando === id ? null : id)
   }
 
   if (!mensalidades.length) return (
@@ -616,10 +639,16 @@ function AbaFinanceiro({ mensalidades, alunoId }: { mensalidades: any[]; alunoId
                         </a>
                       )}
                       {['aberta', 'em_atraso'].includes(m.status) && (
-                        <button onClick={() => setBaixando(baixando === m.id ? null : m.id)}
-                          className="text-xs text-green-600 hover:text-green-700 font-medium">
-                          Dar baixa
-                        </button>
+                        <>
+                          <button onClick={() => { setRenegociando(null); setBaixando(baixando === m.id ? null : m.id) }}
+                            className="text-xs text-green-600 hover:text-green-700 font-medium">
+                            Dar baixa
+                          </button>
+                          <button onClick={() => abrirReneg(m.id, m.valor)}
+                            className="text-xs text-blue-500 hover:text-blue-700 font-medium">
+                            Renegociar
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -644,6 +673,37 @@ function AbaFinanceiro({ mensalidades, alunoId }: { mensalidades: any[]; alunoId
                           {salvandoBaixa ? '...' : 'Confirmar baixa'}
                         </button>
                         <button onClick={() => setBaixando(null)} className="text-gray-400 text-xs">Cancelar</button>
+                      </div>
+                    </td>
+                  </tr>,
+                )
+              }
+              if (renegociando === m.id) {
+                rows.push(
+                  <tr key={`${m.id}-reneg`}>
+                    <td colSpan={5} className="px-4 py-3 bg-blue-50 border-t border-blue-100">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-xs font-medium text-blue-700">Novo valor:</span>
+                        <input
+                          type="number"
+                          value={valorReneg}
+                          onChange={e => setValorReneg(e.target.value)}
+                          placeholder="0,00"
+                          className="border border-blue-200 rounded-lg px-2 py-1.5 text-xs bg-white w-24 focus:outline-none"
+                        />
+                        <span className="text-xs font-medium text-blue-700">Motivo:</span>
+                        <input
+                          type="text"
+                          value={motivoReneg}
+                          onChange={e => setMotivoReneg(e.target.value)}
+                          placeholder="ex: desconto familiar"
+                          className="border border-blue-200 rounded-lg px-2 py-1.5 text-xs bg-white flex-1 min-w-[140px] focus:outline-none"
+                        />
+                        <button onClick={() => handleReneg(m.id)} disabled={salvandoReneg || !valorReneg}
+                          className="bg-blue-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-600 disabled:opacity-50">
+                          {salvandoReneg ? '...' : 'Confirmar'}
+                        </button>
+                        <button onClick={() => setRenegociando(null)} className="text-gray-400 text-xs">Cancelar</button>
                       </div>
                     </td>
                   </tr>,

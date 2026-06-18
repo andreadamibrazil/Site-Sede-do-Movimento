@@ -66,7 +66,7 @@ export default async function ProfessorPage() {
       professores!professor_id(nome),
       turma_horarios(dia_semana, hora_inicio, hora_fim),
       matricula_turmas(
-        matriculas(status, alunos(id, nome, status_financeiro))
+        matriculas(status, alunos(id, nome))
       )
     `)
     .not('status', 'eq', 'encerrada')

@@ -335,6 +335,41 @@ export async function darBaixaMensalidade(
   revalidatePath('/painel/financeiro')
 }
 
+// ── Renegociação de mensalidade ──────────────────────────────
+export async function renegociarMensalidade(
+  mensalidadeId: string,
+  valorNegociado: number,
+  motivo: string,
+  alunoId: string,
+) {
+  const supabase = createServiceClient()
+
+  const { data: mens } = await supabase
+    .from('mensalidades')
+    .select('valor')
+    .eq('id', mensalidadeId)
+    .single()
+
+  if (!mens) throw new Error('Mensalidade não encontrada')
+
+  const { error: errReneg } = await supabase.from('renegociacoes').insert({
+    mensalidade_id: mensalidadeId,
+    valor_original: mens.valor,
+    valor_negociado: valorNegociado,
+    motivo: motivo || null,
+  })
+
+  if (errReneg) throw new Error(errReneg.message)
+
+  await supabase.from('mensalidades').update({
+    status: 'renegociada',
+    valor: valorNegociado,
+  }).eq('id', mensalidadeId)
+
+  revalidatePath(`/painel/alunos/${alunoId}`)
+  revalidatePath('/painel/financeiro')
+}
+
 // ── BotaoEnviarContrato ──────────────────────────────────────
 export async function enviarContratoManual(
   alunoId: string,
