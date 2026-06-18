@@ -13,6 +13,7 @@ type MatriculaDados = {
   dataInicio: string
   diaVencimento: number
   valorFinal: number
+  valorProRata?: number
   tipoDesconto: string | null
   percentualDesconto: number
   observacaoDesconto: string | null
@@ -26,17 +27,20 @@ function gerarMensalidades(
   meses: number,
   valor: number,
   diaVencimento: number,
+  valorProRata?: number,
 ) {
   const mensalidades = []
-  const dataBase = new Date(inicio)
+  const dataBase = new Date(inicio + 'T12:00:00')
   for (let i = 0; i < meses; i++) {
     const competencia = new Date(dataBase)
     competencia.setMonth(competencia.getMonth() + i)
     const venc = new Date(competencia.getFullYear(), competencia.getMonth(), diaVencimento)
+    // Primeira mensalidade usa pro-rata quando fornecido
+    const valorMens = i === 0 && valorProRata != null ? valorProRata : valor
     mensalidades.push({
       matricula_id: matriculaId,
       competencia: `${competencia.getFullYear()}-${String(competencia.getMonth() + 1).padStart(2, '0')}-01`,
-      valor,
+      valor: valorMens,
       vencimento: venc.toISOString().split('T')[0],
       status: 'aberta' as const,
     })
@@ -174,6 +178,7 @@ export async function criarMatricula(dados: MatriculaDados) {
     meses,
     dados.valorFinal,
     dados.diaVencimento,
+    dados.valorProRata,
   )
 
   const { error: errMens } = await supabase.from('mensalidades').insert(mensalidades)
