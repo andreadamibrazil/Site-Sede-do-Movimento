@@ -30,14 +30,17 @@ export default async function ProfessorChamadaPage({
   // Dados da aula — verifica se é do professor
   const { data: aula } = await service
     .from('aulas')
-    .select('*, turmas(nome, modalidades(nome)), professores(nome), salas(nome)')
+    .select('*, turmas(nome, professor_id, modalidades(nome)), professores(nome), salas(nome)')
     .eq('id', aulaId)
     .single()
 
   if (!aula) notFound()
 
   // Segurança: professor só acessa chamada das suas aulas
-  if (aula.professor_id !== professor.id) {
+  // aulas.professor_id pode ser NULL (professor vem via turmas.professor_id)
+  const professorDaTurma = (aula.turmas as any)?.professor_id === professor.id
+  const professorDaAula = aula.professor_id === professor.id
+  if (!professorDaTurma && !professorDaAula) {
     redirect('/painel/professor')
   }
 

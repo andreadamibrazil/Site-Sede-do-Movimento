@@ -82,8 +82,8 @@ export default function ChamadaClient({
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto }))
-  }, [registros, professorFaltou, temAtestado, nomeSubstituto, aulaId])
+    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
+  }, [registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos, aulaId])
 
   useEffect(() => {
     const salvo = localStorage.getItem(STORAGE_KEY(aulaId))
@@ -94,6 +94,10 @@ export default function ChamadaClient({
         if (dados.professorFaltou) setProfessorFaltou(dados.professorFaltou)
         if (dados.temAtestado) setTemAtestado(dados.temAtestado)
         if (dados.nomeSubstituto) setNomeSubstituto(dados.nomeSubstituto)
+        if (dados.cpfSubstituto) setCpfSubstituto(dados.cpfSubstituto)
+        if (dados.celularSubstituto) setCelularSubstituto(dados.celularSubstituto)
+        if (dados.motivoAusencia) setMotivoAusencia(dados.motivoAusencia)
+        if (dados.termosAceitos) setTermosAceitos(dados.termosAceitos)
       } catch {}
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -210,20 +214,25 @@ export default function ChamadaClient({
       setSalvoLocalmente(true)
       setTimeout(() => setSalvoLocalmente(false), 2000)
     }
+    return sucesso
   }
 
-  async function salvar() {
+  async function salvar(): Promise<boolean> {
     if (!online) {
-      localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto }))
+      localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
       setSalvoLocalmente(true)
       setTimeout(() => setSalvoLocalmente(false), 2000)
-      return
+      return false
     }
-    await salvarNoBanco(registros, professorFaltou, temAtestado, nomeSubstituto)
+    return await salvarNoBanco(registros, professorFaltou, temAtestado, nomeSubstituto) ?? false
   }
 
   async function concluir() {
-    await salvar()
+    const salvou = await salvar()
+    if (!salvou) {
+      alert('Não foi possível salvar as presenças. Corrija e tente concluir novamente.')
+      return
+    }
     try {
       const res = await fetch('/api/chamada/salvar', {
         method: 'POST',

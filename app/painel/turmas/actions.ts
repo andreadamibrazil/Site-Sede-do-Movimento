@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import { revalidatePath } from 'next/cache'
 
 export async function atualizarStatusTurma(turmaId: string, status: 'ativa' | 'suspensa' | 'encerrada') {
@@ -12,6 +13,7 @@ export async function atualizarStatusTurma(turmaId: string, status: 'ativa' | 's
 }
 
 export async function removerAlunoDaTurma(matriculaTurmaId: string, turmaId: string) {
+  await requireAdmin()
   const supabase = createServiceClient()
   const hoje = new Date().toISOString().split('T')[0]
   const { error } = await supabase
@@ -100,12 +102,25 @@ export async function editarTurma(
   }
 
   if (horarios !== undefined) {
+    // Busca horários atuais para restaurar em caso de falha no insert
+    const { data: horariosAntigos } = await supabase
+      .from('turma_horarios')
+      .select('dia_semana, hora_inicio, hora_fim')
+      .eq('turma_id', turmaId)
+
     await supabase.from('turma_horarios').delete().eq('turma_id', turmaId)
     if (horarios.length) {
       const { error: hError } = await supabase
         .from('turma_horarios')
         .insert(horarios.map(h => ({ ...h, turma_id: turmaId })) as any)
-      if (hError) throw new Error(hError.message)
+      if (hError) {
+        if (horariosAntigos?.length) {
+          await supabase.from('turma_horarios').insert(
+            horariosAntigos.map(h => ({ ...h, turma_id: turmaId })) as any
+          )
+        }
+        throw new Error(hError.message)
+      }
     }
   }
 

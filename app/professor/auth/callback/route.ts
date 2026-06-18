@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -26,9 +27,10 @@ export async function GET(request: NextRequest) {
     )
     const { data: { user } } = await supabase.auth.exchangeCodeForSession(code)
 
-    // Verifica se é professor cadastrado
+    // Verifica se é professor cadastrado — usa service client para contornar RLS
     if (user?.email) {
-      const { data: prof } = await supabase
+      const service = createServiceClient()
+      const { data: prof } = await service
         .from('professores')
         .select('id')
         .eq('email', user.email)

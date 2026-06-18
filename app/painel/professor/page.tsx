@@ -34,11 +34,12 @@ export default async function ProfessorPage() {
     .not('status', 'eq', 'encerrada')
     .order('nome')
 
-  // Aulas de hoje do professor
+  // Aulas de hoje do professor — filtra por turmaIds pois aulas.professor_id pode ser NULL
+  const turmaIds = (turmas ?? []).map(t => t.id)
   const { data: aulasHoje } = await sb
     .from('aulas')
     .select('id, hora_inicio, hora_fim, status, turmas(nome)')
-    .eq('professor_id', professor.id)
+    .in('turma_id', turmaIds.length > 0 ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
     .eq('data', hoje)
     .order('hora_inicio')
 

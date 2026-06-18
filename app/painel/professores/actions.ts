@@ -47,7 +47,7 @@ export async function upsertProfessor(data: {
 
 export async function excluirProfessor(id: string) {
   const supabase = createServiceClient()
-  const { error } = await supabase.from('professores').delete().eq('id', id)
+  const { error } = await supabase.from('professores').update({ ativo: false }).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/painel/professores')
 }

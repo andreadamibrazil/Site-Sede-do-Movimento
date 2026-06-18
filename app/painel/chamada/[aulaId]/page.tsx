@@ -1,5 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from './ChamadaClient'
 
 // Minutos após o fim da aula que o professor ainda pode editar
@@ -15,16 +15,32 @@ export default async function ChamadaPage({
 
   // Perfil do usuário logado
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/painel/login')
+
+  const service = createServiceClient()
   let perfilUsuario: 'admin' | 'secretaria' | 'professor' = 'professor'
-  if (user) {
-    const service = createServiceClient()
-    const { data: perfil } = await service
-      .from('perfis_usuario')
-      .select('perfil')
-      .eq('id', user.id)
+  const { data: perfil } = await service
+    .from('perfis_usuario')
+    .select('perfil')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria') {
+    perfilUsuario = perfil.perfil
+  } else {
+    // Não é admin/secretaria — verifica se é professor da turma desta aula
+    const { data: aulaCheck } = await service
+      .from('aulas')
+      .select('turmas!inner(professor_id)')
+      .eq('id', aulaId)
+      .single()
+    const { data: prof } = await service
+      .from('professores')
+      .select('id')
+      .eq('email', user.email ?? '')
+      .eq('ativo', true)
       .maybeSingle()
-    if (perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria') {
-      perfilUsuario = perfil.perfil
+    if (!prof || (aulaCheck as any)?.turmas?.professor_id !== prof.id) {
+      redirect('/painel')
     }
   }
 
