@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   const sb = createServiceClient()
   const { professor_id, mes } = await req.json()
   if (!professor_id || !mes) return NextResponse.json({ error: 'professor_id e mes obrigatórios' }, { status: 400 })
+  if (!/^\d{4}-\d{2}$/.test(mes)) return NextResponse.json({ error: 'mes deve ter formato YYYY-MM' }, { status: 400 })
 
   const [ano, mesNum] = mes.split('-').map(Number)
   const inicioMes = new Date(ano, mesNum - 1, 1)
@@ -217,6 +218,7 @@ export async function POST(req: NextRequest) {
 
     totalAulas += valor
   }
+  totalAulas = Math.round(totalAulas * 100) / 100
 
   // Valor fixo (coordenação etc)
   let totalFixo = 0

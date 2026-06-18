@@ -118,7 +118,7 @@ export default async function FolhaDetalhePage({
                   />{' '}·{' '}
                   <span className="text-gray-600">R$ {Number(valorHora).toFixed(2).replace('.', ',')}/h</span>
                   {bonus > 0 && (
-                    <span className="text-green-600 ml-1">(base R$31,50 + bônus R${Number(bonus).toFixed(2).replace('.', ',')})</span>
+                    <span className="text-green-600 ml-1">(base R${Number(primeiroItem?.valor_hora_base ?? 0).toFixed(2).replace('.', ',')} + bônus R${Number(bonus).toFixed(2).replace('.', ',')})</span>
                   )}
                 </p>
               </div>
@@ -228,7 +228,7 @@ export default async function FolhaDetalhePage({
       {/* Resumo */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-2">
         <div className="flex justify-between text-sm text-gray-700">
-          <span>Aulas realizadas ({(itens ?? []).filter((i: any) => i.tipo === 'aula' && i.pago !== false).length})</span>
+          <span>Aulas realizadas ({(itens ?? []).filter((i: any) => i.tipo === 'aula' && i.pago === true).length})</span>
           <span>{Number(folha.valor_aulas).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
         </div>
         {totalFixoReal > 0 && (
