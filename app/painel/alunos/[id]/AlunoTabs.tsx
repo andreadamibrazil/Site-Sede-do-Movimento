@@ -898,7 +898,12 @@ function AbaPresenca({ presencas, alunoId }: { presencas: any[]; alunoId: string
 
   async function handleJustificarFalta(presencaId: string) {
     setSalvando(true)
-    await justificarFaltaAction(presencaId, obs, alunoId)
+    const result = await justificarFaltaAction(presencaId, obs, alunoId)
+    if ('error' in result) {
+      alert(`Erro ao justificar falta: ${result.error}`)
+      setSalvando(false)
+      return
+    }
     setJustificando(null)
     setObs('')
     setSalvando(false)

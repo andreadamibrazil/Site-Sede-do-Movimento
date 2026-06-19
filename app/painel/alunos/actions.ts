@@ -72,7 +72,7 @@ export async function obterOuCriarResponsavel(data: {
 
   // 23505 = unique violation (CPF duplicado por race condition)
   if (error?.code === '23505' && cpfLimpo.length === 11) {
-    const { data: dup } = await supabase.from('responsaveis').select('id').eq('cpf', cpfLimpo).single()
+    const { data: dup } = await supabase.from('responsaveis').select('id').eq('cpf', cpfLimpo).maybeSingle()
     if (dup) return dup.id as string
   }
   if (error) throw new Error(error.message)
