@@ -84,9 +84,14 @@ export default function FinanceiroClient({
       const { createClient } = await import('@/lib/supabase/client')
       const storageClient = createClient()
       const path = `comprovantes/${pagando}/${Date.now()}.${comprovante.name.split('.').pop()}`
-      const { data: upData } = await storageClient.storage
+      const { data: upData, error: upError } = await storageClient.storage
         .from('documentos-alunos')
         .upload(path, comprovante)
+      if (upError) {
+        alert('Erro ao fazer upload do comprovante: ' + upError.message)
+        setSalvando(false)
+        return
+      }
       if (upData?.path) comprovanteUrl = upData.path
     }
 

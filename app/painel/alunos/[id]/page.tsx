@@ -120,7 +120,13 @@ export default async function AlunoPage({
           <StatusFinBadge status={aluno.status_financeiro} />
           <ContratoBadge status={contratoStatus} />
           {contratoStatus === 'sem_contrato' && emailContrato && (
-            <BotaoEnviarContrato alunoId={id} emailDestino={emailContrato} />
+            <BotaoEnviarContrato
+              alunoId={id}
+              emailDestino={emailContrato}
+              previewUrl={process.env.DOCUSEAL_URL && process.env.DOCUSEAL_TEMPLATE_CONTRATO
+                ? `${process.env.DOCUSEAL_URL}/templates/${process.env.DOCUSEAL_TEMPLATE_CONTRATO}`
+                : undefined}
+            />
           )}
           <BotaoDeclaracao alunoId={id} />
           <BotaoTermoAditivo alunoId={id} />
