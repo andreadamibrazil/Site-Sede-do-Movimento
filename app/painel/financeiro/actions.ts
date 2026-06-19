@@ -11,6 +11,14 @@ export async function registrarPagamento(data: {
 }) {
   const supabase = createServiceClient()
 
+  // Busca aluno_id para revalidar a ficha do aluno após o pagamento
+  const { data: mensRef } = await supabase
+    .from('mensalidades')
+    .select('matriculas!inner(aluno_id)')
+    .eq('id', data.mensalidadeId)
+    .maybeSingle()
+  const alunoId = (mensRef as any)?.matriculas?.aluno_id
+
   const { error: e1 } = await supabase
     .from('mensalidades')
     .update({
@@ -31,4 +39,5 @@ export async function registrarPagamento(data: {
   if (e2) throw new Error(e2.message)
 
   revalidatePath('/painel/financeiro')
+  if (alunoId) revalidatePath(`/painel/alunos/${alunoId}`)
 }

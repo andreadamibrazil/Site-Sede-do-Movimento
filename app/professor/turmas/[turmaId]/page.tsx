@@ -26,11 +26,25 @@ export default async function FrequenciaTurmaPage({
 
   const { data: turma } = await service
     .from('turmas')
-    .select('id, nome, modalidades(nome)')
+    .select('id, nome, professor_id, modalidades(nome)')
     .eq('id', turmaId)
     .maybeSingle()
 
   if (!turma) notFound()
+
+  // Segurança: professor só acessa frequência das próprias turmas
+  if (!isAdmin) {
+    const professorDaTurma = (turma as any).professor_id === professor.id
+    if (!professorDaTurma) {
+      const { data: coRegencia } = await (service as any)
+        .from('turma_professores')
+        .select('id')
+        .eq('turma_id', turmaId)
+        .eq('professor_id', professor.id)
+        .maybeSingle()
+      if (!coRegencia) notFound()
+    }
+  }
 
   // Alunos ativos na turma
   const { data: matriculaTurmas } = await service

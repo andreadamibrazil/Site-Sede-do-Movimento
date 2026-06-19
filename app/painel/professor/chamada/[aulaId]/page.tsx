@@ -41,7 +41,14 @@ export default async function ProfessorChamadaPage({
   const professorDaTurma = (aula.turmas as any)?.professor_id === professor.id
   const professorDaAula = aula.professor_id === professor.id
   if (!professorDaTurma && !professorDaAula) {
-    redirect('/painel/professor')
+    // Verificar co-regência
+    const { data: coRegencia } = await (service as any)
+      .from('turma_professores')
+      .select('id')
+      .eq('turma_id', aula.turma_id)
+      .eq('professor_id', professor.id)
+      .maybeSingle()
+    if (!coRegencia) redirect('/painel/professor')
   }
 
   // Alunos da turma
