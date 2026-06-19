@@ -26,7 +26,7 @@ function isSafeUrl(url: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
-    const cronSecret = req.headers.get("x-cron-secret") ?? req.nextUrl.searchParams.get("secret");
+    const cronSecret = req.headers.get("x-cron-secret");
     const internalSecret = process.env.CRON_SECRET ?? process.env.WEBHOOK_SECRET;
     const origin = req.headers.get("origin");
 

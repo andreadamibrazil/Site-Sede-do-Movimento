@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
   if (!id) return NextResponse.json({ error: 'id obrigatório' }, { status: 400 })
 
   const sb = createServiceClient()
-  // Incrementa tentativas_contato diretamente (sem RPC)
-  const { data: aluno } = await sb.from('alunos').select('tentativas_contato').eq('id', id).single()
-  const novoValor = ((aluno as any)?.tentativas_contato ?? 0) + 1
-  await sb.from('alunos').update({ tentativas_contato: novoValor }).eq('id', id)
+  // Incremento atômico via RPC para evitar race condition (dois requests simultâneos)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: novoValor, error } = await (sb as any).rpc('incrementar_tentativas_contato', { p_id: id })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ tentativas: novoValor })
 }

@@ -70,6 +70,11 @@ export async function obterOuCriarResponsavel(data: {
     .select('id')
     .single()
 
+  // 23505 = unique violation (CPF duplicado por race condition)
+  if (error?.code === '23505' && cpfLimpo.length === 11) {
+    const { data: dup } = await supabase.from('responsaveis').select('id').eq('cpf', cpfLimpo).single()
+    if (dup) return dup.id as string
+  }
   if (error) throw new Error(error.message)
   return criado.id as string
 }
@@ -125,8 +130,10 @@ export async function criarFamilia(nome: string): Promise<string> {
 
 export async function vincularAlunoFamilia(alunoId: string, familiaId: string) {
   const supabase = createServiceClient()
-  await supabase.from('alunos').update({ familia_id: familiaId }).eq('id', alunoId)
-  await supabase.from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
+  const { error: errUpdate } = await supabase.from('alunos').update({ familia_id: familiaId }).eq('id', alunoId)
+  if (errUpdate) throw new Error(errUpdate.message)
+  const { error: errInsert } = await supabase.from('familia_membros').insert({ familia_id: familiaId, aluno_id: alunoId, papeis: ['aluno'] })
+  if (errInsert) throw new Error(errInsert.message)
   revalidatePath(`/painel/alunos/${alunoId}`)
 }
 
@@ -144,13 +151,23 @@ export async function salvarAditivo(data: {
 }
 
 // ── AbaPresenca ──────────────────────────────────────────────
-export async function justificarFalta(presencaId: string, obs: string) {
-  const supabase = createServiceClient()
-  const { error } = await supabase
-    .from('presencas')
-    .update({ status: 'falta_justificada', observacao: obs || 'Atestado entregue' })
-    .eq('id', presencaId)
-  if (error) throw new Error(error.message)
+export async function justificarFalta(
+  presencaId: string,
+  observacao: string,
+  alunoId: string,
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = createServiceClient()
+    const { error } = await supabase
+      .from('presencas')
+      .update({ status: 'falta_justificada' as any, observacao: observacao || 'Atestado entregue' })
+      .eq('id', presencaId)
+    if (error) return { error: error.message }
+    revalidatePath(`/painel/alunos/${alunoId}`)
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message ?? 'Erro desconhecido' }
+  }
 }
 
 // ── AbaCobrancas ─────────────────────────────────────────────
@@ -192,7 +209,7 @@ export async function salvarDocumentoLink(data: {
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('documentos_aluno')
-    .insert({ ...data, storage_path: '' })
+    .insert({ ...data, storage_path: null })
   if (error) throw new Error(error.message)
   revalidatePath(`/painel/alunos/${data.aluno_id}`)
 }
@@ -312,24 +329,34 @@ export async function darBaixaMensalidade(
 
   const { data: mens } = await supabase
     .from('mensalidades')
-    .select('valor')
+    .select('valor, status, matriculas!inner(aluno_id)')
     .eq('id', mensalidadeId)
-    .single()
+    .maybeSingle()
 
   if (!mens) throw new Error('Mensalidade não encontrada')
+  if ((mens as any).matriculas?.aluno_id !== alunoId) throw new Error('Acesso negado')
+  if ((mens as any).status === 'recebida') throw new Error('Mensalidade já foi baixada')
 
-  await supabase.from('mensalidades').update({
+  const { error: errUpd } = await supabase.from('mensalidades').update({
     status: 'recebida',
     valor_pago: mens.valor,
     pago_em: new Date().toISOString(),
   }).eq('id', mensalidadeId)
 
-  await supabase.from('pagamentos').insert({
+  if (errUpd) throw new Error(errUpd.message)
+
+  const { error: errPag } = await supabase.from('pagamentos').insert({
     mensalidade_id: mensalidadeId,
     valor: mens.valor,
     forma: forma as any,
     data_pagamento: new Date().toISOString().split('T')[0],
   })
+
+  if (errPag) {
+    // Rollback: reverte status da mensalidade
+    await supabase.from('mensalidades').update({ status: 'aberta', valor_pago: null, pago_em: null }).eq('id', mensalidadeId)
+    throw new Error('Erro ao registrar pagamento: ' + errPag.message)
+  }
 
   revalidatePath(`/painel/alunos/${alunoId}`)
   revalidatePath('/painel/financeiro')
@@ -346,11 +373,12 @@ export async function renegociarMensalidade(
 
   const { data: mens } = await supabase
     .from('mensalidades')
-    .select('valor')
+    .select('valor, matriculas!inner(aluno_id)')
     .eq('id', mensalidadeId)
-    .single()
+    .maybeSingle()
 
   if (!mens) throw new Error('Mensalidade não encontrada')
+  if ((mens as any).matriculas?.aluno_id !== alunoId) throw new Error('Acesso negado')
 
   const { error: errReneg } = await supabase.from('renegociacoes').insert({
     mensalidade_id: mensalidadeId,
@@ -395,9 +423,10 @@ export async function enviarContratoManual(
       .eq('status', 'ativa')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (errMat || !matricula) return { error: 'Nenhuma matrícula ativa encontrada' }
+    if (errMat) return { error: errMat.message }
+    if (!matricula) return { error: 'Nenhuma matrícula ativa encontrada' }
 
     const { data: turmasData } = await supabase
       .from('matricula_turmas')

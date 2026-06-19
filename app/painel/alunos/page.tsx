@@ -48,10 +48,11 @@ export default async function AlunosPage({
 
   const { data: alunos } = await query
 
-  // Contagens por status para os badges do filtro
+  // Contagens por status para os badges do filtro (exclui soft-deleted)
   const { data: contagens } = await supabase
     .from('alunos')
     .select('status_pedagogico')
+    .neq('status_pedagogico', 'excluido')
 
   const qtdPorStatus: Record<string, number> = {}
   contagens?.forEach(a => {

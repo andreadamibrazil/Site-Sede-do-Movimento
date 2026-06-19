@@ -119,6 +119,25 @@ async function professorMiddleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // Verifica se o usuário autenticado é realmente um professor ativo
+  const sbService = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  )
+  const { data: prof } = await sbService
+    .from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle()
+
+  if (!prof) {
+    // Pode ser admin tentando acessar o portal — redireciona pro painel
+    const { data: perfil } = await sbService
+      .from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle()
+    if (perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria') {
+      return NextResponse.redirect(new URL('/painel', request.url))
+    }
+    return NextResponse.redirect(new URL('/professor/login', request.url))
+  }
+
   return response;
 }
 

@@ -52,35 +52,28 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
-  // Verifica se já é lead — se for, não duplica
-  const { data: existente } = await sb
+  // INSERT ... ON CONFLICT DO NOTHING — evita race condition de dois webhooks simultâneos
+  const { data: resultado, error } = await sb
     .from('leads')
+    .upsert(
+      { nome, celular, origem: 'chatwoot', status: 'novo' },
+      { onConflict: 'celular', ignoreDuplicates: true }
+    )
     .select('id')
-    .eq('celular', celular)
     .maybeSingle()
 
-  if (existente) {
-    return NextResponse.json({ ok: true, action: 'already_lead', lead_id: existente.id })
-  }
-
-  // Cria novo lead
-  const { data: novoLead, error } = await sb
-    .from('leads')
-    .insert({
-      nome,
-      celular,
-      origem: 'chatwoot',
-      status: 'novo',
-    })
-    .select('id')
-    .single()
-
   if (error) {
-    console.error('[chatwoot-leads] insert:', error)
+    console.error('[chatwoot-leads] upsert:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, action: 'created', lead_id: novoLead.id })
+  if (!resultado) {
+    // ignoreDuplicates=true — lead já existia
+    const { data: existente } = await sb.from('leads').select('id').eq('celular', celular).maybeSingle()
+    return NextResponse.json({ ok: true, action: 'already_lead', lead_id: existente?.id })
+  }
+
+  return NextResponse.json({ ok: true, action: 'created', lead_id: resultado.id })
 }
 
 // GET para verificação de URL pelo Chatwoot

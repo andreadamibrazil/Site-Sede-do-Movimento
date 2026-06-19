@@ -4,11 +4,14 @@ import { NextRequest, NextResponse } from 'next/server'
 
 function gerarMensalidades(matriculaId: string, inicio: string, meses: number, valor: number, vencimento: number) {
   const mensalidades = []
-  const dataBase = new Date(inicio)
+  const dataBase = new Date(inicio + 'T12:00:00')
   for (let i = 0; i < meses; i++) {
     const competencia = new Date(dataBase)
     competencia.setMonth(competencia.getMonth() + i)
-    const venc = new Date(competencia.getFullYear(), competencia.getMonth(), vencimento)
+    // Corrige overflow: ex: dia 31 em fevereiro vira 3 de março sem essa proteção
+    const diasNoMes = new Date(competencia.getFullYear(), competencia.getMonth() + 1, 0).getDate()
+    const diaReal = Math.min(vencimento, diasNoMes)
+    const venc = new Date(competencia.getFullYear(), competencia.getMonth(), diaReal)
     mensalidades.push({
       matricula_id: matriculaId,
       competencia: `${competencia.getFullYear()}-${String(competencia.getMonth() + 1).padStart(2, '0')}-01`,

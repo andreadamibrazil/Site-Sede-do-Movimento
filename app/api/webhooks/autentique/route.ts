@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     body?.id ?? ''
   )
 
-  if (!submissionId) return NextResponse.json({ ok: true })
+  if (!submissionId || submissionId === '0') return NextResponse.json({ ok: true })
 
   const sb = createServiceClient()
   const concluido = evento === 'form.completed' || evento === 'document.signed' || evento === 'signed'

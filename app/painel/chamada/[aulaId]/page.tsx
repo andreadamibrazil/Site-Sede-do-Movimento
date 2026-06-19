@@ -32,7 +32,7 @@ export default async function ChamadaPage({
       .from('aulas')
       .select('turmas!inner(professor_id)')
       .eq('id', aulaId)
-      .single()
+      .maybeSingle()
     const { data: prof } = await service
       .from('professores')
       .select('id')
@@ -90,7 +90,8 @@ export default async function ChamadaPage({
   }))
 
   // Calcula se professor ainda está dentro da janela de tolerância
-  const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
+  // Força fuso horário Brasília (-03:00) para evitar erro de ±3h em servidores UTC
+  const fimAula = new Date(`${aula.data}T${aula.hora_fim}:00-03:00`)
   const agora = new Date()
   const minutosDesdeOFim = (agora.getTime() - fimAula.getTime()) / 60000
   const dentroTolerancia = minutosDesdeOFim <= TOLERANCIA_PROFESSOR_MINUTOS

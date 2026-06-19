@@ -1,14 +1,14 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import imageCompression from 'browser-image-compression'
 import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula } from '../actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction } from '../actions'
 
 const ABAS = [
   { id: 'dados',         label: 'Dados pessoais' },
@@ -49,7 +49,7 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
       {abaAtiva === 'matriculas'  && <AbaMatriculas matriculas={matriculas} alunoId={alunoId} />}
       {abaAtiva === 'financeiro'  && <AbaFinanceiro mensalidades={mensalidades} alunoId={alunoId} />}
       {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
-      {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} />}
+      {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} alunoId={alunoId} />}
       {abaAtiva === 'documentos'  && <AbaDocumentos documentos={documentos} alunoId={aluno.id} />}
       {abaAtiva === 'uniforme'     && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
       {abaAtiva === 'inteligencia' && <AbaInteligencia analiseCron={analiseCron ?? null} historicoAnalises={historicoAnalises ?? []} />}
@@ -97,7 +97,7 @@ function AbaDados({ aluno }: { aluno: any }) {
     nome:         aluno.responsavel_principal?.nome     ?? '',
     celular:      aluno.responsavel_principal?.celular  ?? '',
     email:        aluno.responsavel_principal?.email    ?? '',
-    notificacao:  aluno.responsavel_principal?.notificacao ?? 'whatsapp',
+    notificacao:  aluno.responsavel_principal?.notificacao ?? 'notificacao_e_cobranca',
   })
   const [salvandoR1, setSalvandoR1] = useState(false)
 
@@ -116,7 +116,7 @@ function AbaDados({ aluno }: { aluno: any }) {
     nome:         aluno.responsavel_secundario?.nome     ?? '',
     celular:      aluno.responsavel_secundario?.celular  ?? '',
     email:        aluno.responsavel_secundario?.email    ?? '',
-    notificacao:  aluno.responsavel_secundario?.notificacao ?? 'whatsapp',
+    notificacao:  aluno.responsavel_secundario?.notificacao ?? 'notificacao_e_cobranca',
   })
   const [salvandoR2, setSalvandoR2] = useState(false)
 
@@ -254,9 +254,9 @@ function AbaDados({ aluno }: { aluno: any }) {
                   <label className="text-xs text-gray-400">Notificações</label>
                   <select className={INP} value={formR1.notificacao}
                     onChange={e => setFormR1(f => ({ ...f, notificacao: e.target.value }))}>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">Email</option>
-                    <option value="ambos">Ambos</option>
+                    <option value="notificacao_e_cobranca">Notificações e cobranças</option>
+                    <option value="so_notificacao">Só notificações</option>
+                    <option value="so_cobranca">Só cobranças</option>
                     <option value="nenhum">Nenhum</option>
                   </select>
                 </div>
@@ -302,9 +302,9 @@ function AbaDados({ aluno }: { aluno: any }) {
                   <label className="text-xs text-gray-400">Notificações</label>
                   <select className={INP} value={formR2.notificacao}
                     onChange={e => setFormR2(f => ({ ...f, notificacao: e.target.value }))}>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="email">Email</option>
-                    <option value="ambos">Ambos</option>
+                    <option value="notificacao_e_cobranca">Notificações e cobranças</option>
+                    <option value="so_notificacao">Só notificações</option>
+                    <option value="so_cobranca">Só cobranças</option>
                     <option value="nenhum">Nenhum</option>
                   </select>
                 </div>
@@ -362,15 +362,17 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
       // Cria nova família
       const nome = (nomeNovo ?? busca).trim()
       if (!nome) { setSalvando(false); return }
-      const { data: raw } = await supabase.from('familias' as any).insert({ nome }).select('id').single()
+      const { data: raw, error: errCria } = await supabase.from('familias' as any).insert({ nome }).select('id').single()
       const criada = raw as { id: string } | null
-      if (!criada) { setSalvando(false); return }
+      if (errCria || !criada) { alert('Erro ao criar família: ' + errCria?.message); setSalvando(false); return }
       fId = criada.id
       fNome = nome
     }
 
-    await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
-    await supabase.from('familia_membros' as any).insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
+    const { error: errAluno } = await (supabase.from('alunos') as any).update({ familia_id: fId }).eq('id', alunoId)
+    if (errAluno) { alert('Erro ao vincular aluno: ' + errAluno.message); setSalvando(false); return }
+    const { error: errMembro } = await supabase.from('familia_membros' as any).insert({ familia_id: fId, aluno_id: alunoId, papeis: ['aluno'] })
+    if (errMembro && errMembro.code !== '23505') { alert('Erro ao registrar membro: ' + errMembro.message); setSalvando(false); return }
 
     setSalvando(false)
     setVinculado(true)
@@ -880,8 +882,7 @@ function AbaFinanceiro({ mensalidades, alunoId }: { mensalidades: any[]; alunoId
 
 // ── Aba: Presença ────────────────────────────────────────────
 
-function AbaPresenca({ presencas }: { presencas: any[] }) {
-  const supabase = createClient()
+function AbaPresenca({ presencas, alunoId }: { presencas: any[]; alunoId: string }) {
   const router = useRouter()
   const [justificando, setJustificando] = useState<string | null>(null)
   const [obs, setObs] = useState('')
@@ -895,12 +896,9 @@ function AbaPresenca({ presencas }: { presencas: any[] }) {
   const faltas = presencas.filter(p => p.status === 'falta').length
   const pct = Math.round((presentes / total) * 100)
 
-  async function justificarFalta(presencaId: string) {
+  async function handleJustificarFalta(presencaId: string) {
     setSalvando(true)
-    await supabase.from('presencas').update({
-      status: 'falta_justificada' as any,
-      observacao: obs || 'Atestado entregue',
-    }).eq('id', presencaId)
+    await justificarFaltaAction(presencaId, obs, alunoId)
     setJustificando(null)
     setObs('')
     setSalvando(false)
@@ -978,7 +976,7 @@ function AbaPresenca({ presencas }: { presencas: any[] }) {
                           className="flex-1 border border-yellow-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         />
                         <button
-                          onClick={() => justificarFalta(p.id)}
+                          onClick={() => handleJustificarFalta(p.id)}
                           disabled={salvando}
                           className="bg-yellow-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-yellow-600 disabled:opacity-50"
                         >
@@ -1264,13 +1262,13 @@ function AbaCobrancas({ alunoId }: { alunoId: string }) {
   })
 
   // Carrega ao montar
-  useState(() => {
+  useEffect(() => {
     supabase.from('cobrancas_avulsas')
       .select('*')
       .eq('aluno_id', alunoId)
       .order('created_at', { ascending: false })
       .then(({ data }) => { setCobrancas(data ?? []); setCarregado(true) })
-  })
+  }, [alunoId])
 
   async function adicionar() {
     if (!form.descricao || !form.valor) return
@@ -1421,6 +1419,7 @@ const NOTIF_LABEL: Record<string, string> = {
 const PLANO_LABEL: Record<string, string> = {
   mensal: 'Mensal', trimestral: 'Trimestral',
   semestral: 'Semestral', anual: 'Anual',
+  fidelidade: 'Fidelidade (anual)', personalizado: 'Personalizado (migração)',
 }
 
 const DESCONTO_LABEL: Record<string, string> = {

@@ -76,13 +76,22 @@ export async function POST(req: NextRequest) {
   const { folha_id, professor_email, admin_email } = await req.json()
   if (!folha_id) return NextResponse.json({ error: 'folha_id obrigatório' }, { status: 400 })
 
-  const { data: folha } = await sb
+  const { data: folha, error: errFolha } = await sb
     .from('folhas_pagamento')
     .select('*, professores(nome, email, cpf, mei)')
     .eq('id', folha_id)
-    .single()
+    .maybeSingle()
 
+  if (errFolha) return NextResponse.json({ error: errFolha.message }, { status: 500 })
   if (!folha) return NextResponse.json({ error: 'Folha não encontrada' }, { status: 404 })
+
+  // Idempotência — não reenviar se já foi enviada/assinada
+  if (folha.status === 'enviado' || folha.status === 'assinado') {
+    return NextResponse.json({
+      error: `Folha já está com status "${folha.status}". Não é possível reenviar.`,
+      status: folha.status,
+    }, { status: 409 })
+  }
 
   const { data: itens } = await sb
     .from('itens_folha')

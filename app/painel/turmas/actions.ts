@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import { revalidatePath } from 'next/cache'
 
 export async function atualizarStatusTurma(turmaId: string, status: 'ativa' | 'suspensa' | 'encerrada') {
+  await requireAdmin()
   const supabase = createServiceClient()
   const { error } = await supabase.from('turmas').update({ status }).eq('id', turmaId)
   if (error) throw new Error(error.message)
@@ -25,6 +26,7 @@ export async function removerAlunoDaTurma(matriculaTurmaId: string, turmaId: str
 }
 
 export async function atualizarPrecoPadrao(turmaId: string, preco: number) {
+  await requireAdmin()
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('turmas')
@@ -48,6 +50,7 @@ export async function criarTurma(data: {
   data_fim?: string | null
   horarios?: { dia_semana: string; hora_inicio: string; hora_fim: string }[]
 }) {
+  await requireAdmin()
   const supabase = createServiceClient()
   const { horarios, ...turmaData } = data
   const { data: nova, error } = await supabase
@@ -85,6 +88,7 @@ export async function editarTurma(
   },
   horarios?: { dia_semana: string; hora_inicio: string; hora_fim: string }[]
 ) {
+  await requireAdmin()
   const supabase = createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase.from('turmas').update(data as any).eq('id', turmaId)

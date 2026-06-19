@@ -49,11 +49,8 @@ export async function POST(req: NextRequest) {
   const path = `${aulaId}/${user.id}_${Date.now()}.${ext}`
   const sb = createServiceClient()
 
-  const { data: buckets } = await sb.storage.listBuckets()
-  if (!buckets?.find(b => b.name === BUCKET)) {
-    await sb.storage.createBucket(BUCKET, { public: false })
-  }
-
+  // O bucket 'atestados' deve existir no Supabase Storage antes do deploy.
+  // Não verificamos/criamos em runtime: listBuckets() é lento e cria race conditions.
   const { error } = await sb.storage
     .from(BUCKET)
     .upload(path, bytes, { contentType: file.type, upsert: true })

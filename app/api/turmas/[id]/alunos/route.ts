@@ -19,11 +19,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const idsJaMatriculados = (jaMatriculados ?? []).map((m: any) => m.matricula_id as string)
 
-  // Todas as matrículas ativas com aluno
+  // Todas as matrículas ativas com aluno (limite para evitar payloads gigantes)
   const { data: matriculas } = await sb
     .from('matriculas')
     .select('id, aluno_id, alunos(id, nome)')
     .eq('status', 'ativa')
+    .limit(500)
 
   const disponiveis = (matriculas ?? [])
     .filter((m: any) => !idsJaMatriculados.includes(m.id))

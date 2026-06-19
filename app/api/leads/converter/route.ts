@@ -19,6 +19,15 @@ export async function POST(req: NextRequest) {
 
   if (!lead) return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
 
+  // Verifica se já existe aluno com mesmo celular
+  if (lead.celular) {
+    const { data: alunoExistente } = await sb
+      .from('alunos').select('id').eq('celular', lead.celular).maybeSingle()
+    if (alunoExistente) {
+      return NextResponse.json({ error: 'Já existe aluno com este celular', aluno_id: alunoExistente.id }, { status: 409 })
+    }
+  }
+
   // Cria aluno com dados básicos do lead
   const { data: aluno, error } = await sb
     .from('alunos')

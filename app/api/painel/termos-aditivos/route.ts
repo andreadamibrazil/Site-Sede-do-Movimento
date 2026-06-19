@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         termo_aditivo_id: data.id,
         matricula_id,

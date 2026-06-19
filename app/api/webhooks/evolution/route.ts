@@ -107,11 +107,12 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       const msgs: any[] = Array.isArray(existing.messages) ? (existing.messages as any[]) : []
-      // Evita duplicar mesma mensagem
+      // Evita duplicar mesma mensagem; limita array aos últimos 200
       if (!msgs.find((m: any) => m.id === messageEntry.id)) {
         msgs.push(messageEntry)
+        const msgsTruncadas = msgs.length > 200 ? msgs.slice(-200) : msgs
         await sb.from('conversas')
-          .update({ messages: msgs, updated_at: new Date().toISOString(), analisado_em: null })
+          .update({ messages: msgsTruncadas, updated_at: new Date().toISOString(), analisado_em: null })
           .eq('id', existing.id)
         // Sincroniza com Azure Blob para o cron de análise IA conseguir ler
         try { await appendMessage(instance, celular, messageEntry) } catch { /* sem Azure configurado — ignora */ }

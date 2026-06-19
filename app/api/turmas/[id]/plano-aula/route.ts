@@ -88,7 +88,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // PDF é processado em memória pelo Gemini e descartado — não vai para o Supabase Storage
     const rawPdf = await callGeminiVision(base64, 'application/pdf', PROMPT_EXTRACAO)
-    const parsedPdf = JSON.parse(rawPdf.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    let parsedPdf: any
+    try {
+      parsedPdf = JSON.parse(rawPdf.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    } catch {
+      return NextResponse.json({ error: 'Gemini retornou resposta inválida para o PDF. Tente novamente ou cole o texto manualmente.' }, { status: 422 })
+    }
     resumo = parsedPdf.resumo ?? ''
     conteudo = parsedPdf
     textoOriginal = `[PDF: ${arquivo.name}]`
@@ -111,7 +116,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!textoOriginal?.trim()) return NextResponse.json({ error: 'Texto do plano é obrigatório' }, { status: 400 })
 
     const rawTxt = await callGemini(`${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}`)
-    const parsedTxt = JSON.parse(rawTxt.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    let parsedTxt: any
+    try {
+      parsedTxt = JSON.parse(rawTxt.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    } catch {
+      return NextResponse.json({ error: 'Gemini retornou resposta inválida para o texto. Tente novamente.' }, { status: 422 })
+    }
     resumo = parsedTxt.resumo ?? ''
     conteudo = parsedTxt
   }

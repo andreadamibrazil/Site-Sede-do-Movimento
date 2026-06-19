@@ -19,6 +19,15 @@ export async function POST(req: NextRequest) {
   const inicioStr = inicioMes.toISOString().slice(0, 10)
   const fimStr = fimMes.toISOString().slice(0, 10)
 
+  // Valida professor antes de qualquer operação destrutiva
+  const { data: prof, error: errProf } = await sb
+    .from('professores')
+    .select('nome, valor_base, forma_pagamento, valor_transporte')
+    .eq('id', professor_id)
+    .maybeSingle()
+  if (errProf) return NextResponse.json({ error: errProf.message }, { status: 500 })
+  if (!prof) return NextResponse.json({ error: 'Professor não encontrado' }, { status: 404 })
+
   // Remove folha existente (rascunho) para regenerar
   await sb.from('folhas_pagamento')
     .delete()
@@ -146,13 +155,6 @@ export async function POST(req: NextRequest) {
   )
   const alunosPorTurma: Record<string, number> = Object.fromEntries(contagensParalelas)
 
-  // Valor fixo do professor
-  const { data: prof } = await sb
-    .from('professores')
-    .select('nome, valor_base, forma_pagamento, valor_transporte')
-    .eq('id', professor_id)
-    .single()
-
   // Monta itens — inclui TODAS as aulas (concluídas e sem chamada)
   const itens: any[] = []
   let totalAulas = 0
@@ -195,7 +197,9 @@ export async function POST(req: NextRequest) {
 
     const [hi, mi] = (aula.hora_inicio ?? '00:00').split(':').map(Number)
     const [hf, mf] = (aula.hora_fim ?? '00:00').split(':').map(Number)
-    const horasAula = ((hf * 60 + mf) - (hi * 60 + mi)) / 60
+    const horasAula = Number.isFinite(hi) && Number.isFinite(hf)
+      ? ((hf * 60 + mf) - (hi * 60 + mi)) / 60
+      : 0
 
     const valor = pago ? Math.round(horasAula * valorHora * 100) / 100 : 0
 
