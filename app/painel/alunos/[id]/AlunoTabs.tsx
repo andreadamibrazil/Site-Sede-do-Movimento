@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade } from '../actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula } from '../actions'
 
 const ABAS = [
   { id: 'dados',         label: 'Dados pessoais' },
@@ -469,6 +469,55 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
 // ── Aba: Matrículas e turmas ─────────────────────────────────
 
 function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: string }) {
+  const router = useRouter()
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+  const [editValor, setEditValor] = useState('')
+  const [editTipoDesconto, setEditTipoDesconto] = useState('')
+  const [editPercDesconto, setEditPercDesconto] = useState('')
+  const [editObsDesconto, setEditObsDesconto] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [cancelando, setCancelando] = useState<string | null>(null)
+  const [editErro, setEditErro] = useState('')
+
+  function iniciarEdicao(m: any) {
+    setEditandoId(m.id)
+    setEditValor(String(m.valor_final))
+    setEditTipoDesconto(m.tipo_desconto ?? '')
+    setEditPercDesconto(m.percentual_desconto ? String(m.percentual_desconto) : '')
+    setEditObsDesconto(m.observacao_desconto ?? '')
+    setEditErro('')
+  }
+
+  async function salvarEdicao(matriculaId: string) {
+    const valorNum = Number(String(editValor).replace(',', '.'))
+    if (!editValor || isNaN(valorNum) || valorNum <= 0) {
+      setEditErro('Valor inválido — informe um número maior que zero.')
+      return
+    }
+    const percNum = editPercDesconto !== '' ? Number(editPercDesconto) : undefined
+    setSalvando(true)
+    setEditErro('')
+    const res = await editarMatricula(matriculaId, {
+      valorFinal: valorNum,
+      tipoDesconto: editTipoDesconto || null,
+      percentualDesconto: percNum !== undefined && !isNaN(percNum) ? percNum : undefined,
+      observacaoDesconto: editObsDesconto || null,
+    })
+    setSalvando(false)
+    if ('error' in res) { setEditErro(res.error); return }
+    setEditandoId(null)
+    router.refresh()
+  }
+
+  async function handleCancelarMatricula(matriculaId: string) {
+    if (!confirm('Cancelar esta matrícula? Ela ficará com status "cancelada" mas não será apagada.')) return
+    setCancelando(matriculaId)
+    const res = await cancelarMatricula(matriculaId)
+    setCancelando(null)
+    if ('error' in res) { alert('Erro: ' + res.error); return }
+    router.refresh()
+  }
+
   if (!matriculas.length) return (
     <div className="text-center py-12 space-y-3">
       <p className="text-sm text-gray-400">Nenhuma matrícula ainda.</p>
@@ -478,18 +527,20 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
       </a>
     </div>
   )
+
   return (
     <div className="space-y-4">
       {matriculas.map((m: any) => {
         const turmasAtivas = m.matricula_turmas?.filter((mt: any) => !mt.data_saida) ?? []
         const turmaIds = turmasAtivas.map((mt: any) => mt.turma_id).join(',')
+        const isEditando = editandoId === m.id
         return (
-          <div key={m.id} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+          <div key={m.id} className={`bg-white border rounded-xl p-5 space-y-3 ${m.status === 'cancelada' ? 'border-gray-100 opacity-60' : 'border-gray-200'}`}>
             <div className="flex items-center justify-between">
               <div>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  m.status === 'ativa' ? 'bg-green-100 text-green-700' :
-                  m.status === 'trancada' ? 'bg-yellow-100 text-yellow-700' :
+                  m.status === 'ativa'     ? 'bg-green-100 text-green-700' :
+                  m.status === 'trancada'  ? 'bg-yellow-100 text-yellow-700' :
                   'bg-gray-100 text-gray-500'
                 }`}>{m.status}</span>
                 <span className="ml-2 text-xs text-gray-400">{PLANO_LABEL[m.plano] ?? m.plano}</span>
@@ -498,16 +549,109 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
                 <p className="text-sm font-semibold text-gray-900">
                   R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
                 </p>
-                <a
-                  href={`/painel/alunos/${alunoId}/matricula?plano=${m.plano}&dia=${m.dia_vencimento}&turmas=${turmaIds}`}
-                  className="text-xs font-medium px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
-                  title="Criar nova matrícula com as mesmas turmas e plano"
-                >
-                  ↺ Renovar
-                </a>
+                {m.status !== 'cancelada' && (
+                  <>
+                    <button
+                      onClick={() => isEditando ? setEditandoId(null) : iniciarEdicao(m)}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                      title="Editar valor e desconto"
+                    >
+                      {isEditando ? '✕' : '✎ Editar'}
+                    </button>
+                    <a
+                      href={`/painel/alunos/${alunoId}/matricula?plano=${m.plano}&dia=${m.dia_vencimento}&turmas=${turmaIds}`}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      title="Criar nova matrícula com as mesmas turmas e plano"
+                    >
+                      ↺ Renovar
+                    </a>
+                    <button
+                      onClick={() => handleCancelarMatricula(m.id)}
+                      disabled={cancelando === m.id}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                      title="Cancelar esta matrícula"
+                    >
+                      {cancelando === m.id ? '...' : '🗑'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-            {m.tipo_desconto && (
+
+            {/* Form de edição inline */}
+            {isEditando && (
+              <div className="border border-indigo-100 bg-indigo-50/40 rounded-xl p-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Valor mensal (R$)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editValor}
+                      onChange={e => setEditValor(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">% desconto</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="100"
+                      value={editPercDesconto}
+                      onChange={e => setEditPercDesconto(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de desconto</label>
+                  <select
+                    value={editTipoDesconto}
+                    onChange={e => setEditTipoDesconto(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Sem desconto</option>
+                    <option value="bairro">Bairro (Rio Comprido)</option>
+                    <option value="familia">Família</option>
+                    <option value="all_dance">All Dance</option>
+                    <option value="vip">VIP</option>
+                    <option value="bolsa">Bolsa artística</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Observação</label>
+                  <input
+                    type="text"
+                    value={editObsDesconto}
+                    onChange={e => setEditObsDesconto(e.target.value)}
+                    placeholder="Ex: aprovado por Carlos em 18/06"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                {editErro && <p className="text-xs text-red-600">✗ {editErro}</p>}
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setEditandoId(null)}
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => salvarEdicao(m.id)}
+                    disabled={salvando}
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    {salvando ? 'Salvando...' : 'Salvar'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {m.tipo_desconto && !isEditando && (
               <p className="text-xs text-gray-500">
                 Desconto: {DESCONTO_LABEL[m.tipo_desconto] ?? m.tipo_desconto}
                 {m.percentual_desconto ? ` (${m.percentual_desconto}%)` : ''}

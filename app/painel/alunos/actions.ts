@@ -473,3 +473,54 @@ export async function enviarContratoManual(
     return { error: err?.message ?? 'Erro desconhecido' }
   }
 }
+
+// ── Editar matrícula (valor, desconto) ───────────────────────
+export async function editarMatricula(
+  matriculaId: string,
+  dados: {
+    valorFinal?: number
+    tipoDesconto?: string | null
+    percentualDesconto?: number
+    observacaoDesconto?: string | null
+  },
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = createServiceClient()
+    const { error, data } = await supabase
+      .from('matriculas')
+      .update({
+        ...(dados.valorFinal !== undefined && { valor_final: dados.valorFinal }),
+        tipo_desconto: (dados.tipoDesconto ?? null) as any,
+        ...(dados.percentualDesconto !== undefined && { percentual_desconto: dados.percentualDesconto }),
+        observacao_desconto: dados.observacaoDesconto ?? null,
+      })
+      .eq('id', matriculaId)
+      .select('aluno_id')
+      .single()
+    if (error) return { error: error.message }
+    revalidatePath(`/painel/alunos/${(data as any).aluno_id}`)
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message ?? 'Erro desconhecido' }
+  }
+}
+
+// ── Cancelar matrícula ───────────────────────────────────────
+export async function cancelarMatricula(
+  matriculaId: string,
+): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = createServiceClient()
+    const { error, data } = await supabase
+      .from('matriculas')
+      .update({ status: 'cancelada' })
+      .eq('id', matriculaId)
+      .select('aluno_id')
+      .single()
+    if (error) return { error: error.message }
+    revalidatePath(`/painel/alunos/${(data as any).aluno_id}`)
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message ?? 'Erro desconhecido' }
+  }
+}

@@ -1,5 +1,5 @@
-const BASE_URL = process.env.DOCUSEAL_URL ?? ''
-const API_KEY  = process.env.DOCUSEAL_API_KEY ?? ''
+const BASE_URL = (process.env.DOCUSEAL_URL ?? '').trim()
+const API_KEY  = (process.env.DOCUSEAL_API_KEY ?? '').trim()
 
 // Mapa de templates — adicione uma linha para cada novo documento
 export const DOCUSEAL_TEMPLATES = {
