@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from '@/app/painel/chamada/[aulaId]/ChamadaClient'
 import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
-const TOLERANCIA_PROFESSOR_MINUTOS = 120
+const TOLERANCIA_PROFESSOR_MINUTOS = 10080
 
 export default async function ProfessorChamadaPage({
   params,

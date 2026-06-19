@@ -2,8 +2,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from './ChamadaClient'
 
-// Minutos após o fim da aula que o professor ainda pode editar
-const TOLERANCIA_PROFESSOR_MINUTOS = 120
+// Minutos após o fim da aula que o professor ainda pode editar (7 dias)
+const TOLERANCIA_PROFESSOR_MINUTOS = 10080
 
 export default async function ChamadaPage({
   params,

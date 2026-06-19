@@ -279,7 +279,7 @@ export default function ChamadaClient({
                 ✏️ Corrigir
               </button>
             ) : (
-              <span className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full" title={`Prazo de ${toleranciaMinutos}min expirado — contate a secretaria`}>
+              <span className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full" title={`Prazo de 7 dias expirado — contate a secretaria`}>
                 🔒 Prazo expirado
               </span>
             )}

@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from '@/app/painel/chamada/[aulaId]/ChamadaClient'
 
-const TOLERANCIA_PROFESSOR_MINUTOS = 120
+const TOLERANCIA_PROFESSOR_MINUTOS = 10080
 
 export default async function ProfessorChamadaPage({
   params,
