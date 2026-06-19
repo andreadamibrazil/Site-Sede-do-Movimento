@@ -25,6 +25,7 @@ export default function PlanoAula({ turmaId, dataInicio, dataFim }: {
           setTexto(d.plano.texto_original ?? '')
         }
       })
+      .catch(() => setErro('Erro ao carregar plano de aula'))
   }, [turmaId])
 
   async function processar() {
