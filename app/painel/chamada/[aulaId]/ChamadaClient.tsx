@@ -287,6 +287,7 @@ export default function ChamadaClient({
           <h1 className="text-base font-semibold text-gray-900">{(aula.turmas as any)?.nome}</h1>
           <p className="text-xs text-gray-500">
             {diaSemana}, {dataFormatada} · {aula.hora_inicio?.slice(0,5)} – {aula.hora_fim?.slice(0,5)}
+            {perfilUsuario !== 'professor' && (aula.professores as any)?.nome ? ` · Prof. ${(aula.professores as any).nome}` : ''}
           </p>
           <p className="text-xs font-medium text-green-600 mt-1">
             {totalPresentes} de {alunos.length} presentes
@@ -366,6 +367,7 @@ export default function ChamadaClient({
         <p className="text-xs text-gray-500">
           {diaSemana}, {dataFormatada} · {aula.hora_inicio?.slice(0,5)} – {aula.hora_fim?.slice(0,5)}
           {(aula.salas as any)?.nome ? ` · Sala ${(aula.salas as any).nome}` : ''}
+          {perfilUsuario !== 'professor' && (aula.professores as any)?.nome ? ` · Prof. ${(aula.professores as any).nome}` : ''}
         </p>
         <div className="flex items-center justify-between mt-2">
           <p className="text-xs text-gray-400">

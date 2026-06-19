@@ -234,12 +234,17 @@ export default async function ProfessorPage() {
                     </div>
                   )}
 
-                  {/* Plano de aula */}
-                  <div className="border-t border-gray-100 pt-2">
+                  {/* Plano de aula + Frequência */}
+                  <div className="border-t border-gray-100 pt-2 space-y-0.5">
                     <a href={`/professor/plano/${turma.id}`}
                       className="flex items-center justify-between text-xs text-indigo-600 hover:text-indigo-700 py-1">
                       <span>📋 Plano de aula</span>
                       <span>Enviar / Ver →</span>
+                    </a>
+                    <a href={`/professor/turmas/${turma.id}`}
+                      className="flex items-center justify-between text-xs text-gray-500 hover:text-gray-700 py-1">
+                      <span>📊 Frequência dos alunos</span>
+                      <span>Ver →</span>
                     </a>
                   </div>
                 </div>

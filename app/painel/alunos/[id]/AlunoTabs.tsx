@@ -46,7 +46,7 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
 
       {/* Conteúdo */}
       {abaAtiva === 'dados'       && <AbaDados aluno={aluno} />}
-      {abaAtiva === 'matriculas'  && <AbaMatriculas matriculas={matriculas} />}
+      {abaAtiva === 'matriculas'  && <AbaMatriculas matriculas={matriculas} alunoId={alunoId} />}
       {abaAtiva === 'financeiro'  && <AbaFinanceiro mensalidades={mensalidades} alunoId={alunoId} />}
       {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
       {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} />}
@@ -468,14 +468,21 @@ function VincularFamilia({ alunoId, familiaId, familiaNome }: { alunoId: string;
 
 // ── Aba: Matrículas e turmas ─────────────────────────────────
 
-function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
+function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: string }) {
   if (!matriculas.length) return (
-    <p className="text-sm text-gray-400 text-center py-12">Nenhuma matrícula ainda.</p>
+    <div className="text-center py-12 space-y-3">
+      <p className="text-sm text-gray-400">Nenhuma matrícula ainda.</p>
+      <a href={`/painel/alunos/${alunoId}/matricula`}
+        className="inline-block text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+        + Nova matrícula
+      </a>
+    </div>
   )
   return (
     <div className="space-y-4">
       {matriculas.map((m: any) => {
         const turmasAtivas = m.matricula_turmas?.filter((mt: any) => !mt.data_saida) ?? []
+        const turmaIds = turmasAtivas.map((mt: any) => mt.turma_id).join(',')
         return (
           <div key={m.id} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -487,9 +494,18 @@ function AbaMatriculas({ matriculas }: { matriculas: any[] }) {
                 }`}>{m.status}</span>
                 <span className="ml-2 text-xs text-gray-400">{PLANO_LABEL[m.plano] ?? m.plano}</span>
               </div>
-              <p className="text-sm font-semibold text-gray-900">
-                R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-gray-900">
+                  R$ {Number(m.valor_final).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+                </p>
+                <a
+                  href={`/painel/alunos/${alunoId}/matricula?plano=${m.plano}&dia=${m.dia_vencimento}&turmas=${turmaIds}`}
+                  className="text-xs font-medium px-2.5 py-1 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors"
+                  title="Criar nova matrícula com as mesmas turmas e plano"
+                >
+                  ↺ Renovar
+                </a>
+              </div>
             </div>
             {m.tipo_desconto && (
               <p className="text-xs text-gray-500">

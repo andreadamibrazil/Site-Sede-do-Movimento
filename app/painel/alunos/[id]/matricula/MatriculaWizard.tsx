@@ -61,16 +61,17 @@ export default function MatriculaWizard({
     responsavel_secundario: Responsavel
   }
   turmas: Turma[]
+  renovarDe?: { plano: string; diaVencimento: string; turmaIds: string[] }
 }) {
   const router = useRouter()
 
   const [etapa, setEtapa] = useState<1 | 2 | 3>(1)
-  const [turmasSelecionadas, setTurmasSelecionadas] = useState<string[]>([])
-  const [plano, setPlano] = useState('mensal')
+  const [turmasSelecionadas, setTurmasSelecionadas] = useState<string[]>(renovarDe?.turmaIds ?? [])
+  const [plano, setPlano] = useState(renovarDe?.plano ?? 'mensal')
   const [mesesPersonalizado, setMesesPersonalizado] = useState('4')
   const [tipoDesconto, setTipoDesconto] = useState('')
   const [percentualDesconto, setPercentualDesconto] = useState('')
-  const [diaVencimento, setDiaVencimento] = useState('10')
+  const [diaVencimento, setDiaVencimento] = useState(renovarDe?.diaVencimento ?? '10')
   const [enviarContrato, setEnviarContrato] = useState(false)
 
   const emailContrato = aluno.responsavel_principal?.email ?? aluno.email ?? null

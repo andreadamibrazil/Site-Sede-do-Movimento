@@ -158,7 +158,14 @@ export default function FinanceiroClient({
           <p className="text-gray-400 text-sm">Nenhuma mensalidade encontrada.</p>
           <p className="text-gray-300 text-xs mt-1">As mensalidades são geradas ao criar matrículas.</p>
         </div>
-      ) : grupos.map(({ aluno, mensalidades }) => {
+      ) : (filtroAtual === 'em_atraso'
+        ? [...grupos].sort((a, b) => {
+            const maxA = Math.max(...a.mensalidades.map(m => diasAtraso(m.vencimento)))
+            const maxB = Math.max(...b.mensalidades.map(m => diasAtraso(m.vencimento)))
+            return maxB - maxA
+          })
+        : grupos
+      ).map(({ aluno, mensalidades }) => {
         const totalGrupo = mensalidades.reduce((a, m) => a + Number(m.valor), 0)
         return (
           <div key={aluno.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">

@@ -4,10 +4,13 @@ import MatriculaWizard from './MatriculaWizard'
 
 export default async function NovaMatriculaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ plano?: string; dia?: string; turmas?: string }>
 }) {
   const { id } = await params
+  const { plano: renovarPlano, dia: renovarDia, turmas: renovarTurmas } = await searchParams
   const supabase = await createClient()
 
   const [
@@ -50,7 +53,15 @@ export default async function NovaMatriculaPage({
         </a>
         <h1 className="text-xl font-semibold text-gray-900 mt-1">Nova matrícula</h1>
       </div>
-      <MatriculaWizard aluno={aluno as any} turmas={turmasComVagas as any} />
+      <MatriculaWizard
+        aluno={aluno as any}
+        turmas={turmasComVagas as any}
+        renovarDe={renovarPlano ? {
+          plano: renovarPlano,
+          diaVencimento: renovarDia ?? '10',
+          turmaIds: renovarTurmas ? renovarTurmas.split(',').filter(Boolean) : [],
+        } : undefined}
+      />
     </div>
   )
 }
