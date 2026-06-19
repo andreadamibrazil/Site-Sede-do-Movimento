@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { criarMatricula } from './actions'
 
@@ -52,6 +52,7 @@ type Responsavel = {
 export default function MatriculaWizard({
   aluno,
   turmas,
+  renovarDe,
 }: {
   aluno: {
     id: string; nome: string; data_nascimento: string | null
@@ -98,6 +99,7 @@ export default function MatriculaWizard({
   const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().split('T')[0])
   const [observacaoDesconto, setObservacaoDesconto] = useState('')
   const [valorOverride, setValorOverride] = useState('')
+  const salvandoRef = useRef(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -126,8 +128,10 @@ export default function MatriculaWizard({
   }
 
   async function confirmar() {
+    if (salvandoRef.current) return
     setErro('')
     if (!turmasSelecionadas.length) { setErro('Selecione ao menos uma turma.'); return }
+    salvandoRef.current = true
     setSalvando(true)
 
     try {
@@ -159,6 +163,7 @@ export default function MatriculaWizard({
     } catch (e) {
       setErro((e as Error).message)
     } finally {
+      salvandoRef.current = false
       setSalvando(false)
     }
   }

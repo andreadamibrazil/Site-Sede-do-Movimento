@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 type AlunoDisponivel = { matricula_id: string; aluno_id: string; nome: string }
@@ -12,6 +12,7 @@ export default function AdicionarAlunosModal({ turmaId }: { turmaId: string }) {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [carregando, setCarregando] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const adicionandoRef = useRef(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -49,7 +50,8 @@ export default function AdicionarAlunosModal({ turmaId }: { turmaId: string }) {
   }
 
   async function adicionar() {
-    if (selecionados.size === 0) return
+    if (selecionados.size === 0 || adicionandoRef.current) return
+    adicionandoRef.current = true
     startTransition(async () => {
       const res = await fetch(`/api/turmas/${turmaId}/alunos`, {
         method: 'POST',
@@ -57,10 +59,12 @@ export default function AdicionarAlunosModal({ turmaId }: { turmaId: string }) {
         body: JSON.stringify({ matriculaIds: [...selecionados] }),
       })
       if (res.ok) {
+        adicionandoRef.current = false
         fechar()
         router.refresh()
       } else {
         const err = await res.json()
+        adicionandoRef.current = false
         alert('Erro: ' + (err.error ?? 'desconhecido'))
       }
     })
