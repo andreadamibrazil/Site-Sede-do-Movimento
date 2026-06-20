@@ -9,6 +9,7 @@ import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
 import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento } from '../actions'
+import { dispararContratoN8n } from './matricula/actions'
 
 const ABAS = [
   { id: 'dados',          label: 'Dados pessoais' },
@@ -484,6 +485,20 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
   const [salvando, setSalvando] = useState(false)
   const [cancelando, setCancelando] = useState<string | null>(null)
   const [editErro, setEditErro] = useState('')
+  const [contratoEstado, setContratoEstado] = useState<Record<string, 'loading' | 'ok' | 'erro'>>({})
+
+  async function handleEnviarContrato(matriculaId: string) {
+    setContratoEstado(s => ({ ...s, [matriculaId]: 'loading' }))
+    const res = await dispararContratoN8n(matriculaId, alunoId)
+    if ('error' in res) {
+      setContratoEstado(s => ({ ...s, [matriculaId]: 'erro' }))
+      alert('Erro ao enviar contrato: ' + res.error)
+      setTimeout(() => setContratoEstado(s => { const next = { ...s }; delete next[matriculaId]; return next }), 4000)
+    } else {
+      setContratoEstado(s => ({ ...s, [matriculaId]: 'ok' }))
+      setTimeout(() => setContratoEstado(s => { const next = { ...s }; delete next[matriculaId]; return next }), 6000)
+    }
+  }
 
   function iniciarEdicao(m: any) {
     setEditandoId(m.id)
@@ -572,12 +587,26 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
                       ↺ Renovar
                     </a>
                     <button
+                      onClick={() => handleEnviarContrato(m.id)}
+                      disabled={contratoEstado[m.id] === 'loading'}
+                      className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                        contratoEstado[m.id] === 'ok'
+                          ? 'border-green-200 text-green-700 bg-green-50'
+                          : 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                      }`}
+                      title="Enviar contrato por WhatsApp e e-mail via n8n"
+                    >
+                      {contratoEstado[m.id] === 'loading' ? '...'
+                        : contratoEstado[m.id] === 'ok' ? '✓ Contrato enviado'
+                        : '✉ Enviar contrato'}
+                    </button>
+                    <button
                       onClick={() => handleCancelarMatricula(m.id)}
                       disabled={cancelando === m.id}
                       className="text-xs font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
                       title="Cancelar esta matrícula"
                     >
-                      {cancelando === m.id ? '...' : '🗑'}
+                      {cancelando === m.id ? '...' : '🗑 Cancelar'}
                     </button>
                   </>
                 )}

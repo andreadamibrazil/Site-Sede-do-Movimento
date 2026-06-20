@@ -203,29 +203,51 @@ export async function criarMatricula(dados: MatriculaDados) {
     )
   }
 
-  // Notifica n8n — fire-and-forget (WhatsApp responsável + secretaria + Drive + tabela contratos)
+  return { success: true, matriculaId: matricula.id }
+}
+
+export async function dispararContratoN8n(
+  matriculaId: string,
+  alunoId: string,
+): Promise<{ success: true } | { error: string }> {
   const n8nUrl = process.env.N8N_WEBHOOK_MATRICULA
-  if (n8nUrl) {
-    fetch(n8nUrl, {
+  if (!n8nUrl) return { error: 'Webhook não configurado (N8N_WEBHOOK_MATRICULA)' }
+
+  const supabase = createServiceClient()
+  const [{ data: aluno }, { data: mat }] = await Promise.all([
+    supabase.from('alunos').select('nome, email, celular').eq('id', alunoId).single(),
+    supabase
+      .from('matriculas')
+      .select('plano, data_inicio, dia_vencimento, valor_final, matricula_turmas(turma_id)')
+      .eq('id', matriculaId)
+      .single(),
+  ])
+
+  if (!aluno || !mat) return { error: 'Dados da matrícula não encontrados' }
+
+  const turmaIds = (mat as any).matricula_turmas?.map((mt: any) => mt.turma_id) ?? []
+
+  try {
+    const res = await fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        matriculaId: matricula.id,
-        alunoId: dados.alunoId,
-        alunoNome: dados.alunoNome,
-        alunoEmail: dados.alunoEmail,
-        alunoWhatsapp: dados.alunoWhatsapp,
-        turmaIds: dados.turmaIds,
-        plano: dados.plano,
-        dataInicio: dados.dataInicio,
-        diaVencimento: dados.diaVencimento,
-        valorFinal: dados.valorFinal,
-        enviarContrato: dados.enviarContrato,
+        matriculaId,
+        alunoId,
+        alunoNome: aluno.nome,
+        alunoEmail: aluno.email,
+        alunoWhatsapp: aluno.celular,
+        turmaIds,
+        plano: mat.plano,
+        dataInicio: mat.data_inicio,
+        diaVencimento: mat.dia_vencimento,
+        valorFinal: mat.valor_final,
+        enviarContrato: true,
       }),
-    }).catch(err =>
-      console.error('[criarMatricula] falha ao notificar n8n:', err)
-    )
+    })
+    if (!res.ok) return { error: `n8n respondeu com status ${res.status}` }
+    return { success: true }
+  } catch (err) {
+    return { error: String(err) }
   }
-
-  return { success: true, matriculaId: matricula.id }
 }
