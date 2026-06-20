@@ -52,6 +52,7 @@ export default async function ChamadaPage({
     .single()
 
   if (!aula) notFound()
+  if (aula.status === 'cancelada') redirect('/painel/agenda')
 
   // Alunos matriculados na turma (ativos)
   const { data: matriculaTurmas } = await supabase

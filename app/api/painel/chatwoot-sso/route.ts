@@ -1,7 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireStaff } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+  const guard = await requireStaff()
+  if (!guard.ok) return NextResponse.redirect(new URL('/painel/login', process.env.NEXT_PUBLIC_SITE_URL ?? ''))
+
   const chatwootUrl = process.env.CHATWOOT_URL ?? 'https://crm.sededomovimento.art'
   const adminToken = process.env.CHATWOOT_ADMIN_TOKEN
 
@@ -14,7 +18,7 @@ export async function GET() {
   const { data: { user } } = await sb.auth.getUser()
 
   if (!user?.email) {
-    return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SITE_URL ?? ''))
+    return NextResponse.redirect(new URL('/painel/login', process.env.NEXT_PUBLIC_SITE_URL ?? ''))
   }
 
   // Busca o agente Chatwoot pelo email

@@ -1,9 +1,11 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 import { revalidatePath } from 'next/cache'
 
 export async function atualizarAtivoUsuario(userId: string, ativo: boolean) {
+  await requireAdmin()
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('perfis_usuario')
@@ -14,6 +16,7 @@ export async function atualizarAtivoUsuario(userId: string, ativo: boolean) {
 }
 
 export async function atualizarPerfilUsuario(userId: string, perfil: string) {
+  await requireAdmin()
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('perfis_usuario')

@@ -28,7 +28,7 @@ export default async function AgendaPage() {
   const hoje = new Date()
   const inicioSemana = getInicioSemana(hoje)
   const fimSemana = new Date(inicioSemana)
-  fimSemana.setDate(fimSemana.getDate() + 4) // seg-sex apenas
+  fimSemana.setDate(fimSemana.getDate() + 5) // seg-sab
 
   const inicioStr = inicioSemana.toISOString().split('T')[0]
   const fimStr = fimSemana.toISOString().split('T')[0]
@@ -67,7 +67,7 @@ export default async function AgendaPage() {
   const { data: professores } = await service.from('professores').select('id, nome').eq('ativo', true).order('nome')
 
   // Datas da semana (seg-sex)
-  const datas = Array.from({ length: 5 }, (_, i) => {
+  const datas = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(inicioSemana)
     d.setDate(d.getDate() + i)
     return d.toISOString().split('T')[0]

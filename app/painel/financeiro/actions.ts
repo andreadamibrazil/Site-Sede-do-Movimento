@@ -19,7 +19,7 @@ export async function registrarPagamento(data: {
     .maybeSingle()
   const alunoId = (mensRef as any)?.matriculas?.aluno_id
 
-  const { error: e1 } = await supabase
+  const { data: updated, error: e1 } = await supabase
     .from('mensalidades')
     .update({
       status: 'recebida',
@@ -27,7 +27,11 @@ export async function registrarPagamento(data: {
       pago_em: new Date().toISOString(),
     })
     .eq('id', data.mensalidadeId)
+    .neq('status', 'recebida')
+    .select('id')
+
   if (e1) throw new Error(e1.message)
+  if (!updated?.length) throw new Error('Mensalidade já foi recebida')
 
   const { error: e2 } = await supabase.from('pagamentos').insert({
     mensalidade_id: data.mensalidadeId,

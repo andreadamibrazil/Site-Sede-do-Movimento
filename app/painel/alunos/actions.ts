@@ -337,13 +337,16 @@ export async function darBaixaMensalidade(
   if ((mens as any).matriculas?.aluno_id !== alunoId) throw new Error('Acesso negado')
   if ((mens as any).status === 'recebida') throw new Error('Mensalidade já foi baixada')
 
-  const { error: errUpd } = await supabase.from('mensalidades').update({
+  const statusOriginal = (mens as any).status
+
+  const { data: updated, error: errUpd } = await supabase.from('mensalidades').update({
     status: 'recebida',
     valor_pago: mens.valor,
     pago_em: new Date().toISOString(),
-  }).eq('id', mensalidadeId)
+  }).eq('id', mensalidadeId).neq('status', 'recebida').select('id')
 
   if (errUpd) throw new Error(errUpd.message)
+  if (!updated?.length) throw new Error('Mensalidade já foi baixada por outro usuário')
 
   const { error: errPag } = await supabase.from('pagamentos').insert({
     mensalidade_id: mensalidadeId,
@@ -353,8 +356,8 @@ export async function darBaixaMensalidade(
   })
 
   if (errPag) {
-    // Rollback: reverte status da mensalidade
-    await supabase.from('mensalidades').update({ status: 'aberta', valor_pago: null, pago_em: null }).eq('id', mensalidadeId)
+    // Rollback: reverte para o status original (não necessariamente 'aberta')
+    await supabase.from('mensalidades').update({ status: statusOriginal, valor_pago: null, pago_em: null }).eq('id', mensalidadeId)
     throw new Error('Erro ao registrar pagamento: ' + errPag.message)
   }
 
@@ -373,12 +376,13 @@ export async function renegociarMensalidade(
 
   const { data: mens } = await supabase
     .from('mensalidades')
-    .select('valor, matriculas!inner(aluno_id)')
+    .select('valor, status, matriculas!inner(aluno_id)')
     .eq('id', mensalidadeId)
     .maybeSingle()
 
   if (!mens) throw new Error('Mensalidade não encontrada')
   if ((mens as any).matriculas?.aluno_id !== alunoId) throw new Error('Acesso negado')
+  if ((mens as any).status === 'recebida') throw new Error('Mensalidade já foi paga e não pode ser renegociada')
 
   const { error: errReneg } = await supabase.from('renegociacoes').insert({
     mensalidade_id: mensalidadeId,

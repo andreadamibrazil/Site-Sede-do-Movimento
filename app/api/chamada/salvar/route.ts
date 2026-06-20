@@ -20,11 +20,12 @@ export async function POST(req: NextRequest) {
   // Verifica se o usuário tem acesso a esta aula
   const { data: aula } = await sb
     .from('aulas')
-    .select('id, professor_id, turma_id, status, turmas(professor_id)')
+    .select('id, data, hora_fim, professor_id, turma_id, status, turmas(professor_id)')
     .eq('id', aulaId)
     .single()
 
   if (!aula) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })
+  if (aula.status === 'cancelada') return NextResponse.json({ error: 'chamada não permitida em aula cancelada' }, { status: 403 })
 
   // professor_id efetivo: aulas.professor_id ou turmas.professor_id (fluxo normal não preenche aulas.professor_id)
   const professorIdEfetivo = aula.professor_id ?? (aula.turmas as any)?.professor_id ?? null
@@ -62,6 +63,13 @@ export async function POST(req: NextRequest) {
 
     if (!pertenceAoProfessor) {
       return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
+    }
+
+    // Verifica janela de 7 dias server-side
+    const fimAula = new Date(`${aula.data}T${aula.hora_fim ?? '23:59'}:00-03:00`)
+    const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
+    if (minutosDesdeOFim > 10080) {
+      return NextResponse.json({ error: 'prazo de 7 dias para editar esta chamada expirou' }, { status: 403 })
     }
   }
 

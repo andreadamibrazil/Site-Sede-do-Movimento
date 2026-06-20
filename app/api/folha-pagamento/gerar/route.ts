@@ -24,9 +24,10 @@ export async function POST(req: NextRequest) {
     .from('professores')
     .select('nome, valor_base, forma_pagamento, valor_transporte')
     .eq('id', professor_id)
+    .eq('ativo', true)
     .maybeSingle()
   if (errProf) return NextResponse.json({ error: errProf.message }, { status: 500 })
-  if (!prof) return NextResponse.json({ error: 'Professor não encontrado' }, { status: 404 })
+  if (!prof) return NextResponse.json({ error: 'Professor não encontrado ou inativo' }, { status: 404 })
 
   // Remove folha existente (rascunho) para regenerar
   await sb.from('folhas_pagamento')
@@ -256,7 +257,11 @@ export async function POST(req: NextRequest) {
     .select('id')
     .single()
 
-  if (error || !folha) return NextResponse.json({ error: error?.message ?? 'Erro ao criar folha' }, { status: 500 })
+  if (error) {
+    if (error.code === '23505') return NextResponse.json({ error: 'Folha já existe para este professor e mês' }, { status: 409 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!folha) return NextResponse.json({ error: 'Erro ao criar folha' }, { status: 500 })
 
   if (itens.length > 0) {
     await sb.from('itens_folha').insert(itens.map((i: any) => ({ ...i, folha_id: folha.id })))

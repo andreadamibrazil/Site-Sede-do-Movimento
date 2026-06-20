@@ -145,12 +145,19 @@ export async function criarMatricula(dados: MatriculaDados) {
     : dados.plano === 'personalizado' ? (dados.mesesPersonalizado ?? 1)
     : 1
 
+  const dataFim = meses > 1 ? (() => {
+    const d = new Date(dados.dataInicio + 'T12:00:00')
+    d.setMonth(d.getMonth() + meses)
+    return d.toISOString().split('T')[0]
+  })() : null
+
   const { data: matricula, error: errMat } = await supabase
     .from('matriculas')
     .insert({
       aluno_id: dados.alunoId,
       plano: dados.plano as any,
       data_inicio: dados.dataInicio,
+      ...(dataFim && { data_fim: dataFim }),
       dia_vencimento: dados.diaVencimento,
       valor_final: dados.valorFinal,
       tipo_desconto: dados.tipoDesconto as any || null,

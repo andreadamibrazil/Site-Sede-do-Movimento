@@ -35,7 +35,12 @@ export default async function FinanceiroPage({
   // Mensalidades filtradas
   const statusFiltro = filtro.split(',').filter(Boolean)
 
-  const query = supabase
+  const { count: totalCount } = await supabase
+    .from('mensalidades')
+    .select('id', { count: 'exact', head: true })
+    .in('status', statusFiltro as any)
+
+  const { data: mensalidades } = await supabase
     .from('mensalidades')
     .select(`
       id, competencia, valor, vencimento, status, valor_pago, pago_em,
@@ -48,7 +53,7 @@ export default async function FinanceiroPage({
     .order('vencimento', { ascending: true })
     .limit(100)
 
-  const { data: mensalidades } = await query
+  const limiteAtingido = (totalCount ?? 0) > 100
 
   // Filtra por nome se busca
   const lista = (mensalidades ?? []).filter(m => {
@@ -83,6 +88,12 @@ export default async function FinanceiroPage({
           🏷️ Produtos
         </a>
       </div>
+
+      {limiteAtingido && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm text-amber-700">
+          Mostrando as primeiras 100 mensalidades de {totalCount} no filtro atual. Use a busca por nome para encontrar registros específicos.
+        </div>
+      )}
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-3 gap-4">

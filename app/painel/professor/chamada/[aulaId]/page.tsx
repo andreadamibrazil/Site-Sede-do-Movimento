@@ -35,6 +35,7 @@ export default async function ProfessorChamadaPage({
     .single()
 
   if (!aula) notFound()
+  if ((aula as any).status === 'cancelada') redirect('/painel/professor')
 
   // Segurança: professor só acessa chamada das suas aulas
   // aulas.professor_id pode ser NULL (professor vem via turmas.professor_id)
@@ -87,7 +88,7 @@ export default async function ProfessorChamadaPage({
     lead: e.leads,
   }))
 
-  const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
+  const fimAula = new Date(`${aula.data}T${aula.hora_fim}:00-03:00`)
   const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
   const dentroTolerancia = minutosDesdeOFim <= TOLERANCIA_PROFESSOR_MINUTOS
 

@@ -72,13 +72,25 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (existente) {
+    // Faz merge de observacoes para não apagar análise Gemini existente
+    const { data: leadAtual } = await sb.from('leads').select('observacoes').eq('id', existente.id).maybeSingle()
+    let obsAtual: Record<string, any> = {}
+    try {
+      const raw = (leadAtual as any)?.observacoes
+      if (typeof raw === 'string') obsAtual = JSON.parse(raw)
+      else if (raw && typeof raw === 'object') obsAtual = raw
+    } catch {}
+    const obsAtualizado = obs
+      ? JSON.stringify({ ...obsAtual, chatwoot: variables, tags })
+      : (Object.keys(obsAtual).length > 0 ? JSON.stringify(obsAtual) : null)
+
     // Atualiza dados sem sobrescrever status se já progrediu
     const { error: updateErr } = await sb.from('leads').update({
       nome: nome !== 'Sem nome' ? nome : existente.nome,
       modalidade_interesse: modalidade,
       como_conheceu: comoConheceu,
       horario_preferido: horario,
-      observacoes: obs,
+      observacoes: obsAtualizado,
       updated_at: new Date().toISOString(),
     }).eq('id', existente.id)
 

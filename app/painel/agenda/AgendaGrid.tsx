@@ -14,7 +14,7 @@ const SALA_COR: Record<string, { border: string; dot: string; label: string }> =
   'Roxa':    { border: 'border-l-violet-600',  dot: 'bg-violet-600',  label: 'Roxa'    },
 }
 
-const DIAS = ['Seg','Ter','Qua','Qui','Sex']
+const DIAS = ['Seg','Ter','Qua','Qui','Sex','Sáb']
 
 type Aula = {
   id: string; data: string; hora_inicio: string; hora_fim: string
@@ -102,7 +102,7 @@ export default function AgendaGrid({ aulas, pendentes, datas, hojeStr, isAdmin, 
       <div className="flex-1 overflow-x-auto mt-2 px-4 pb-6">
         <div className="min-w-[680px]">
           {/* Header */}
-          <div className="grid grid-cols-5 gap-2 mb-2">
+          <div className="grid grid-cols-6 gap-2 mb-2">
             {datas.map((data, idx) => {
               const isHoje = data === hojeStr
               const d = new Date(data+'T12:00:00')
@@ -118,7 +118,7 @@ export default function AgendaGrid({ aulas, pendentes, datas, hojeStr, isAdmin, 
           </div>
 
           {/* Colunas */}
-          <div className="grid grid-cols-5 gap-2 items-start">
+          <div className="grid grid-cols-6 gap-2 items-start">
             {datas.map((data) => {
               const lista = (porDia[data]??[]).sort((a,b)=>a.hora_inicio.localeCompare(b.hora_inicio))
               const isHoje = data === hojeStr

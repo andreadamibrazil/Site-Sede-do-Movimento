@@ -891,10 +891,11 @@ function AbaPresenca({ presencas, alunoId }: { presencas: any[]; alunoId: string
   if (!presencas.length) return (
     <p className="text-sm text-gray-400 text-center py-12">Nenhuma chamada registrada ainda.</p>
   )
-  const total = presencas.length
-  const presentes = presencas.filter(p => p.status === 'presente').length
-  const faltas = presencas.filter(p => p.status === 'falta').length
-  const pct = Math.round((presentes / total) * 100)
+  const aulaValida = presencas.filter((p: any) => p.status !== 'professor_faltou')
+  const total = aulaValida.length
+  const presentes = aulaValida.filter((p: any) => p.status === 'presente' || p.status === 'reposicao').length
+  const faltas = aulaValida.filter((p: any) => p.status === 'falta' || p.status === 'falta_justificada').length
+  const pct = total > 0 ? Math.round((presentes / total) * 100) : 0
 
   async function handleJustificarFalta(presencaId: string) {
     setSalvando(true)
