@@ -43,7 +43,7 @@ export default async function FinanceiroPage({
   const { data: mensalidades } = await supabase
     .from('mensalidades')
     .select(`
-      id, competencia, valor, vencimento, status, valor_pago, pago_em,
+      id, competencia, valor, vencimento, status, valor_pago, pago_em, desconto_aplicado, juros_aplicados, link_pagamento,
       matriculas(
         aluno_id, plano,
         alunos(id, nome, celular, status_financeiro)

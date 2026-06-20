@@ -28,6 +28,9 @@ type Mensalidade = {
   status: string
   valor_pago: number | null
   pago_em: string | null
+  desconto_aplicado: number | null
+  juros_aplicados: number | null
+  link_pagamento: string | null
 }
 
 type Grupo = {
@@ -204,10 +207,24 @@ export default function FinanceiroClient({
                           Vence {fmtData(m.vencimento)}
                           {atraso > 0 && <span className="text-orange-500 ml-1">· {atraso} dias em atraso</span>}
                         </p>
+                        {Number(m.desconto_aplicado) > 0 && (
+                          <p className="text-xs text-green-600">Desconto: −R$ {fmtValor(Number(m.desconto_aplicado))}</p>
+                        )}
+                        {Number(m.juros_aplicados) > 0 && (
+                          <p className="text-xs text-orange-600">Juros: +R$ {fmtValor(Number(m.juros_aplicados))}</p>
+                        )}
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 shrink-0">
-                        R$ {fmtValor(Number(m.valor))}
-                      </p>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          R$ {fmtValor(Number(m.valor))}
+                        </p>
+                        {m.link_pagamento && m.status !== 'recebida' && (
+                          <a href={m.link_pagamento} target="_blank" rel="noopener noreferrer"
+                            className="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                            Link PIX/Boleto
+                          </a>
+                        )}
+                      </div>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${badge.className}`}>
                         {badge.label}
                       </span>

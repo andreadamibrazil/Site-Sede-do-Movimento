@@ -34,6 +34,11 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
     .eq('turma_id', id)
     .order('dia_semana')
 
+  const { data: coRegentes } = await supabase
+    .from('turma_professores' as any)
+    .select('professores(id, nome)')
+    .eq('turma_id', id)
+
   const { data: matriculaTurmas } = await supabase
     .from('matricula_turmas')
     .select('id, matriculas(aluno_id, status, alunos(id, nome, status_financeiro))')
@@ -81,6 +86,12 @@ export default async function TurmaPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Detalhes</h2>
           <Row label="Modalidade" value={(turma.modalidades as any)?.nome ?? '—'} />
           <Row label="Professor" value={(turma.professores as any)?.nome ?? '—'} />
+          {(coRegentes ?? []).length > 0 && (
+            <Row
+              label="Co-regentes"
+              value={(coRegentes ?? []).map((r: any) => r.professores?.nome).filter(Boolean).join(', ')}
+            />
+          )}
           <Row label="Sala" value={(turma.salas as any)?.nome ?? '—'} />
           <Row label="Capacidade" value={`${alunos.length} / ${turma.capacidade} alunos`} />
           <Row label="Preço padrão" value={`R$ ${Number(turma.preco_padrao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês`} />
