@@ -203,5 +203,29 @@ export async function criarMatricula(dados: MatriculaDados) {
     )
   }
 
+  // Notifica n8n — fire-and-forget (WhatsApp responsável + secretaria + Drive + tabela contratos)
+  const n8nUrl = process.env.N8N_WEBHOOK_MATRICULA
+  if (n8nUrl) {
+    fetch(n8nUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        matriculaId: matricula.id,
+        alunoId: dados.alunoId,
+        alunoNome: dados.alunoNome,
+        alunoEmail: dados.alunoEmail,
+        alunoWhatsapp: dados.alunoWhatsapp,
+        turmaIds: dados.turmaIds,
+        plano: dados.plano,
+        dataInicio: dados.dataInicio,
+        diaVencimento: dados.diaVencimento,
+        valorFinal: dados.valorFinal,
+        enviarContrato: dados.enviarContrato,
+      }),
+    }).catch(err =>
+      console.error('[criarMatricula] falha ao notificar n8n:', err)
+    )
+  }
+
   return { success: true, matriculaId: matricula.id }
 }
