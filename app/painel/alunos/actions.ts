@@ -112,6 +112,7 @@ export async function salvarAluno(data: {
 
   if (leadId) {
     await supabase.from('leads').update({ status: 'convertido' }).eq('id', leadId)
+    revalidatePath('/painel/leads')
   }
 
   return aluno.id as string

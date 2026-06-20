@@ -198,7 +198,9 @@ export async function criarMatricula(dados: MatriculaDados) {
 
   // Dispara contrato DocuSeal — fire-and-forget, somente se solicitado
   if (dados.enviarContrato) {
-    enviarContratoDocuSeal(supabase, matricula.id, dados).catch(() => {})
+    enviarContratoDocuSeal(supabase, matricula.id, dados).catch(err =>
+      console.error('[criarMatricula] falha ao enviar contrato DocuSeal:', err)
+    )
   }
 
   return { success: true, matriculaId: matricula.id }
