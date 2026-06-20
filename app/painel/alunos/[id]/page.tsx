@@ -84,6 +84,23 @@ export default async function AlunoPage({
     .eq('aluno_id', id)
     .order('created_at', { ascending: false })
 
+  // Trancamentos — via matriculas do aluno
+  const matriculaIds = (matriculas ?? []).map((m: any) => m.id)
+  const { data: trancamentos } = matriculaIds.length
+    ? await service
+        .from('trancamentos' as any)
+        .select('*, matriculas(id, status, plano, dia_vencimento)')
+        .in('matricula_id', matriculaIds)
+        .order('data_inicio', { ascending: false })
+    : { data: [] }
+
+  // Avaliações do aluno
+  const { data: avaliacoes } = await service
+    .from('avaliacoes' as any)
+    .select('*, turmas(nome), professores(nome)')
+    .eq('aluno_id', id)
+    .order('created_at', { ascending: false })
+
   // Análise IA — lê do lead vinculado pelo celular (persiste após conversão)
   let analiseCron: Record<string, unknown> | null = null
   let historicoAnalises: unknown[] = []
@@ -149,8 +166,10 @@ export default async function AlunoPage({
         presencas={presencas as any ?? []}
         documentos={documentos as any ?? []}
         uniforme={uniforme as any ?? []}
-      analiseCron={analiseCron}
-      historicoAnalises={historicoAnalises}
+        analiseCron={analiseCron}
+        historicoAnalises={historicoAnalises}
+        trancamentos={trancamentos as any ?? []}
+        avaliacoes={avaliacoes as any ?? []}
       />
     </div>
   )

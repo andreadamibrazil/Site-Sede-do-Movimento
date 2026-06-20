@@ -557,3 +557,30 @@ export async function cancelarMatricula(
     return { error: err?.message ?? 'Erro desconhecido' }
   }
 }
+
+// ── AbaTrancamentos ──────────────────────────────────────────
+export async function criarTrancamento(data: {
+  matricula_id: string
+  motivo: string
+  data_inicio: string
+  data_retorno_prevista: string
+  alunoId: string
+}): Promise<{ success: true } | { error: string }> {
+  try {
+    const supabase = createServiceClient()
+    const { alunoId, ...trancamentoData } = data
+    const { error } = await supabase
+      .from('trancamentos' as any)
+      .insert({ ...trancamentoData, status: 'ativo' })
+    if (error) return { error: error.message }
+    // Atualiza status da matrícula para trancada
+    await supabase
+      .from('matriculas')
+      .update({ status: 'trancada' })
+      .eq('id', data.matricula_id)
+    revalidatePath(`/painel/alunos/${alunoId}`)
+    return { success: true }
+  } catch (err: any) {
+    return { error: err?.message ?? 'Erro desconhecido' }
+  }
+}

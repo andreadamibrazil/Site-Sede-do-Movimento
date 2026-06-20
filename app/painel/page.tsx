@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { RetencaoChart, MetaBar, InadimplentesTable } from './DashboardCharts'
 import AulasHoje, { type AulaLembrete, type ContatoLembrete, type Sexo } from './AulasHoje'
 
-const META_ALUNOS = 120
+const META_ALUNOS = Number(process.env.NEXT_PUBLIC_META_ALUNOS ?? '120')
 
 function mesLabel(ano: number, mes: number) {
   return new Date(ano, mes - 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
@@ -99,6 +99,116 @@ export default async function DashboardPage() {
       ? service.from('alunos').select('id, nome, celular, tentativas_contato').eq('status_financeiro', 'inadimplente').order('tentativas_contato')
       : Promise.resolve({ data: [] }),
   ])
+
+  // ─── Aniversariantes da semana ────────────────────────────────────────────
+  const daqui7Dias = new Date(hoje)
+  daqui7Dias.setDate(hoje.getDate() + 7)
+  const hojeMMDD = `${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
+  const fim7MMDD = `${String(daqui7Dias.getMonth() + 1).padStart(2, '0')}-${String(daqui7Dias.getDate()).padStart(2, '0')}`
+
+  // Busca todos os ativos com data_nascimento e filtra em JS (mais simples que lidar com wrap de ano no Supabase)
+  const { data: alunosNasc } = await service
+    .from('alunos')
+    .select('id, nome, data_nascimento')
+    .eq('status_pedagogico', 'ativo')
+    .not('data_nascimento', 'is', null)
+
+  const aniversariantes = (alunosNasc ?? []).filter(a => {
+    const mmdd = a.data_nascimento!.slice(5) // "MM-DD"
+    if (hojeMMDD <= fim7MMDD) {
+      return mmdd >= hojeMMDD && mmdd <= fim7MMDD
+    } else {
+      // virada de ano (ex: hoje=12-28, fim=01-04)
+      return mmdd >= hojeMMDD || mmdd <= fim7MMDD
+    }
+  }).sort((a, b) => (a.data_nascimento!.slice(5)).localeCompare(b.data_nascimento!.slice(5)))
+
+  // ─── Turmas quase cheias (≥80% capacidade) ────────────────────────────────
+  const { data: turmasRaw } = await service
+    .from('turmas')
+    .select('id, nome, capacidade')
+    .eq('status', 'ativa')
+    .not('capacidade', 'is', null)
+
+  let turmasQuaseCheiasData: { id: string; nome: string; capacidade: number; matriculados: number; pct: number }[] = []
+
+  if ((turmasRaw ?? []).length > 0) {
+    const turmaIdsAll = (turmasRaw ?? []).map(t => t.id)
+    const { data: countRows } = await service
+      .from('matricula_turmas')
+      .select('turma_id')
+      .in('turma_id', turmaIdsAll)
+      .is('data_saida', null)
+
+    const countByTurma: Record<string, number> = {}
+    for (const r of (countRows ?? [])) {
+      countByTurma[r.turma_id] = (countByTurma[r.turma_id] ?? 0) + 1
+    }
+
+    turmasQuaseCheiasData = (turmasRaw ?? [])
+      .map(t => ({
+        id: t.id,
+        nome: t.nome,
+        capacidade: t.capacidade!,
+        matriculados: countByTurma[t.id] ?? 0,
+        pct: Math.round(((countByTurma[t.id] ?? 0) / t.capacidade!) * 100),
+      }))
+      .filter(t => t.pct >= 80)
+      .sort((a, b) => b.pct - a.pct)
+  }
+
+  // ─── Contratos vencendo em 30 dias ────────────────────────────────────────
+  const daqui30Dias = new Date(hoje)
+  daqui30Dias.setDate(hoje.getDate() + 30)
+  const daqui30Str = daqui30Dias.toISOString().split('T')[0]
+
+  const { data: contratosVencendo } = await service
+    .from('matriculas')
+    .select('id, data_fim, alunos(id, nome)')
+    .eq('status', 'ativa')
+    .not('data_fim', 'is', null)
+    .gte('data_fim', hojeStr)
+    .lte('data_fim', daqui30Str)
+    .order('data_fim')
+
+  // ─── Alunos com frequência baixa (últimos 90 dias) ────────────────────────
+  const noventaDiasAtras = new Date(hoje)
+  noventaDiasAtras.setDate(hoje.getDate() - 90)
+  const noventaDiasStr = noventaDiasAtras.toISOString().split('T')[0]
+
+  const { data: presencasRaw } = await service
+    .from('presencas')
+    .select('aluno_id, status')
+    .gte('data', noventaDiasStr)
+    .in('status', ['presente', 'falta'])
+
+  // Agrupa por aluno: conta total e faltas
+  const presencaMap: Record<string, { total: number; faltas: number }> = {}
+  for (const p of (presencasRaw ?? [])) {
+    if (!presencaMap[p.aluno_id]) presencaMap[p.aluno_id] = { total: 0, faltas: 0 }
+    presencaMap[p.aluno_id].total++
+    if (p.status === 'falta') presencaMap[p.aluno_id].faltas++
+  }
+
+  // Filtra: >5 aulas e >25% de faltas
+  const alunoIdsFreqBaixa = Object.entries(presencaMap)
+    .filter(([, v]) => v.total > 5 && v.faltas / v.total > 0.25)
+    .map(([id]) => id)
+
+  let freqBaixaData: { id: string; nome: string; pct: number }[] = []
+  if (alunoIdsFreqBaixa.length > 0) {
+    const { data: alunosFreq } = await service
+      .from('alunos')
+      .select('id, nome')
+      .in('id', alunoIdsFreqBaixa)
+      .eq('status_pedagogico', 'ativo')
+
+    freqBaixaData = (alunosFreq ?? []).map(a => ({
+      id: a.id,
+      nome: a.nome,
+      pct: Math.round((presencaMap[a.id].faltas / presencaMap[a.id].total) * 100),
+    })).sort((a, b) => b.pct - a.pct)
+  }
 
   // Experimentais futuros (query separada por limitação do Supabase com filtro em relação)
   const { data: expRaw } = await service
@@ -245,6 +355,82 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Inadimplência</h2>
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <InadimplentesTable data={(inadimplentesDetalhes ?? []) as any} />
+          </div>
+        </section>
+      )}
+
+      {/* Aniversariantes da semana */}
+      {aniversariantes.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">🎂 Aniversariantes da semana</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {aniversariantes.map(a => {
+              const [, mm, dd] = a.data_nascimento!.split('-')
+              const dataFmt = `${dd}/${mm}`
+              return (
+                <div key={a.id} className="flex items-center justify-between px-4 py-2.5">
+                  <p className="text-sm text-gray-800">{a.nome}</p>
+                  <span className="text-xs text-amber-600 font-medium">{dataFmt}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Turmas quase cheias */}
+      {turmasQuaseCheiasData.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">📊 Turmas quase cheias</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {turmasQuaseCheiasData.map(t => (
+              <div key={t.id} className="px-4 py-3">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-medium text-gray-800">{t.nome}</p>
+                  <span className="text-xs text-gray-500">{t.matriculados}/{t.capacidade} ({t.pct}%)</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${t.pct >= 100 ? 'bg-red-500' : t.pct >= 90 ? 'bg-orange-400' : 'bg-amber-400'}`}
+                    style={{ width: `${Math.min(t.pct, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Contratos vencendo em 30 dias */}
+      {(contratosVencendo ?? []).length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">📅 Contratos vencendo em 30 dias</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {(contratosVencendo ?? []).map((m: any) => {
+              const aluno = m.alunos
+              const dataFim = new Date(m.data_fim + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
+              return (
+                <div key={m.id} className="flex items-center justify-between px-4 py-2.5">
+                  <p className="text-sm text-gray-800">{aluno?.nome ?? '—'}</p>
+                  <span className="text-xs text-orange-600 font-medium">{dataFim}</span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Alunos com frequência baixa */}
+      {freqBaixaData.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">⚠️ Frequência baixa (últimos 90 dias)</h2>
+          <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            {freqBaixaData.map(a => (
+              <div key={a.id} className="flex items-center justify-between px-4 py-2.5">
+                <p className="text-sm text-gray-800">{a.nome}</p>
+                <span className="text-xs text-rose-600 font-medium">{a.pct}% faltas</span>
+              </div>
+            ))}
           </div>
         </section>
       )}

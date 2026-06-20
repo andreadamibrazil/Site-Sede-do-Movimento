@@ -11,6 +11,7 @@ async function whatsapp(celular: string, mensagem: string) {
         method: 'POST',
         headers: { 'apikey': process.env.EVOLUTION_API_KEY ?? '', 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: numero, text: mensagem }),
+        signal: AbortSignal.timeout(8000),
       }
     )
     return res.ok

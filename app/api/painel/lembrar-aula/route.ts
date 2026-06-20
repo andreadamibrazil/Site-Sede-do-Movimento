@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
             presence: 'composing',
           },
         }),
+        signal: AbortSignal.timeout(8000),
       }
     )
     if (!res.ok) {

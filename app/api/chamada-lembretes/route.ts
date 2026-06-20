@@ -45,6 +45,7 @@ async function whatsapp(celular: string, mensagem: string) {
             presence: 'composing',
           },
         }),
+        signal: AbortSignal.timeout(8000),
       }
     )
     return res.ok

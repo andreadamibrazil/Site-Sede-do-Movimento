@@ -228,6 +228,21 @@ export default function ChamadaClient({
   }
 
   async function concluir() {
+    // Verificar se há mais de 50% de faltas antes de concluir
+    if (alunos.length > 0) {
+      const totalFaltas = alunos.filter(a => {
+        const s = statusAtual(a.id)
+        return s === 'falta' || s === 'falta_justificada'
+      }).length
+      const percentualFaltas = totalFaltas / alunos.length
+      if (percentualFaltas > 0.5) {
+        const confirmou = window.confirm(
+          `${totalFaltas} de ${alunos.length} alunos estão com falta. Confirmar conclusão da chamada?`
+        )
+        if (!confirmou) return
+      }
+    }
+
     const salvou = await salvar()
     if (!salvou) {
       alert('Não foi possível salvar as presenças. Corrija e tente concluir novamente.')

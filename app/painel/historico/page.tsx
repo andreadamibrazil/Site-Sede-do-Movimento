@@ -25,9 +25,9 @@ const OP_LABEL: Record<string, string> = {
 export default async function HistoricoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tabela?: string; pagina?: string }>
+  searchParams: Promise<{ tabela?: string; pagina?: string; usuario?: string }>
 }) {
-  const { tabela, pagina } = await searchParams
+  const { tabela, pagina, usuario } = await searchParams
   const supabase = await createClient()
 
   // Só admin acessa
@@ -52,6 +52,7 @@ export default async function HistoricoPage({
     .range(offset, offset + por_pagina - 1)
 
   if (tabela) query = query.eq('tabela', tabela)
+  if (usuario) query = query.ilike('usuario_email', `%${usuario}%`)
 
   const { data: logs, count } = await query
 

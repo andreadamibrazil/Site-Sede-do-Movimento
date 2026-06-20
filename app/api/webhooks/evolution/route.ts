@@ -32,6 +32,7 @@ async function resolveLidCelular(lid: string, instance: string): Promise<string 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: evoKey },
       body: JSON.stringify({ where: { remoteJid: lid } }),
+      signal: AbortSignal.timeout(8000),
     })
     if (!res.ok) return null
     const contacts = await res.json()

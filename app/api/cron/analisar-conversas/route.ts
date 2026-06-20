@@ -176,6 +176,10 @@ export async function GET(req: NextRequest) {
     // analise não é null aqui (verificado acima com continue)
     const analiseSegura = analise as Record<string, unknown>
 
+    // Normaliza temperatura do Gemini (quente/morno/frio) para os valores da coluna SQL (quente/morna/fria)
+    const TEMP_MAP: Record<string, string> = { quente: 'quente', morno: 'morna', frio: 'fria' }
+    const temperaturaColuna = TEMP_MAP[String(analiseSegura.temperatura ?? '')] ?? null
+
     // Atualiza leads.observacoes — sobrescreve campos de IA, preserva manuais, acumula histórico
     async function atualizarLead(id: string) {
       const { data: lead } = await sb
@@ -190,7 +194,8 @@ export async function GET(req: NextRequest) {
       const historico = Array.isArray(obs.historico_analises) ? obs.historico_analises as unknown[] : []
       historico.push(entradaHistorico)
 
-      await sb.from('leads').update({
+      // Salva temperatura no JSON (backward compatibility) e na coluna SQL (permite filtros no banco)
+      await (sb.from('leads') as any).update({
         observacoes: JSON.stringify({
           ...obs,
           temperatura: analiseSegura.temperatura,
@@ -202,6 +207,7 @@ export async function GET(req: NextRequest) {
           ultima_analise: agoraISO,
           historico_analises: historico.slice(-MAX_HISTORICO),
         }),
+        temperatura: temperaturaColuna,
         updated_at: agoraISO,
       }).eq('id', id)
     }

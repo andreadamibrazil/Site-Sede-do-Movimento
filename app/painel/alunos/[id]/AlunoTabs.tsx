@@ -8,20 +8,22 @@ import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction } from '../actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento } from '../actions'
 
 const ABAS = [
-  { id: 'dados',         label: 'Dados pessoais' },
-  { id: 'matriculas',    label: 'Matrículas e turmas' },
-  { id: 'financeiro',    label: 'Financeiro' },
-  { id: 'cobrancas',     label: 'Cobranças avulsas' },
-  { id: 'presenca',      label: 'Presença' },
-  { id: 'documentos',    label: 'Documentos' },
-  { id: 'uniforme',      label: 'Uniforme' },
-  { id: 'inteligencia',  label: 'Análise IA' },
+  { id: 'dados',          label: 'Dados pessoais' },
+  { id: 'matriculas',     label: 'Matrículas e turmas' },
+  { id: 'financeiro',     label: 'Financeiro' },
+  { id: 'cobrancas',      label: 'Cobranças avulsas' },
+  { id: 'presenca',       label: 'Presença' },
+  { id: 'documentos',     label: 'Documentos' },
+  { id: 'uniforme',       label: 'Uniforme' },
+  { id: 'trancamentos',   label: 'Trancamentos' },
+  { id: 'avaliacoes',     label: 'Avaliações' },
+  { id: 'inteligencia',   label: 'Análise IA' },
 ]
 
-export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos, uniforme, analiseCron, historicoAnalises }: any) {
+export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensalidades, presencas, documentos, uniforme, analiseCron, historicoAnalises, trancamentos, avaliacoes }: any) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -51,8 +53,10 @@ export default function AlunoTabs({ abaAtiva, alunoId, aluno, matriculas, mensal
       {abaAtiva === 'cobrancas'   && <AbaCobrancas alunoId={aluno.id} />}
       {abaAtiva === 'presenca'    && <AbaPresenca presencas={presencas} alunoId={alunoId} />}
       {abaAtiva === 'documentos'  && <AbaDocumentos documentos={documentos} alunoId={aluno.id} />}
-      {abaAtiva === 'uniforme'     && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
-      {abaAtiva === 'inteligencia' && <AbaInteligencia analiseCron={analiseCron ?? null} historicoAnalises={historicoAnalises ?? []} />}
+      {abaAtiva === 'uniforme'      && <AbaUniforme alunoId={aluno.id} retiradas={uniforme ?? []} />}
+      {abaAtiva === 'trancamentos'  && <AbaTrancamentos trancamentos={trancamentos ?? []} matriculas={matriculas ?? []} alunoId={alunoId} />}
+      {abaAtiva === 'avaliacoes'    && <AbaAvaliacoes avaliacoes={avaliacoes ?? []} />}
+      {abaAtiva === 'inteligencia'  && <AbaInteligencia analiseCron={analiseCron ?? null} historicoAnalises={historicoAnalises ?? []} />}
     </div>
   )
 }
@@ -1393,6 +1397,228 @@ function AbaCobrancas({ alunoId }: { alunoId: string }) {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Aba: Trancamentos ────────────────────────────────────────
+
+function AbaTrancamentos({ trancamentos, matriculas, alunoId }: { trancamentos: any[]; matriculas: any[]; alunoId: string }) {
+  const router = useRouter()
+  const [modal, setModal] = useState(false)
+  const [form, setForm] = useState({
+    matricula_id: '',
+    motivo: '',
+    data_inicio: '',
+    data_retorno_prevista: '',
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  const matriculasAtivas = matriculas.filter((m: any) => m.status === 'ativa')
+
+  function abrirModal() {
+    setForm({
+      matricula_id: matriculasAtivas.length === 1 ? matriculasAtivas[0].id : '',
+      motivo: '',
+      data_inicio: '',
+      data_retorno_prevista: '',
+    })
+    setErro('')
+    setModal(true)
+  }
+
+  async function handleSalvar() {
+    if (!form.matricula_id) { setErro('Selecione a matrícula a ser trancada.'); return }
+    if (!form.motivo.trim()) { setErro('Informe o motivo do trancamento.'); return }
+    if (!form.data_inicio) { setErro('Informe a data de início.'); return }
+    if (!form.data_retorno_prevista) { setErro('Informe a data de retorno prevista.'); return }
+    setSalvando(true)
+    setErro('')
+    const res = await criarTrancamento({ ...form, alunoId })
+    setSalvando(false)
+    if ('error' in res) { setErro(res.error); return }
+    setModal(false)
+    router.refresh()
+  }
+
+  function fmtData(iso: string | null) {
+    if (!iso) return '—'
+    return new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR')
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button
+          onClick={abrirModal}
+          className="bg-indigo-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          + Novo trancamento
+        </button>
+      </div>
+
+      {trancamentos.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-12">Nenhum trancamento registrado.</p>
+      ) : (
+        <div className="space-y-2">
+          {trancamentos.map((t: any) => (
+            <div key={t.id} className="bg-white border border-gray-200 rounded-xl px-5 py-4 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    t.status === 'ativo' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {t.status === 'ativo' ? 'Ativo' : 'Revertido'}
+                  </span>
+                  <span className="text-sm font-medium text-gray-800">{t.motivo}</span>
+                </div>
+                <span className="text-xs text-gray-400">
+                  {fmtData(t.data_inicio)} → {fmtData(t.data_retorno_prevista)}
+                  {t.data_retorno_efetiva && ` (retornou em ${fmtData(t.data_retorno_efetiva)})`}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h2 className="text-base font-semibold text-gray-900">Novo trancamento</h2>
+
+            {matriculasAtivas.length > 1 && (
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-600">Matrícula</label>
+                <select
+                  value={form.matricula_id}
+                  onChange={e => setForm(f => ({ ...f, matricula_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Selecione...</option>
+                  {matriculasAtivas.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {m.plano} — vence dia {m.dia_vencimento}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {matriculasAtivas.length === 0 && (
+              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Nenhuma matrícula ativa encontrada. O trancamento requer uma matrícula ativa.
+              </p>
+            )}
+
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-600">Motivo</label>
+              <textarea
+                value={form.motivo}
+                onChange={e => setForm(f => ({ ...f, motivo: e.target.value }))}
+                rows={3}
+                placeholder="Ex: Viagem longa, problema de saúde..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-600">Data de início</label>
+                <input
+                  type="date"
+                  value={form.data_inicio}
+                  onChange={e => setForm(f => ({ ...f, data_inicio: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-gray-600">Retorno previsto</label>
+                <input
+                  type="date"
+                  value={form.data_retorno_prevista}
+                  onChange={e => setForm(f => ({ ...f, data_retorno_prevista: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            {erro && <p className="text-xs text-red-500">{erro}</p>}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setModal(false)}
+                className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSalvar}
+                disabled={salvando || matriculasAtivas.length === 0}
+                className="flex-1 bg-indigo-600 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-40"
+              >
+                {salvando ? 'Salvando...' : 'Confirmar trancamento'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Aba: Avaliações ──────────────────────────────────────────
+
+function AbaAvaliacoes({ avaliacoes }: { avaliacoes: any[] }) {
+  if (!avaliacoes.length) return (
+    <p className="text-sm text-gray-400 text-center py-12">Nenhuma avaliação registrada ainda.</p>
+  )
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b border-gray-200">
+          <tr>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Período</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Turma</th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Professor</th>
+            <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Técnica</th>
+            <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Comportamento</th>
+            <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Frequência</th>
+            <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Média</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {avaliacoes.map((av: any) => (
+            <tr key={av.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-4 py-3 text-gray-700">{av.periodo ?? '—'}</td>
+              <td className="px-4 py-3 text-gray-700">{av.turmas?.nome ?? '—'}</td>
+              <td className="px-4 py-3 text-gray-500 text-xs">{av.professores?.nome ?? '—'}</td>
+              <td className="px-4 py-3 text-center font-medium text-gray-900">
+                {av.nota_tecnica != null ? Number(av.nota_tecnica).toFixed(1) : '—'}
+              </td>
+              <td className="px-4 py-3 text-center font-medium text-gray-900">
+                {av.nota_comportamental != null ? Number(av.nota_comportamental).toFixed(1) : '—'}
+              </td>
+              <td className="px-4 py-3 text-center font-medium text-gray-900">
+                {av.nota_frequencia != null ? Number(av.nota_frequencia).toFixed(1) : '—'}
+              </td>
+              <td className="px-4 py-3 text-center">
+                {av.media_geral != null ? (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    Number(av.media_geral) >= 7 ? 'bg-green-100 text-green-700' :
+                    Number(av.media_geral) >= 5 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-600'
+                  }`}>
+                    {Number(av.media_geral).toFixed(1)}
+                  </span>
+                ) : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

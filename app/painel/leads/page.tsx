@@ -60,38 +60,42 @@ export default async function LeadsPage({
   const supabase = await createClient()
   const offset = (parseInt(pagina) - 1) * PAGE_SIZE
 
-  let query = supabase
+  let query = (supabase as any)
     .from('leads')
-    .select('id, nome, celular, email, modalidade_interesse, como_conheceu, status, observacoes, created_at, updated_at, lead_notas(count)', { count: 'exact' })
+    .select('id, nome, celular, email, modalidade_interesse, como_conheceu, status, observacoes, temperatura, created_at, updated_at, lead_notas(count)', { count: 'exact' })
     .order('updated_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
   if (status && status !== 'todos') query = query.eq('status', status as 'novo' | 'em_contato' | 'experimental_agendada' | 'convertido' | 'perdido')
   if (modalidade) query = query.ilike('modalidade_interesse', `%${modalidade}%`)
   if (busca) query = query.or(`nome.ilike.%${busca}%,celular.ilike.%${busca}%`)
+  if (temperatura && temperatura !== 'todos') {
+    if (temperatura === 'sem_analise') {
+      query = (query as any).is('temperatura', null)
+    } else {
+      // coluna usa 'morna'/'fria'; filtro externo pode vir como 'morno'/'frio' (legado)
+      const tempSQL = temperatura === 'morno' ? 'morna' : temperatura === 'frio' ? 'fria' : temperatura
+      query = (query as any).eq('temperatura', tempSQL)
+    }
+  }
 
   const { data: leadsRaw, count } = await query
 
-  const leads = (leadsRaw ?? []).map(l => ({ ...l, crm: parseCRM(l.observacoes) }))
+  const leads = (leadsRaw ?? []).map((l: any) => ({ ...l, crm: parseCRM(l.observacoes) }))
 
-  const leadsFiltrados = temperatura && temperatura !== 'todos'
-    ? temperatura === 'sem_analise'
-      ? leads.filter(l => !l.crm.temperatura)
-      : leads.filter(l => l.crm.temperatura === temperatura)
-    : leads
-
-  const { data: todosLeads } = await supabase
+  const { data: todosLeads } = await (supabase as any)
     .from('leads')
-    .select('status, observacoes')
+    .select('status, temperatura')
     .range(0, 9999)
 
   const qtdStatus: Record<string, number> = {}
   const qtdTemperatura: Record<string, number> = {}
 
-  ;(todosLeads ?? []).forEach(l => {
+  ;(todosLeads ?? []).forEach((l: any) => {
     qtdStatus[l.status] = (qtdStatus[l.status] ?? 0) + 1
-    const crm = parseCRM(l.observacoes)
-    const t = crm.temperatura ?? 'sem_analise'
+    const tRaw = l.temperatura as string | null
+    // normaliza morna→morno e fria→frio para compatibilidade com TEMP_BADGE
+    const t = tRaw === 'morna' ? 'morno' : tRaw === 'fria' ? 'frio' : (tRaw ?? 'sem_analise')
     qtdTemperatura[t] = (qtdTemperatura[t] ?? 0) + 1
   })
 
@@ -177,7 +181,7 @@ export default async function LeadsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {leadsFiltrados.map(lead => {
+                {leads.map((lead: any) => {
                   const temp = lead.crm.temperatura ? TEMP_BADGE[lead.crm.temperatura] : null
                   const opor = lead.crm.oportunidade ? (OPOR_LABEL[lead.crm.oportunidade] ?? lead.crm.oportunidade) : null
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -238,7 +242,7 @@ export default async function LeadsPage({
                 })}
               </tbody>
             </table>
-            {!leadsFiltrados.length && <p className="text-center text-gray-400 text-sm py-12">Nenhum lead encontrado.</p>}
+            {!leads.length && <p className="text-center text-gray-400 text-sm py-12">Nenhum lead encontrado.</p>}
           </div>
 
           {/* Rodapé */}
