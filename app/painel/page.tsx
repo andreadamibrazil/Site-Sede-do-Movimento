@@ -176,11 +176,21 @@ export default async function DashboardPage() {
   noventaDiasAtras.setDate(hoje.getDate() - 90)
   const noventaDiasStr = noventaDiasAtras.toISOString().split('T')[0]
 
-  const { data: presencasRaw } = await service
-    .from('presencas')
-    .select('aluno_id, status')
+  // presencas não tem coluna 'data' — filtrar via aulas
+  const { data: aulasIds90 } = await service
+    .from('aulas')
+    .select('id')
     .gte('data', noventaDiasStr)
-    .in('status', ['presente', 'falta'])
+    .lte('data', hojeStr)
+
+  const ids90 = (aulasIds90 ?? []).map(a => a.id)
+  const { data: presencasRaw } = ids90.length > 0
+    ? await service
+        .from('presencas')
+        .select('aluno_id, status')
+        .in('aula_id', ids90)
+        .in('status', ['presente', 'falta'])
+    : { data: [] }
 
   // Agrupa por aluno: conta total e faltas
   const presencaMap: Record<string, { total: number; faltas: number }> = {}

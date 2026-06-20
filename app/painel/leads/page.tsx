@@ -9,6 +9,7 @@ import BotaoNovoLead from './BotaoNovoLead'
 import PainelExperimentais from './PainelExperimentais'
 import BotaoReabrirLead from './BotaoReabrirLead'
 import BotaoStatus from './BotaoStatus'
+import LeadsClient from './LeadsClient'
 
 function parseCRM(obs: string | null): { temperatura?: string; oportunidade?: string; resumo?: string } {
   if (!obs) return {}
@@ -152,6 +153,9 @@ export default async function LeadsPage({
               </div>
             ))}
           </div>
+
+          {/* Funil visual + relatório por origem */}
+          <LeadsClient leads={leads} totalLeads={count ?? 0} />
 
           {/* Filtros */}
           <Suspense>

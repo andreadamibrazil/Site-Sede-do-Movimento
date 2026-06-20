@@ -60,8 +60,8 @@ export default async function RelatoriosPage() {
   // ── Relatório 2: Ocupação das Turmas ──────────────────────────────────────
   const [{ data: turmas }, { data: matriculaTurmas }, { data: professores }, { data: modalidades }] =
     await Promise.all([
-      supabase.from('turmas').select('id, nome, capacidade, modalidade_id, professor_id, status').eq('status', 'ativo'),
-      supabase.from('matricula_turmas').select('turma_id, data_saida').is('data_saida', null),
+      supabase.from('turmas').select('id, nome, capacidade, modalidade_id, professor_id, status').eq('status', 'ativa'),
+      supabase.from('matricula_turmas').select('turma_id, matriculas!inner(status)').is('data_saida', null).eq('matriculas.status' as any, 'ativa'),
       supabase.from('professores').select('id, nome'),
       supabase.from('modalidades').select('id, nome'),
     ])
