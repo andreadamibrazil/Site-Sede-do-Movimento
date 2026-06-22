@@ -1,75 +1,58 @@
-// Rotação automática entre todas as chaves Gemini free tier
-// AQ. keys → header x-goog-api-key | AIzaSy keys → ?key= param
-// 429/401/403 → pula para a próxima chave
+// Azure OpenAI (créditos nonprofit) — substitui o Gemini pago.
+// Mantém os nomes callGemini / callGeminiVision / generateWithFallback
+// para que as rotas existentes não precisem mudar.
+// Recurso: sede-openai (gpt-4o-mini). Env vars no Vercel:
+//   AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_KEY, AZURE_OPENAI_DEPLOYMENT
 
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const API_VERSION = '2024-10-21'
 
-function getKeys(): string[] {
-  return [
-    process.env.GOOGLE_AI_KEY,
-    process.env.GOOGLE_AI_KEY_2,
-    process.env.GOOGLE_AI_KEY_3,
-    process.env.GOOGLE_AI_KEY_4,
-    process.env.GOOGLE_AI_KEY_5,
-    process.env.GOOGLE_AI_KEY_6,
-    process.env.GOOGLE_AI_KEY_7,
-    process.env.GOOGLE_AI_KEY_8,
-    process.env.GOOGLE_AI_KEY_9,
-    process.env.GOOGLE_AI_KEY_10,
-    // Aliases legados (cron scripts)
-    process.env.GEMINI_API_KEY,
-    process.env.GEMINI_API_KEY_VIVA,
-  ].filter(Boolean) as string[]
-}
-
-function makeRequest(url: string, apiKey: string, body: object): Promise<Response> {
-  if (apiKey.startsWith('AQ.')) {
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify(body),
-    })
+function getConfig() {
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT
+  const apiKey = process.env.AZURE_OPENAI_KEY
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT
+  if (!endpoint || !apiKey || !deployment) {
+    throw new Error('Azure OpenAI não configurado (AZURE_OPENAI_ENDPOINT/KEY/DEPLOYMENT)')
   }
-  return fetch(`${url}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  const base = endpoint.replace(/\/$/, '')
+  const url = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${API_VERSION}`
+  return { url, apiKey }
 }
 
-export async function callGemini(
-  prompt: string,
-  opts: { model?: string; maxOutputTokens?: number; temperature?: number } = {}
-): Promise<string> {
-  const { model = GEMINI_MODEL, maxOutputTokens = 1024, temperature = 0.2 } = opts
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-  const keys = getKeys()
-  if (!keys.length) throw new Error('Nenhuma chave Gemini configurada')
+type Message = { role: 'system' | 'user' | 'assistant'; content: unknown }
 
+async function chamar(messages: Message[], maxTokens: number, temperature: number): Promise<string> {
+  const { url, apiKey } = getConfig()
   let lastErr = ''
-  for (let i = 0; i < keys.length; i++) {
+  // 1 tentativa + 2 retries para 429/5xx (rate limit ou indisponibilidade momentânea)
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await makeRequest(url, keys[i], {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature, maxOutputTokens, thinkingConfig: { thinkingBudget: 0 } },
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+        body: JSON.stringify({ messages, max_tokens: maxTokens, temperature }),
       })
-      if (res.status === 429 || res.status === 401 || res.status === 403) {
-        lastErr = `HTTP ${res.status} (key ${i + 1})`
+      if (res.status === 429 || res.status >= 500) {
+        lastErr = `HTTP ${res.status}`
         continue
       }
-      if (!res.ok) { lastErr = `HTTP ${res.status}`; continue }
+      if (!res.ok) throw new Error(`Azure OpenAI HTTP ${res.status}: ${await res.text()}`)
       const data = await res.json()
-      // gemini-2.5-flash may return a thought part (thought:true) before the actual answer
-      type Part = { thought?: boolean; text?: string }
-      const parts: Part[] = data?.candidates?.[0]?.content?.parts ?? []
-      const text: string = (parts.find(p => !p.thought)?.text ?? parts[0]?.text) ?? ''
+      const text: string = data?.choices?.[0]?.message?.content ?? ''
       if (!text) { lastErr = 'resposta vazia'; continue }
       return text
     } catch (e: unknown) {
       lastErr = e instanceof Error ? e.message : String(e)
     }
   }
-  throw new Error(`Gemini indisponível após ${keys.length} chaves: ${lastErr}`)
+  throw new Error(`Azure OpenAI indisponível: ${lastErr}`)
+}
+
+export async function callGemini(
+  prompt: string,
+  opts: { model?: string; maxOutputTokens?: number; temperature?: number } = {}
+): Promise<string> {
+  const { maxOutputTokens = 1024, temperature = 0.2 } = opts
+  return chamar([{ role: 'user', content: prompt }], maxOutputTokens, temperature)
 }
 
 // Mantém compatibilidade com rotas existentes (pauta/, etc.)
@@ -77,41 +60,25 @@ export async function generateWithFallback(prompt: string): Promise<string> {
   return callGemini(prompt)
 }
 
-/** Gemini Vision — analisa imagem ou PDF em base64 */
+/** Visão — analisa imagem em base64. gpt-4o-mini suporta apenas imagens (não PDF). */
 export async function callGeminiVision(
   fileBase64: string,
   mimeType: string,
   prompt: string,
   opts: { model?: string; maxOutputTokens?: number } = {}
 ): Promise<string> {
-  const { model = GEMINI_MODEL, maxOutputTokens = 1024 } = opts
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-  const keys = getKeys()
-  if (!keys.length) throw new Error('Nenhuma chave Gemini configurada')
-
-  const body = {
-    contents: [{ parts: [{ inlineData: { mimeType, data: fileBase64 } }, { text: prompt }] }],
-    generationConfig: { maxOutputTokens, temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } },
+  const { maxOutputTokens = 1024 } = opts
+  if (!mimeType.startsWith('image/')) {
+    throw new Error(`Azure OpenAI (gpt-4o-mini) só analisa imagens; tipo recebido: ${mimeType}`)
   }
-
-  let lastErr = ''
-  for (let i = 0; i < keys.length; i++) {
-    try {
-      const res = await makeRequest(url, keys[i], body)
-      if (res.status === 429 || res.status === 401 || res.status === 403) {
-        lastErr = `HTTP ${res.status} (key ${i + 1})`
-        continue
-      }
-      if (!res.ok) { lastErr = `HTTP ${res.status}`; continue }
-      const data = await res.json()
-      type Part = { thought?: boolean; text?: string }
-      const parts: Part[] = data?.candidates?.[0]?.content?.parts ?? []
-      const text: string = (parts.find(p => !p.thought)?.text ?? parts[0]?.text) ?? ''
-      if (!text) { lastErr = 'resposta vazia'; continue }
-      return text
-    } catch (e: unknown) {
-      lastErr = e instanceof Error ? e.message : String(e)
-    }
-  }
-  throw new Error(`Gemini Vision indisponível após ${keys.length} chaves: ${lastErr}`)
+  const messages: Message[] = [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${fileBase64}` } },
+      ],
+    },
+  ]
+  return chamar(messages, maxOutputTokens, 0.1)
 }

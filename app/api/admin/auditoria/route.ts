@@ -1,31 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
-
-const GEMINI_KEYS = [
-  process.env.GOOGLE_AI_KEY,
-  process.env.GOOGLE_AI_API_KEY_2,
-  process.env.GOOGLE_AI_API_KEY_3,
-].filter(Boolean)
-
-async function chamarGemini(prompt: string): Promise<string> {
-  for (const key of GEMINI_KEYS) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        }
-      )
-      if (!res.ok) continue
-      const data = await res.json()
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    } catch { continue }
-  }
-  throw new Error('Gemini indisponível')
-}
+import { callGemini } from '@/lib/gemini'
 
 export async function POST() {
   const guard = await requireAdmin()
@@ -88,7 +64,7 @@ Seja objetivo. Foque em: (1) item faz sentido para escola de dança? (2) está n
 
   let resultado: any
   try {
-    const raw = await chamarGemini(prompt)
+    const raw = await callGemini(prompt, { maxOutputTokens: 4096 })
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     resultado = JSON.parse(cleaned)
   } catch {
