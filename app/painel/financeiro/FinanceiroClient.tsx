@@ -272,7 +272,7 @@ export default function FinanceiroClient({
                         {/* Upload comprovante */}
                         <div>
                           <input ref={fileRef} type="file" onChange={e => setComprovante(e.target.files?.[0] ?? null)}
-                            className="hidden" id={`comp-${m.id}`} accept="image/*,application/pdf" />
+                            className="hidden" id={`comp-${m.id}`} accept="image/*" />
                           <label htmlFor={`comp-${m.id}`}
                             className="flex items-center gap-2 text-xs text-indigo-600 cursor-pointer hover:text-indigo-700">
                             <span>📎</span>

@@ -87,12 +87,12 @@ export default function ComprovanteBtn({
         `}>
           <input
             type="file"
-            accept="image/*,application/pdf"
+            accept="image/*"
             onChange={handleFile}
             disabled={uploading}
             className="sr-only"
           />
-          {uploading ? '⏳ Enviando e analisando...' : '📎 Selecionar arquivo (imagem ou PDF)'}
+          {uploading ? '⏳ Enviando e analisando...' : '📎 Selecionar imagem (JPG/PNG)'}
         </label>
         <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP, HEIC, PDF — Gemini extrai os dados automaticamente</p>
       </div>

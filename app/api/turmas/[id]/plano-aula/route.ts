@@ -86,13 +86,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const buffer = await arquivo.arrayBuffer()
     const base64 = Buffer.from(buffer).toString('base64')
 
-    // PDF é processado em memória pelo Gemini e descartado — não vai para o Supabase Storage
-    const rawPdf = await callGeminiVision(base64, 'application/pdf', PROMPT_EXTRACAO)
+    // Visão só lê imagens (gpt-4o-mini não aceita PDF). Arquivo é processado em
+    // memória e descartado — não vai para o Supabase Storage.
     let parsedPdf: any
     try {
+      const rawPdf = await callGeminiVision(base64, arquivo.type || 'application/pdf', PROMPT_EXTRACAO, { maxOutputTokens: 4096 })
       parsedPdf = JSON.parse(rawPdf.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
     } catch {
-      return NextResponse.json({ error: 'Gemini retornou resposta inválida para o PDF. Tente novamente ou cole o texto manualmente.' }, { status: 422 })
+      return NextResponse.json({ error: 'Não consigo ler PDF automaticamente. Cole o texto do plano no campo "Colar texto" ao lado.' }, { status: 422 })
     }
     resumo = parsedPdf.resumo ?? ''
     conteudo = parsedPdf
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     dataFim = body.data_fim ?? null
     if (!textoOriginal?.trim()) return NextResponse.json({ error: 'Texto do plano é obrigatório' }, { status: 400 })
 
-    const rawTxt = await callGemini(`${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}`)
+    const rawTxt = await callGemini(`${PROMPT_EXTRACAO}\n\nPLANO:\n${textoOriginal}`, { maxOutputTokens: 4096 })
     let parsedTxt: any
     try {
       parsedTxt = JSON.parse(rawTxt.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())

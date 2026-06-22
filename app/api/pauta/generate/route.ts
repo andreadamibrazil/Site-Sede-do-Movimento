@@ -76,7 +76,7 @@ Gere:
 
 Seja direto, criativo e focado no público da ${negocioNome}.`;
 
-    const text = await generateWithFallback(prompt);
+    const text = await generateWithFallback(prompt, { maxOutputTokens: 2048 });
 
     if (id) {
       try {

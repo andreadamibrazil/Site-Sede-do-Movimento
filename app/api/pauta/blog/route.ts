@@ -68,7 +68,7 @@ Escreva um artigo de blog com:
 
 Escreva em português, com tom ${tomVoz || "próximo, inspirador e acessível"}. Extensão: 600-900 palavras. Use markdown.`;
 
-    const text = await generateWithFallback(prompt);
+    const text = await generateWithFallback(prompt, { maxOutputTokens: 4096 });
 
     if (id) {
       try {

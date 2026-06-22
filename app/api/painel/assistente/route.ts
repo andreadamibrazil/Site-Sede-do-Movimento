@@ -135,7 +135,7 @@ ${pergunta}
 Responda em português. Se precisar de mais informação, faça UMA pergunta por vez.`
 
   try {
-    const resposta = await callGemini(prompt)
+    const resposta = await callGemini(prompt, { maxOutputTokens: 2048 })
     return NextResponse.json({ resposta })
   } catch (e) {
     console.error('[assistente]', e)

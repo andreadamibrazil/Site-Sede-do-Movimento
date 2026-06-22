@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
     }
+    // A análise por visão só lê imagens — PDF não é suportado pelo gpt-4o-mini.
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({
+        error: 'Envie uma imagem (JPG ou PNG). PDF não é suportado na análise automática.',
+      }, { status: 422 })
+    }
 
     const bytes = await file.arrayBuffer()
     const base64 = Buffer.from(bytes).toString('base64')

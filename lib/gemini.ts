@@ -37,13 +37,21 @@ async function chamar(messages: Message[], maxTokens: number, temperature: numbe
       }
       if (!res.ok) throw new Error(`Azure OpenAI HTTP ${res.status}: ${await res.text()}`)
       const data = await res.json()
-      const text: string = data?.choices?.[0]?.message?.content ?? ''
+      const choice = data?.choices?.[0]
+      // content_filter não é transitório — não adianta retentar (gasta quota à toa)
+      if (choice?.finish_reason === 'content_filter') {
+        throw new Error('content_filter: conteúdo bloqueado pelo filtro do Azure OpenAI')
+      }
+      const text: string = choice?.message?.content ?? ''
       if (!text) { lastErr = 'resposta vazia'; continue }
       return text
     } catch (e: unknown) {
-      lastErr = e instanceof Error ? e.message : String(e)
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.startsWith('content_filter')) throw e // erro definitivo: propaga sem retentar
+      lastErr = msg
     }
   }
+  console.error('[azure-openai] falha após retries:', lastErr)
   throw new Error(`Azure OpenAI indisponível: ${lastErr}`)
 }
 
@@ -56,8 +64,11 @@ export async function callGemini(
 }
 
 // Mantém compatibilidade com rotas existentes (pauta/, etc.)
-export async function generateWithFallback(prompt: string): Promise<string> {
-  return callGemini(prompt)
+export async function generateWithFallback(
+  prompt: string,
+  opts: { maxOutputTokens?: number; temperature?: number } = {}
+): Promise<string> {
+  return callGemini(prompt, opts)
 }
 
 /** Visão — analisa imagem em base64. gpt-4o-mini suporta apenas imagens (não PDF). */
