@@ -22,11 +22,11 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_MB * 1024 * 1024) {
     return NextResponse.json({ error: `Arquivo muito grande (máx ${MAX_MB}MB)` }, { status: 413 })
   }
-  // A análise automática só lê imagens (PDF não é suportado). Rejeita cedo com
-  // mensagem clara — evita o erro genérico "sistema indisponível".
-  if (!file.type.startsWith('image/')) {
+  // Aceita imagem ou PDF (PDF é rasterizado em imagem no lib/gemini). Rejeita
+  // o resto cedo com mensagem clara — evita o erro genérico "sistema indisponível".
+  if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
     return NextResponse.json({
-      error: 'Envie uma FOTO do atestado (JPG ou PNG). PDF não é aceito — tire uma foto da tela ou do papel.',
+      error: 'Envie uma foto (JPG/PNG) ou um PDF do atestado.',
       legivel: false,
     }, { status: 422 })
   }

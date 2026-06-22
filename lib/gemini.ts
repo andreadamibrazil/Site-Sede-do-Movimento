@@ -71,7 +71,11 @@ export async function generateWithFallback(
   return callGemini(prompt, opts)
 }
 
-/** Visão — analisa imagem em base64. gpt-4o-mini suporta apenas imagens (não PDF). */
+/**
+ * Visão — analisa imagem OU PDF em base64.
+ * gpt-4o-mini não lê PDF nativamente; quando recebe um PDF, cada página é
+ * rasterizada em PNG (via lib/pdf-to-image) e enviada como imagem.
+ */
 export async function callGeminiVision(
   fileBase64: string,
   mimeType: string,
@@ -79,15 +83,26 @@ export async function callGeminiVision(
   opts: { model?: string; maxOutputTokens?: number } = {}
 ): Promise<string> {
   const { maxOutputTokens = 1024 } = opts
-  if (!mimeType.startsWith('image/')) {
-    throw new Error(`Azure OpenAI (gpt-4o-mini) só analisa imagens; tipo recebido: ${mimeType}`)
+
+  // Monta a lista de imagens (data URLs) a enviar
+  let imagens: string[]
+  if (mimeType.startsWith('image/')) {
+    imagens = [`data:${mimeType};base64,${fileBase64}`]
+  } else if (mimeType === 'application/pdf') {
+    const { pdfParaImagensBase64 } = await import('./pdf-to-image')
+    const pngs = await pdfParaImagensBase64(Buffer.from(fileBase64, 'base64'))
+    if (!pngs.length) throw new Error('PDF vazio ou ilegível')
+    imagens = pngs.map((b64) => `data:image/png;base64,${b64}`)
+  } else {
+    throw new Error(`Tipo não suportado: ${mimeType} (envie imagem ou PDF)`)
   }
+
   const messages: Message[] = [
     {
       role: 'user',
       content: [
         { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${fileBase64}` } },
+        ...imagens.map((url) => ({ type: 'image_url', image_url: { url } })),
       ],
     },
   ]

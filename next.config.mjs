@@ -67,6 +67,12 @@ const securityHeaders = [
 const nextConfig = {
   eslint: { ignoreDuringBuilds: false },
   typescript: { ignoreBuildErrors: false },
+  // mupdf (WASM) é carregado em runtime nas rotas que leem PDF — não deve ser
+  // empacotado pelo webpack, e o .wasm precisa ser incluído no lambda do Vercel.
+  serverExternalPackages: ["mupdf"],
+  outputFileTracingIncludes: {
+    "/api/**": ["./node_modules/mupdf/dist/**"],
+  },
   images: {
     remotePatterns: [
       {

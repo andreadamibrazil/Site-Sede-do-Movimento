@@ -431,10 +431,10 @@ export default function ChamadaClient({
                 {temAtestado && (
                   <div className="space-y-2">
                     <label className="block">
-                      <span className="text-xs text-red-600 font-medium">Anexar atestado (foto JPG/PNG)</span>
+                      <span className="text-xs text-red-600 font-medium">Anexar atestado (foto ou PDF)</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*,application/pdf"
                         capture="environment"
                         onChange={e => {
                           const f = e.target.files?.[0] ?? null
