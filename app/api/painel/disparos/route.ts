@@ -56,13 +56,30 @@ export async function POST(req: NextRequest) {
     const { mensagem } = body as { mensagem: string }
     const prompt = `Você é um assistente de comunicação da Sede do Movimento, uma escola de artes cênicas no Rio de Janeiro (dança, teatro e música).
 
-Melhore esta mensagem de WhatsApp:
+Melhore esta mensagem de WhatsApp seguindo as regras abaixo:
+
+FORMATAÇÃO (obrigatório):
+- Use quebras de linha para separar saudação, corpo e encerramento — sem blocos de texto corrido
+- Use *negrito* (asteriscos) para destacar informações importantes: data, local, nome do evento
+- Emojis no início de linhas importantes para guiar o olhar
+- Máximo 4-5 linhas de texto no total — mensagem curta e escaneável
+
+CONTEÚDO:
 - Linguagem calorosa, acolhedora e profissional
-- Emojis adequados e bem posicionados
 - Corrija erros gramaticais e ortográficos
-- Deixe o texto mais fluido e natural
 - Mantenha EXATAMENTE as variáveis entre chaves {assim} sem alterá-las
 - Não invente informações que não estão no original
+
+Exemplo de formato ideal:
+Olá, {nome}! 👋
+
+🎉 *Sarau Copa na Roça* — não perca!
+📅 *05/07*, às 16h
+📍 Clube do Servidor Municipal
+
+[corpo curto com 1-2 frases]
+
+Até lá! 🌟
 
 Mensagem original:
 ${mensagem}
@@ -84,17 +101,23 @@ Responda APENAS com a mensagem melhorada, sem explicações.`
 
     const prompt = `Você é um assistente de comunicação da Sede do Movimento, uma escola de artes cênicas no Rio de Janeiro (dança, teatro e música).
 
-Gere EXATAMENTE ${n} variações diferentes desta mensagem de WhatsApp. Cada variação deve ter um tom ligeiramente diferente, mas todas devem:
+Gere EXATAMENTE ${n} variações diferentes desta mensagem de WhatsApp.
+
+FORMATAÇÃO obrigatória em TODAS as variações:
+- Quebras de linha entre saudação, corpo e encerramento (sem parágrafos colados)
+- *negrito* (asteriscos) em datas, nomes de eventos e informações-chave
+- Emojis no início de linhas de destaque
+- Texto curto e escaneável — máximo 5-6 linhas
+
+CONTEÚDO: cada variação com tom ligeiramente diferente, mas todas devem:
 - Ser calorosas, acolhedoras e profissionais
-- Ter emojis adequados
-- Estar gramaticalmente corretas
-- Manter EXATAMENTE as variáveis entre chaves {assim} sem alterá-las
+- Manter EXATAMENTE as variáveis {assim} sem alterá-las
 - Preservar todas as informações do original (datas, links, locais)
 
 Mensagem base:
 ${mensagem}
 
-Responda APENAS com um array JSON: ["variação 1", "variação 2", ...]`
+Responda APENAS com um array JSON onde cada elemento é uma string com \\n para quebras de linha: ["variação 1", "variação 2", ...]`
 
     try {
       const raw = await callGemini(prompt, { temperature: 0.8, maxOutputTokens: 2000 })

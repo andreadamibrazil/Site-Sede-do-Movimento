@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 
 type Turma = {
   id: string
@@ -55,6 +55,33 @@ function interpolarPreview(texto: string): string {
     .replace(/\{turma\}/g, 'Ballet Básico I')
     .replace(/\{modalidade\}/g, 'Ballet')
     .replace(/\{nome\}/g, 'Maria')
+}
+
+// Renderiza markdown do WhatsApp: *negrito*, _itálico_, ~riscado~
+function renderWAMarkdown(texto: string): React.ReactNode[] {
+  const lines = texto.split('\n')
+  return lines.map((line, li) => {
+    const parts: React.ReactNode[] = []
+    // Tokeniza *bold*, _italic_, ~strike~ sem quebrar variáveis {x}
+    const re = /(\*[^*]+\*|_[^_]+_|~[^~]+~)/g
+    let last = 0
+    let m: RegExpExecArray | null
+    while ((m = re.exec(line)) !== null) {
+      if (m.index > last) parts.push(line.slice(last, m.index))
+      const raw = m[0]
+      if (raw.startsWith('*'))  parts.push(<strong key={`${li}-${m.index}`}>{raw.slice(1, -1)}</strong>)
+      else if (raw.startsWith('_')) parts.push(<em key={`${li}-${m.index}`}>{raw.slice(1, -1)}</em>)
+      else parts.push(<s key={`${li}-${m.index}`}>{raw.slice(1, -1)}</s>)
+      last = m.index + raw.length
+    }
+    if (last < line.length) parts.push(line.slice(last))
+    return (
+      <span key={li}>
+        {parts}
+        {li < lines.length - 1 && <br />}
+      </span>
+    )
+  })
 }
 
 function parseTelefones(texto: string): string[] {
@@ -338,14 +365,14 @@ export default function DisparosClient({ turmas, clientes }: { turmas: Turma[]; 
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Preview</h2>
             {textoAtual ? (
-              <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
-                {interpolarPreview(textoAtual)}
+              <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-sm text-gray-800 leading-relaxed max-h-64 overflow-y-auto">
+                {renderWAMarkdown(interpolarPreview(textoAtual))}
               </div>
             ) : (
               <p className="text-sm text-gray-400 italic">O preview aparece aqui conforme você escreve.</p>
             )}
             {textoAtual && (
-              <p className="text-xs text-gray-400 mt-2">Variáveis substituídas por valores de exemplo.</p>
+              <p className="text-xs text-gray-400 mt-2">Preview com dados de exemplo · *negrito* e _itálico_ são renderizados pelo WhatsApp.</p>
             )}
           </div>
 
