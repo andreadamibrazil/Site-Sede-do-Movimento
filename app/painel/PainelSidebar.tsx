@@ -114,7 +114,8 @@ export default function PainelSidebar({ email, isAdmin }: Props) {
         <NavItem href="/painel/leads"        icon="🎯" label="Leads"       collapsed={collapsed} />
         <NavItem href="/painel/inteligencia" icon="🧠" label="Inteligência" collapsed={collapsed} />
         <NavItem href="/painel/relatorios"   icon="📋" label="Relatórios"  collapsed={collapsed} />
-        <NavItem href="/painel/inbox"        icon="💬" label="Atendimento" collapsed={collapsed} />
+        <NavItem href="/painel/inbox"         icon="💬" label="Atendimento" collapsed={collapsed} />
+        <NavItem href="/painel/disparos"      icon="📣" label="Disparos"    collapsed={collapsed} />
 
         {isAdmin && (
           <div className="pt-4">
