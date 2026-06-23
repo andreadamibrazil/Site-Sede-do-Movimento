@@ -17,16 +17,6 @@ export default defineConfig({
   },
 
   projects: [
-    // Setup: salva sessões autenticadas (roda primeiro)
-    {
-      name: 'setup-professor',
-      testMatch: /professor\.setup\.ts/,
-    },
-    {
-      name: 'setup-admin',
-      testMatch: /admin\.setup\.ts/,
-    },
-
     // Testes públicos (sem auth)
     {
       name: 'publico',
@@ -34,22 +24,20 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    // Testes professor (usa sessão salva)
+    // Testes professor — sessão criada por e2e/create-auth-sessions.mjs
     {
       name: 'professor',
       testMatch: /professor\.spec\.ts/,
-      dependencies: ['setup-professor'],
       use: {
         ...devices['Pixel 7'],  // mobile-first
         storageState: 'e2e/.auth/professor.json',
       },
     },
 
-    // Testes admin/painel
+    // Testes admin/painel — sessão criada por e2e/create-auth-sessions.mjs
     {
       name: 'painel',
       testMatch: /painel\.spec\.ts/,
-      dependencies: ['setup-admin'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/admin.json',

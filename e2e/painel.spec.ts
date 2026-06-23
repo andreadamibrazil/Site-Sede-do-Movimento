@@ -24,7 +24,7 @@ test.describe('Smoke — todas as páginas do painel carregam', () => {
       page.on('pageerror', err => erros.push(err.message))
 
       const response = await page.goto(path)
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
 
       // Status OK
       expect(response?.status(), `${path} retornou ${response?.status()}`).toBeLessThan(500)
@@ -43,7 +43,7 @@ test.describe('Smoke — todas as páginas do painel carregam', () => {
 test.describe('Alunos', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/painel/alunos')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
   })
 
   test('lista de alunos tem pelo menos um resultado', async ({ page }) => {
@@ -66,7 +66,7 @@ test.describe('Alunos', () => {
 test.describe('Turmas', () => {
   test('lista de turmas carrega', async ({ page }) => {
     await page.goto('/painel/turmas')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     const conteudo = page.locator('main, .container, [class*="max-w"]').first()
     await expect(conteudo).toBeVisible()
   })
@@ -81,16 +81,20 @@ test.describe('Chamada via painel — sem restrição de prazo para admin', () =
   test('admin não vê "🔒 Prazo expirado" em chamadas recentes', async ({ page }) => {
     // Navega para uma chamada recente via agenda
     await page.goto('/painel/agenda')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
 
     const linkChamada = page.locator('a[href*="/painel/chamada/"]').first()
     if (await linkChamada.count() > 0) {
       await linkChamada.click()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
 
-      // Admin nunca deve ver "Prazo expirado" (tem botão Corrigir sempre)
-      await expect(page.locator(':has-text("🔒 Prazo expirado")')).toHaveCount(0)
-      await expect(page.locator('button:has-text("Corrigir")')).toBeVisible()
+      // Admin nunca deve ver "Prazo expirado" — essa é a verificação crítica
+      await expect(page.locator('text=🔒 Prazo expirado')).toHaveCount(0)
+
+      // Se a chamada já foi feita, deve ter botão Corrigir; se não, deve ter Salvar
+      const temCorrigir = await page.locator('button:has-text("Corrigir")').count()
+      const temSalvar = await page.locator('button:has-text("Salvar"), button:has-text("Lançar")').count()
+      expect(temCorrigir + temSalvar, 'Admin deve ter acesso à chamada (Corrigir ou Salvar)').toBeGreaterThan(0)
     }
   })
 })
@@ -98,7 +102,7 @@ test.describe('Chamada via painel — sem restrição de prazo para admin', () =
 test.describe('Folha de pagamento', () => {
   test('página de folha carrega sem erro', async ({ page }) => {
     const response = await page.goto('/painel/folha-pagamento')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     expect(response?.status()).toBeLessThan(500)
     expect(page.url()).not.toContain('/login')
   })
@@ -107,7 +111,7 @@ test.describe('Folha de pagamento', () => {
 test.describe('Auditoria', () => {
   test('verificações de auditoria carregam', async ({ page }) => {
     await page.goto('/painel/auditoria')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     // Deve ter algum conteúdo de verificação
     await expect(page.locator('main, .container, [class*="max-w"]').first()).toBeVisible()
   })
@@ -116,7 +120,7 @@ test.describe('Auditoria', () => {
 test.describe('Leads / CRM', () => {
   test('lista de leads carrega', async ({ page }) => {
     const response = await page.goto('/painel/leads')
-    await page.waitForLoadState('networkidle')
+    await page.waitForLoadState('domcontentloaded')
     expect(response?.status()).toBeLessThan(500)
   })
 })

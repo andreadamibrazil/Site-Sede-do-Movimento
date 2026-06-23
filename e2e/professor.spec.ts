@@ -6,15 +6,16 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Dashboard do professor', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/professor')
-    await page.waitForLoadState('networkidle')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    // networkidle timeout em Next.js com analytics — aguarda elemento raiz em vez
+    await page.waitForSelector('main, .bg-indigo-600, h1, body', { timeout: 15000 })
   })
 
   test('dashboard carrega sem erro de JS', async ({ page }) => {
     const erros: string[] = []
     page.on('console', msg => { if (msg.type() === 'error') erros.push(msg.text()) })
-    await page.goto('/professor')
-    await page.waitForLoadState('networkidle')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('main, h1, body', { timeout: 15000 })
 
     const errosCriticos = erros.filter(e =>
       !e.includes('favicon') && !e.includes('analytics') && !e.includes('ResizeObserver')
@@ -87,12 +88,13 @@ test.describe('Chamada — acesso e UX', () => {
 
   test('link "← Início" na chamada leva de volta ao portal professor', async ({ page }) => {
     // Pega o primeiro link de chamada disponível no dashboard
-    await page.goto('/professor')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('a[href*="/professor/chamada/"], h1', { timeout: 10000 }).catch(() => {})
     const linkChamada = page.locator('a[href*="/professor/chamada/"]').first()
 
     if (await linkChamada.count() > 0) {
       await linkChamada.click()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
 
       // Botão voltar deve existir e apontar para /professor
       const linkVoltar = page.locator('a[href="/professor"]')
@@ -102,7 +104,8 @@ test.describe('Chamada — acesso e UX', () => {
   })
 
   test('chamada concluída: link voltar vai para /professor (não /painel/agenda)', async ({ page }) => {
-    await page.goto('/professor')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('a, h1', { timeout: 10000 }).catch(() => {})
     // Procura aulas já com chamada concluída (status verde)
     const aulaConcluida = page.locator('a[href*="/professor/chamada/"]').filter({
       has: page.locator(':has-text("Chamada feita")')
@@ -124,12 +127,13 @@ test.describe('Chamada — acesso e UX', () => {
 
 test.describe('Turmas — frequência', () => {
   test('página de frequência de turma carrega', async ({ page }) => {
-    await page.goto('/professor')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('a[href*="/professor/turmas/"], h1', { timeout: 10000 }).catch(() => {})
     const linkFrequencia = page.locator('a[href*="/professor/turmas/"]').first()
 
     if (await linkFrequencia.count() > 0) {
       await linkFrequencia.click()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
 
       const status = await page.evaluate(() => document.readyState)
       expect(status).toBe('complete')
@@ -141,12 +145,13 @@ test.describe('Turmas — frequência', () => {
 
 test.describe('Plano de aula', () => {
   test('página de plano carrega', async ({ page }) => {
-    await page.goto('/professor')
+    await page.goto('/professor', { waitUntil: 'domcontentloaded' })
+    await page.waitForSelector('a[href*="/professor/plano/"], h1', { timeout: 10000 }).catch(() => {})
     const linkPlano = page.locator('a[href*="/professor/plano/"]').first()
 
     if (await linkPlano.count() > 0) {
       await linkPlano.click()
-      await page.waitForLoadState('networkidle')
+      await page.waitForLoadState('domcontentloaded')
       // Não deve dar 500
       expect(page.url()).not.toContain('500')
     }
