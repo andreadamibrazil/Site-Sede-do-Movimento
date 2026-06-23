@@ -2,7 +2,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from '@/app/painel/chamada/[aulaId]/ChamadaClient'
 
-const TOLERANCIA_PROFESSOR_MINUTOS = 10080
+const TOLERANCIA_PROFESSOR_MINUTOS = 57600 // 40 dias — cobre qualquer aula do mês até o fechamento da folha (dia 6 do mês seguinte)
 
 export default async function ProfessorChamadaPage({
   params,

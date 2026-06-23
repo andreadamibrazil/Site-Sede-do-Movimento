@@ -65,11 +65,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
     }
 
-    // Verifica janela de 7 dias server-side
+    // Verifica janela de 40 dias server-side (cobre aulas do mês até fechamento da folha no dia 6 do mês seguinte)
     const fimAula = new Date(`${aula.data}T${aula.hora_fim ?? '23:59'}:00-03:00`)
     const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
-    if (minutosDesdeOFim > 10080) {
-      return NextResponse.json({ error: 'prazo de 7 dias para editar esta chamada expirou' }, { status: 403 })
+    if (minutosDesdeOFim > 57600) {
+      return NextResponse.json({ error: 'prazo para editar esta chamada expirou — contate a secretaria' }, { status: 403 })
     }
   }
 
