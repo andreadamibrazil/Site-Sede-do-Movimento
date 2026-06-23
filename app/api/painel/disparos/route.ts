@@ -117,6 +117,7 @@ Responda APENAS com um array JSON: ["variação 1", "variação 2", ...]`
       nome_responsavel?: string
       turma?: string
       modalidade?: string
+      mensagem_override?: string // variação específica para este destinatário (rotação)
     }
 
     const { mensagem, destinatarios, delay_ms = 0 } = body as {
@@ -136,7 +137,7 @@ Responda APENAS com um array JSON: ["variação 1", "variação 2", ...]`
         modalidade:       d.modalidade ?? '',
         nome:             d.nome_responsavel ?? d.nome_aluno ?? '',
       }
-      const texto = interpolar(mensagem, vars)
+      const texto = interpolar(d.mensagem_override ?? mensagem, vars)
       const ok = await sendWA(d.destino, texto)
       results.push({ id: d.id, ok })
 

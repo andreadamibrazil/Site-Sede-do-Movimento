@@ -9,6 +9,14 @@ type Turma = {
   modalidades: { nome: string } | null
 }
 
+type Cliente = {
+  id: string
+  nome: string
+  celular: string | null
+  status_pedagogico: string
+  responsavel_principal: { nome: string; celular: string } | null
+}
+
 type Destinatario = {
   id: string
   tipo: 'numero' | 'grupo' | 'aluno'
@@ -18,6 +26,7 @@ type Destinatario = {
   nome_responsavel?: string
   turma?: string
   modalidade?: string
+  mensagem_override?: string
 }
 
 type ResultadoEnvio = { id: string; ok: boolean }
@@ -48,7 +57,11 @@ function interpolarPreview(texto: string): string {
     .replace(/\{nome\}/g, 'Maria')
 }
 
-export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
+function parseTelefones(texto: string): string[] {
+  return texto.split('\n').map(l => l.trim()).filter(l => l.replace(/\D/g, '').length >= 8)
+}
+
+export default function DisparosClient({ turmas, clientes }: { turmas: Turma[]; clientes: Cliente[] }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Mensagem
@@ -59,9 +72,11 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
   const [qtdVariacoes, setQtdVariacoes] = useState(3)
 
   // Destinatários
-  const [aba, setAba] = useState<'numero' | 'grupos' | 'turma'>('numero')
-  const [numeroAvulso, setNumeroAvulso] = useState('')
+  const [aba, setAba] = useState<'numero' | 'grupos' | 'clientes'>('numero')
+  const [numerosTexto, setNumerosTexto] = useState('')
   const [gruposSelecionados, setGruposSelecionados] = useState<Set<string>>(new Set())
+  const [clientesSelecionados, setClientesSelecionados] = useState<Set<string>>(new Set())
+  const [buscaCliente, setBuscaCliente] = useState('')
   const [delay, setDelay] = useState(0)
 
   // Envio
@@ -129,17 +144,17 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
   }
 
   function buildDestinatarios(): Destinatario[] {
+    let base: Omit<Destinatario, 'mensagem_override'>[] = []
+
     if (aba === 'numero') {
-      if (!numeroAvulso.trim()) return []
-      return [{
-        id: 'avulso',
-        tipo: 'numero',
-        destino: numeroAvulso.trim(),
-        label: numeroAvulso.trim(),
-      }]
-    }
-    if (aba === 'grupos') {
-      return turmas
+      base = parseTelefones(numerosTexto).map((num, i) => ({
+        id: `avulso-${i}`,
+        tipo: 'numero' as const,
+        destino: num,
+        label: num,
+      }))
+    } else if (aba === 'grupos') {
+      base = turmas
         .filter(t => t.whatsapp_group_id && gruposSelecionados.has(t.id))
         .map(t => ({
           id: t.id,
@@ -149,8 +164,28 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
           turma: t.nome,
           modalidade: t.modalidades?.nome ?? '',
         }))
+    } else if (aba === 'clientes') {
+      base = clientes
+        .filter(c => clientesSelecionados.has(c.id))
+        .map(c => {
+          const tel = c.responsavel_principal?.celular ?? c.celular ?? ''
+          return {
+            id: c.id,
+            tipo: 'aluno' as const,
+            destino: tel,
+            label: `${c.nome}${c.responsavel_principal?.nome ? ` (${c.responsavel_principal.nome})` : ''}`,
+            nome_aluno: c.nome,
+            nome_responsavel: c.responsavel_principal?.nome ?? '',
+          }
+        })
+        .filter(d => d.destino)
     }
-    return []
+
+    // Rotação automática: mais de 1 variação → cada destinatário recebe uma variação diferente em ciclo
+    if (variacoes.length > 1) {
+      return base.map((d, i) => ({ ...d, mensagem_override: variacoes[i % variacoes.length] }))
+    }
+    return base as Destinatario[]
   }
 
   async function enviar() {
@@ -158,8 +193,12 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
     if (!destinatarios.length) { setErro('Selecione ao menos um destinatário.'); return }
     if (!textoAtual.trim()) { setErro('Escreva uma mensagem.'); return }
 
+    const rotando = variacoes.length > 1 && destinatarios.length > 1
     const confirmar = window.confirm(
-      `Enviar mensagem para ${destinatarios.length} destinatário(s)${delay > 0 ? ` com ${delay / 1000}s de intervalo` : ''}?`
+      `Enviar para ${destinatarios.length} destinatário(s)` +
+      (rotando ? ` com ${variacoes.length} variações rotacionadas` : '') +
+      (delay > 0 ? ` e ${delay / 1000}s de intervalo` : '') +
+      '?'
     )
     if (!confirmar) return
 
@@ -171,12 +210,7 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
       const res = await fetch('/api/painel/disparos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'enviar',
-          mensagem: textoAtual,
-          destinatarios,
-          delay_ms: delay,
-        }),
+        body: JSON.stringify({ action: 'enviar', mensagem: textoAtual, destinatarios, delay_ms: delay }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -192,12 +226,18 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
   const enviados = progresso.filter(r => r.ok).length
   const falhos   = progresso.filter(r => !r.ok).length
 
-  const turmasComGrupo = turmas.filter(t => t.whatsapp_group_id)
+  const turmasComGrupo  = turmas.filter(t => t.whatsapp_group_id)
+  const clientesComTel  = clientes.filter(c => c.responsavel_principal?.celular || c.celular)
+  const clientesFiltrados = clientes.filter(c =>
+    !buscaCliente ||
+    c.nome.toLowerCase().includes(buscaCliente.toLowerCase()) ||
+    (c.responsavel_principal?.nome ?? '').toLowerCase().includes(buscaCliente.toLowerCase())
+  )
+  const rotando = variacoes.length > 1 && destinatarios.length > 1
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
 
-      {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Disparos</h1>
         <p className="text-sm text-gray-500 mt-0.5">Crie mensagens com IA e envie para grupos, turmas ou contatos individuais.</p>
@@ -210,7 +250,6 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Mensagem</h2>
 
-            {/* Variáveis */}
             <div>
               <p className="text-xs text-gray-400 mb-1.5">Inserir variável:</p>
               <div className="flex flex-wrap gap-1.5">
@@ -226,17 +265,15 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
               </div>
             </div>
 
-            {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={mensagem}
               onChange={e => { setMensagem(e.target.value); setVariacaoAtiva(null) }}
-              placeholder="Escreva ou cole sua mensagem aqui...&#10;&#10;Use os botões acima para inserir variáveis como {nome_responsavel}."
+              placeholder={"Escreva ou cole sua mensagem aqui...\n\nUse os botões acima para inserir variáveis como {nome_responsavel}."}
               rows={8}
               className="w-full text-sm border border-gray-200 rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono leading-relaxed"
             />
 
-            {/* Botões IA */}
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={melhorar}
@@ -263,12 +300,20 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
                 </select>
               </div>
             </div>
+
+            {rotando && (
+              <p className="text-xs text-violet-600 bg-violet-50 rounded-lg px-3 py-1.5">
+                🔄 {variacoes.length} variações serão rotacionadas entre os {destinatarios.length} destinatários
+              </p>
+            )}
           </div>
 
-          {/* Variações geradas */}
           {variacoes.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Variações — clique para selecionar</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Variações — clique para ver no preview
+                {variacoes.length > 1 && <span className="ml-2 text-violet-500 font-normal normal-case">· rotação ativa ao enviar para múltiplos</span>}
+              </h3>
               {variacoes.map((v, i) => (
                 <button
                   key={i}
@@ -290,7 +335,6 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
         {/* ── COLUNA DIREITA: PREVIEW + DESTINATÁRIOS ── */}
         <div className="space-y-4">
 
-          {/* Preview */}
           <div className="bg-white border border-gray-200 rounded-xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Preview</h2>
             {textoAtual ? (
@@ -301,26 +345,24 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
               <p className="text-sm text-gray-400 italic">O preview aparece aqui conforme você escreve.</p>
             )}
             {textoAtual && (
-              <p className="text-xs text-gray-400 mt-2">
-                Variáveis substituídas por valores de exemplo para visualização.
-              </p>
+              <p className="text-xs text-gray-400 mt-2">Variáveis substituídas por valores de exemplo.</p>
             )}
           </div>
 
-          {/* Destinatários */}
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Destinatários</h2>
 
             {/* Abas */}
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
               {([
-                { id: 'numero', label: '# Número' },
-                { id: 'grupos', label: `👥 Grupos (${turmasComGrupo.length})` },
+                { id: 'numero',   label: '# Números' },
+                { id: 'grupos',   label: `👥 Grupos (${turmasComGrupo.length})` },
+                { id: 'clientes', label: `🎓 Clientes (${clientesComTel.length})` },
               ] as const).map(a => (
                 <button
                   key={a.id}
                   onClick={() => setAba(a.id)}
-                  className={`flex-1 text-xs py-1.5 px-2 rounded-md font-medium transition-colors ${
+                  className={`flex-1 text-xs py-1.5 px-1 rounded-md font-medium transition-colors ${
                     aba === a.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -329,23 +371,26 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
               ))}
             </div>
 
-            {/* Número avulso */}
+            {/* Números avulsos — múltiplos, um por linha */}
             {aba === 'numero' && (
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Telefone (com DDD)</label>
-                <input
-                  type="tel"
-                  value={numeroAvulso}
-                  onChange={e => setNumeroAvulso(e.target.value)}
-                  placeholder="21 9 8765-4321"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <label className="text-xs text-gray-500 mb-1 block">Um número por linha (com DDD)</label>
+                <textarea
+                  value={numerosTexto}
+                  onChange={e => setNumerosTexto(e.target.value)}
+                  placeholder={"21 9 8765-4321\n21 9 8123-0000\n21 9 9999-1234"}
+                  rows={5}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                 />
+                {parseTelefones(numerosTexto).length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">{parseTelefones(numerosTexto).length} número(s) detectado(s)</p>
+                )}
               </div>
             )}
 
             {/* Grupos de turma */}
             {aba === 'grupos' && (
-              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+              <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                 <div className="flex gap-2 mb-2">
                   <button
                     onClick={() => setGruposSelecionados(new Set(turmasComGrupo.map(t => t.id)))}
@@ -360,6 +405,9 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
                   >
                     Limpar
                   </button>
+                  {gruposSelecionados.size > 0 && (
+                    <span className="text-xs text-gray-500 ml-auto">{gruposSelecionados.size} selecionado(s)</span>
+                  )}
                 </div>
                 {turmasComGrupo.map(t => (
                   <label key={t.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -376,13 +424,81 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
                     />
                     <span className="text-sm text-gray-700">{t.nome}</span>
                     {t.modalidades?.nome && (
-                      <span className="text-xs text-gray-400 ml-auto">{t.modalidades.nome}</span>
+                      <span className="text-xs text-gray-400 ml-auto shrink-0">{t.modalidades.nome}</span>
                     )}
                   </label>
                 ))}
                 {turmasComGrupo.length === 0 && (
                   <p className="text-sm text-gray-400 italic">Nenhum grupo vinculado.</p>
                 )}
+              </div>
+            )}
+
+            {/* Clientes individuais */}
+            {aba === 'clientes' && (
+              <div className="space-y-2">
+                <input
+                  type="search"
+                  value={buscaCliente}
+                  onChange={e => setBuscaCliente(e.target.value)}
+                  placeholder="Buscar aluno ou responsável..."
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="flex gap-2 items-center">
+                  <button
+                    onClick={() => setClientesSelecionados(new Set(clientesComTel.map(c => c.id)))}
+                    className="text-xs text-blue-600 hover:underline"
+                  >
+                    Todos com tel.
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    onClick={() => setClientesSelecionados(new Set())}
+                    className="text-xs text-gray-500 hover:underline"
+                  >
+                    Limpar
+                  </button>
+                  {clientesSelecionados.size > 0 && (
+                    <span className="text-xs text-gray-500 ml-auto">{clientesSelecionados.size} selecionado(s)</span>
+                  )}
+                </div>
+                <div className="space-y-0.5 max-h-56 overflow-y-auto pr-1">
+                  {clientesFiltrados.map(c => {
+                    const tel = c.responsavel_principal?.celular ?? c.celular
+                    const semTel = !tel
+                    return (
+                      <label
+                        key={c.id}
+                        className={`flex items-center gap-2.5 py-1.5 px-2 rounded-lg cursor-pointer ${semTel ? 'opacity-40' : 'hover:bg-gray-50'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={clientesSelecionados.has(c.id)}
+                          disabled={semTel}
+                          onChange={e => {
+                            if (semTel) return
+                            const next = new Set(clientesSelecionados)
+                            if (e.target.checked) next.add(c.id)
+                            else next.delete(c.id)
+                            setClientesSelecionados(next)
+                          }}
+                          className="rounded border-gray-300 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-gray-800 truncate">{c.nome}</p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {c.responsavel_principal?.nome
+                              ? `${c.responsavel_principal.nome} · ${tel ?? 'sem tel.'}`
+                              : (tel ?? 'sem telefone')}
+                          </p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                  {clientesFiltrados.length === 0 && (
+                    <p className="text-sm text-gray-400 italic px-2">Nenhum resultado.</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -398,11 +514,9 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
               </select>
             </div>
 
-            {/* Resumo + botão enviar */}
+            {/* Botão enviar */}
             <div className="pt-2 border-t border-gray-100">
-              {erro && (
-                <p className="text-xs text-red-600 mb-2">{erro}</p>
-              )}
+              {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
 
               {progresso.length > 0 && (
                 <div className="text-xs mb-2 flex gap-3">
@@ -423,8 +537,9 @@ export default function DisparosClient({ turmas }: { turmas: Turma[] }) {
               </button>
 
               {destinatarios.length > 0 && !enviando && (
-                <p className="text-xs text-gray-400 text-center mt-1.5">
-                  {destinatarios.map(d => d.label).join(' · ')}
+                <p className="text-xs text-gray-400 text-center mt-1.5 truncate">
+                  {destinatarios.slice(0, 3).map(d => d.label).join(' · ')}
+                  {destinatarios.length > 3 ? ` +${destinatarios.length - 3} mais` : ''}
                 </p>
               )}
             </div>

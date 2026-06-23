@@ -12,9 +12,8 @@ export default async function DisparosPage() {
 
   const service = createServiceClient()
 
-  // Busca turmas com grupo de WhatsApp vinculado
-  // Cast necessário: whatsapp_group_id foi adicionado via migration e os tipos
-  // gerados do Supabase ainda não foram regenerados
+  // Turmas com grupo de WhatsApp vinculado
+  // Cast necessário: whatsapp_group_id adicionado via migration, tipos não regenerados
   const { data: turmasRaw } = await service
     .from('turmas')
     .select('id, nome, whatsapp_group_id, modalidades(nome)')
@@ -24,5 +23,22 @@ export default async function DisparosPage() {
   type TurmaRow = { id: string; nome: string; whatsapp_group_id: string | null; modalidades: { nome: string } | null }
   const turmas = (turmasRaw ?? []) as unknown as TurmaRow[]
 
-  return <DisparosClient turmas={turmas} />
+  // Alunos ativos com responsável (nome + celular para envio individual)
+  // Cast necessário: join de responsaveis não está nos tipos gerados com esses campos
+  const { data: clientesRaw } = await service
+    .from('alunos')
+    .select('id, nome, celular, status_pedagogico, responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(nome, celular)')
+    .in('status_pedagogico', ['ativo', 'experimental', 'trancado'])
+    .order('nome')
+
+  type ClienteRow = {
+    id: string
+    nome: string
+    celular: string | null
+    status_pedagogico: string
+    responsavel_principal: { nome: string; celular: string } | null
+  }
+  const clientes = (clientesRaw ?? []) as unknown as ClienteRow[]
+
+  return <DisparosClient turmas={turmas} clientes={clientes} />
 }
