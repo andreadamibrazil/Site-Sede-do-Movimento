@@ -2,8 +2,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from './ChamadaClient'
 
-// Minutos após o fim da aula que o professor ainda pode editar (40 dias — cobre folha fechada dia 6 do mês seguinte)
-const TOLERANCIA_PROFESSOR_MINUTOS = 57600
+// Minutos após o fim da aula que o professor ainda pode editar (7 dias); admin não tem restrição
+const TOLERANCIA_PROFESSOR_MINUTOS = 10080
 
 export default async function ChamadaPage({
   params,

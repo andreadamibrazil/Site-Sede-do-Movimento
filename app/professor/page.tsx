@@ -30,8 +30,8 @@ export default async function ProfessorPage() {
   const hoje = agoraBRT.toISOString().split('T')[0]
   const em7dias = new Date(agoraBRT.getTime() + 7 * 86400000).toISOString().split('T')[0]
 
-  // Aulas pendentes (sem chamada) — janela de 40 dias para cobrir folha do mês fechada no dia 6
-  const em7diasAtras = new Date(agoraBRT.getTime() - 40 * 86400000).toISOString().split('T')[0]
+  // Aulas pendentes (sem chamada) — mesma janela de 7 dias do prazo do professor
+  const em7diasAtras = new Date(agoraBRT.getTime() - 7 * 86400000).toISOString().split('T')[0]
   // Busca turmas do professor para filtrar aulas (aulas.professor_id não é preenchido no fluxo normal)
   const turmaIds = !isAdmin
     ? (await sb.from('turmas').select('id').eq('professor_id', professor.id).eq('status', 'ativa')).data?.map(t => t.id) ?? []
