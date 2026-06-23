@@ -51,3 +51,8 @@ next-env.d.ts
 .cursorrules
 .windsurfrules
 graphify-out/
+
+# Playwright
+e2e/.auth/
+e2e/report/
+test-results/
