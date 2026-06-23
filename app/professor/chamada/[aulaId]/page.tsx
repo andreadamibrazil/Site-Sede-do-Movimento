@@ -95,8 +95,10 @@ export default async function ProfessorChamadaPage({
     lead: e.leads,
   }))
 
-  const fimAula = new Date(`${aula.data}T${aula.hora_fim}`)
-  const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
+  // Força fuso horário Brasília (-03:00) para evitar erro de ±3h em servidores UTC
+  const fimAula = new Date(`${aula.data}T${aula.hora_fim}:00-03:00`)
+  const agora = new Date()
+  const minutosDesdeOFim = (agora.getTime() - fimAula.getTime()) / 60000
   const dentroTolerancia = minutosDesdeOFim <= TOLERANCIA_PROFESSOR_MINUTOS
 
   return (

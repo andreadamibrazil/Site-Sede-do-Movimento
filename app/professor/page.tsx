@@ -25,11 +25,13 @@ export default async function ProfessorPage() {
 
   const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
 
-  const hoje = new Date().toISOString().split('T')[0]
-  const em7dias = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+  // Usa horário de Brasília (UTC-3) para evitar que após 21h BRT "hoje" vire "amanhã"
+  const agoraBRT = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const hoje = agoraBRT.toISOString().split('T')[0]
+  const em7dias = new Date(agoraBRT.getTime() + 7 * 86400000).toISOString().split('T')[0]
 
   // Aulas pendentes (sem chamada, passadas)
-  const em7diasAtras = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+  const em7diasAtras = new Date(agoraBRT.getTime() - 7 * 86400000).toISOString().split('T')[0]
   // Busca turmas do professor para filtrar aulas (aulas.professor_id não é preenchido no fluxo normal)
   const turmaIds = !isAdmin
     ? (await sb.from('turmas').select('id').eq('professor_id', professor.id).eq('status', 'ativa')).data?.map(t => t.id) ?? []
@@ -100,7 +102,7 @@ export default async function ProfessorPage() {
               </div>
               <div className="divide-y divide-red-100">
                 {aulasPendentes.map(aula => {
-                  const d = new Date(aula.data + 'T12:00:00')
+                  const d = new Date(aula.data + 'T12:00:00-03:00')
                   const diasAtras = Math.floor((Date.now() - d.getTime()) / 86400000)
                   return (
                     <a key={aula.id} href={`/professor/chamada/${aula.id}`}
@@ -169,7 +171,7 @@ export default async function ProfessorPage() {
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Próximas aulas</h2>
             <div className="space-y-1.5">
               {aulasSemana.map(aula => {
-                const d = new Date(aula.data + 'T12:00:00')
+                const d = new Date(aula.data + 'T12:00:00-03:00')
                 const dia = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()]
                 return (
                   <div key={aula.id} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">

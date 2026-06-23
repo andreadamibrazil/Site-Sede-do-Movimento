@@ -267,7 +267,7 @@ export default function ChamadaClient({
     setConcluida(true)
   }
 
-  const dataAula = new Date(aula.data + 'T12:00:00')
+  const dataAula = new Date(aula.data + 'T12:00:00-03:00')
   const diaSemana = DIAS[dataAula.getDay()]
   const dataFormatada = dataAula.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
   const totalPresentes = alunos.filter(a => statusAtual(a.id) === 'presente').length
@@ -278,7 +278,7 @@ export default function ChamadaClient({
         {/* Header concluída */}
         <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
           <div className="flex items-center justify-between mb-1">
-            <a href="/painel/agenda" className="text-gray-400 text-sm">← Agenda</a>
+            <a href={perfilUsuario === 'professor' ? '/professor' : '/painel/agenda'} className="text-gray-400 text-sm">← {perfilUsuario === 'professor' ? 'Início' : 'Agenda'}</a>
             {(perfilUsuario === 'admin' || perfilUsuario === 'secretaria') ? (
               <button
                 onClick={() => setConcluida(false)}
