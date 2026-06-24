@@ -32,10 +32,13 @@ export async function POST(req: NextRequest) {
   const novoStatus = evento === 'submission.completed' ? 'assinado' : 'parcialmente_assinado'
   const sb = createServiceClient()
 
-  await sb
+  const { count } = await sb
     .from('documentos_aluno')
     .update({ docuseal_status: novoStatus })
     .eq('docuseal_submission_id', submissionId)
+    .select('id', { count: 'exact', head: true })
+
+  if (!count) console.warn('[docuseal-webhook] submission não encontrada no banco:', submissionId)
 
   return NextResponse.json({ ok: true })
 }

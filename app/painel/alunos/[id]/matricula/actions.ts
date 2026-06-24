@@ -97,9 +97,16 @@ async function enviarContratoDocuSeal(
   }
   const dataContrato = new Date().toLocaleDateString('pt-BR')
 
+  const celularResp = responsavel?.celular ?? ''
   const submission = await criarSubmission('contrato_matricula', [{
     email: emailDestino,
     role: 'Responsável',
+    metadata: {
+      aluno_id:    dados.alunoId,
+      matricula_id: matriculaId,
+      whatsapp:    celularResp,
+      nome_aluno:  dados.alunoNome,
+    },
     values: {
       nome_responsavel:  responsavel?.nome ?? dados.alunoNome,
       data_nascimento:   aluno?.data_nascimento ?? '',
@@ -108,7 +115,7 @@ async function enviarContratoDocuSeal(
       cep:               aluno?.cep ?? '',
       bairro:            aluno?.bairro ?? '',
       cidade:            'Rio de Janeiro',
-      celular:           responsavel?.celular ?? '',
+      celular:           celularResp,
       email:             emailDestino,
       nome_aluno:        dados.alunoNome,
       modalidades:       modalidadesNomes,
@@ -135,7 +142,7 @@ async function enviarContratoDocuSeal(
     tipo: 'contrato',
     nome: `Contrato — ${dados.alunoNome}`,
     observacao: `Matrícula ${matriculaId} · ${duracaoLabel[dados.plano] ?? dados.plano} · ${modalidadesNomes}`,
-    docuseal_submission_id: String(signer?.submission_id ?? signer?.id ?? ''),
+    docuseal_submission_id: String(signer?.submission_id ?? ''),
     docuseal_url: docusealUrl,
     docuseal_status: 'pendente',
   } as any)

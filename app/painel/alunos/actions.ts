@@ -505,7 +505,7 @@ export async function enviarContratoManual(
       tipo:                    'contrato',
       nome:                    `Contrato — ${aluno.nome}`,
       observacao:              `Matrícula ${matricula.id} · ${duracaoLabel[(matricula as any).plano] ?? (matricula as any).plano} · ${modalidadesNomes}`,
-      docuseal_submission_id:  String(signer?.submission_id ?? signer?.id ?? ''),
+      docuseal_submission_id:  String(signer?.submission_id ?? ''),
       docuseal_url:            docusealUrl,
       docuseal_status:         'pendente',
     } as any)
