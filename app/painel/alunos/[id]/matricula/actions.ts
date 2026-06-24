@@ -58,7 +58,7 @@ async function enviarContratoDocuSeal(
   const { data: aluno } = await supabase
     .from('alunos')
     .select(`
-      data_nascimento, cpf, endereco, bairro, cep,
+      data_nascimento, cpf, endereco, bairro, cep, celular, email,
       responsavel_principal_id,
       responsaveis!alunos_responsavel_principal_id_fkey (
         nome, cpf, celular, email, parentesco
@@ -87,7 +87,7 @@ async function enviarContratoDocuSeal(
   }, 0) ?? 0
 
   const responsavel = (aluno as any)?.responsaveis
-  const emailDestino = responsavel?.email || dados.alunoEmail
+  const emailDestino = responsavel?.email || (aluno as any)?.email || dados.alunoEmail
   if (!emailDestino) return
 
   const duracaoLabel: Record<string, string> = {
@@ -97,7 +97,7 @@ async function enviarContratoDocuSeal(
   }
   const dataContrato = new Date().toLocaleDateString('pt-BR')
 
-  const celularResp = responsavel?.celular ?? ''
+  const celularResp = responsavel?.celular ?? (aluno as any)?.celular ?? ''
   const submission = await criarSubmission('contrato_matricula', [{
     email: emailDestino,
     role: 'Responsável',
