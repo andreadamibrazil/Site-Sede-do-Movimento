@@ -509,14 +509,14 @@ export async function enviarContratoManual(
       const msgWA = `Olá, ${nomeResp.split(' ')[0]}! 😊\n\nSeu contrato de matrícula na Sede do Movimento está pronto para assinatura digital.\n\nClique no link abaixo para assinar:\n${docusealUrl}\n\nQualquer dúvida, estamos à disposição!`
       const num = celularWA.replace(/\D/g, '')
       const dest = num.startsWith('55') ? num : `55${num}`
-      fetch(
-        `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
-        {
-          method: 'POST',
-          headers: { apikey: process.env.EVOLUTION_API_KEY ?? '', 'Content-Type': 'application/json' },
-          body: JSON.stringify({ number: dest, text: msgWA }),
-        },
-      ).catch(() => null)
+      const evoUrl = (process.env.EVOLUTION_API_URL ?? '').trim()
+      const evoKey = (process.env.EVOLUTION_API_KEY ?? '').trim()
+      const evoInst = (process.env.EVOLUTION_INSTANCE ?? 'sede-movimento').trim()
+      fetch(`${evoUrl}/message/sendText/${evoInst}`, {
+        method: 'POST',
+        headers: { apikey: evoKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: dest, text: msgWA }),
+      }).catch(() => null)
     }
 
     revalidatePath(`/painel/alunos/${alunoId}`)
