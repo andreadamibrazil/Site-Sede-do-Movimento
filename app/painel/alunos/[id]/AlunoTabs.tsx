@@ -585,6 +585,15 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
                     >
                       ↺ Renovar
                     </a>
+                    <a
+                      href="https://docuseal.sededomovimento.art/templates/1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                      title="Ver modelo do contrato antes de enviar"
+                    >
+                      👁 Ver modelo
+                    </a>
                     <button
                       onClick={() => handleEnviarContrato(m.id)}
                       disabled={contratoEstado[m.id] === 'loading'}
@@ -593,7 +602,7 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
                           ? 'border-green-200 text-green-700 bg-green-50'
                           : 'border-amber-200 text-amber-700 hover:bg-amber-50'
                       }`}
-                      title="Enviar contrato por WhatsApp e e-mail via n8n"
+                      title="Enviar contrato por e-mail e WhatsApp"
                     >
                       {contratoEstado[m.id] === 'loading' ? '...'
                         : contratoEstado[m.id] === 'ok' ? '✓ Contrato enviado'

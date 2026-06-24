@@ -501,6 +501,23 @@ export async function enviarContratoManual(
       docuseal_status:         'pendente',
     } as any)
 
+    // Envia link de assinatura via WhatsApp (fire-and-forget)
+    const celularWA = responsavel?.celular || (aluno as any).celular
+    if (celularWA && signerSlug) {
+      const nomeResp = responsavel?.nome ?? aluno.nome
+      const msgWA = `Olá, ${nomeResp.split(' ')[0]}! 😊\n\nSeu contrato de matrícula na Sede do Movimento está pronto para assinatura digital.\n\nClique no link abaixo para assinar:\n${docusealUrl}\n\nQualquer dúvida, estamos à disposição!`
+      const num = celularWA.replace(/\D/g, '')
+      const dest = num.startsWith('55') ? num : `55${num}`
+      fetch(
+        `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
+        {
+          method: 'POST',
+          headers: { apikey: process.env.EVOLUTION_API_KEY ?? '', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ number: dest, text: msgWA }),
+        },
+      ).catch(() => null)
+    }
+
     revalidatePath(`/painel/alunos/${alunoId}`)
     return { success: true }
   } catch (err: any) {
