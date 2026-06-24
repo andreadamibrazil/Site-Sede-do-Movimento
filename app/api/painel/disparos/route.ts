@@ -18,19 +18,17 @@ async function checkAuth() {
 
 async function sendWA(numero: string, mensagem: string): Promise<boolean> {
   const num = numero.replace(/\D/g, '')
-  // Grupos têm @g.us — não formatar; números individuais precisam do 55
   const dest = numero.includes('@g.us') ? numero : (num.startsWith('55') ? num : `55${num}`)
+  const evoUrl = (process.env.EVOLUTION_API_URL ?? '').trim()
+  const evoKey = (process.env.EVOLUTION_API_KEY ?? '').trim()
+  const evoInst = (process.env.EVOLUTION_INSTANCE ?? 'sede-movimento').trim()
   try {
     const res = await fetch(
-      `${process.env.EVOLUTION_API_URL}/message/sendText/${process.env.EVOLUTION_INSTANCE ?? 'sede-movimento'}`,
+      `${evoUrl}/message/sendText/${evoInst}`,
       {
         method: 'POST',
-        headers: { apikey: process.env.EVOLUTION_API_KEY ?? '', 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          number: dest,
-          text: mensagem,
-          options: { delay: Math.min(Math.max(mensagem.length * 20, 1500), 5000), presence: 'composing' },
-        }),
+        headers: { apikey: evoKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: dest, text: mensagem }),
         signal: AbortSignal.timeout(10000),
       }
     )
