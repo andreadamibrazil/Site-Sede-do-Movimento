@@ -14,6 +14,7 @@ export interface SubmissionSubmitter {
   email: string
   role: string
   values?: Record<string, string>
+  metadata?: Record<string, string>
 }
 
 export async function criarSubmission(

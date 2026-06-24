@@ -461,9 +461,16 @@ export async function enviarContratoManual(
       semestral: '6 meses', anual: '12 meses', fidelidade: '12 meses',
     }
 
+    const celularResp = responsavel?.celular ?? (aluno as any).celular ?? ''
     const submission = await criarSubmission('contrato_matricula', [{
       email: emailDestino,
       role: 'Responsável',
+      metadata: {
+        aluno_id:    alunoId,
+        matricula_id: (matricula as any).id ?? '',
+        whatsapp:    celularResp,
+        nome_aluno:  aluno.nome,
+      },
       values: {
         nome_responsavel: responsavel?.nome ?? aluno.nome,
         data_nascimento:  (aluno as any).data_nascimento ?? '',
@@ -472,7 +479,7 @@ export async function enviarContratoManual(
         cep:              (aluno as any).cep ?? '',
         bairro:           (aluno as any).bairro ?? '',
         cidade:           'Rio de Janeiro',
-        celular:          responsavel?.celular ?? '',
+        celular:          celularResp,
         email:            emailDestino,
         nome_aluno:       aluno.nome,
         modalidades:      modalidadesNomes,
