@@ -8,8 +8,7 @@ import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento } from '../actions'
-import { dispararContratoN8n } from './matricula/actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento, enviarContratoManual } from '../actions'
 
 const ABAS = [
   { id: 'dados',          label: 'Dados pessoais' },
@@ -489,7 +488,7 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
 
   async function handleEnviarContrato(matriculaId: string) {
     setContratoEstado(s => ({ ...s, [matriculaId]: 'loading' }))
-    const res = await dispararContratoN8n(matriculaId, alunoId)
+    const res = await enviarContratoManual(alunoId)
     if ('error' in res) {
       setContratoEstado(s => ({ ...s, [matriculaId]: 'erro' }))
       alert('Erro ao enviar contrato: ' + res.error)
