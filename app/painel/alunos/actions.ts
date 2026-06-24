@@ -413,7 +413,7 @@ export async function enviarContratoManual(
     const { data: aluno, error: errAluno } = await supabase
       .from('alunos')
       .select(`
-        nome, data_nascimento, cpf, endereco, bairro, cep, email,
+        nome, data_nascimento, cpf, endereco, bairro, cep, email, celular,
         responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(nome, cpf, celular, email)
       `)
       .eq('id', alunoId)
