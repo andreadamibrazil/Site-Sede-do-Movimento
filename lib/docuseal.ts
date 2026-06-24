@@ -41,5 +41,5 @@ export async function criarSubmission(
     throw new Error(`DocuSeal ${res.status}: ${body}`)
   }
 
-  return res.json() as Promise<{ id: number; slug: string; submitters: { slug: string; email: string }[] }>
+  return res.json() as Promise<Array<{ id: number; slug: string; email: string; submission_id: number }>>
 }

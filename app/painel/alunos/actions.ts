@@ -486,17 +486,18 @@ export async function enviarContratoManual(
       },
     }])
 
-    const signerSlug = submission.submitters?.[0]?.slug
+    const signer = submission[0]
+    const signerSlug = signer?.slug
     const docusealUrl = signerSlug
       ? `${process.env.DOCUSEAL_URL}/s/${signerSlug}`
-      : `${process.env.DOCUSEAL_URL}/submissions/${submission.id}`
+      : `${process.env.DOCUSEAL_URL}`
 
     await supabase.from('documentos_aluno').insert({
       aluno_id:                alunoId,
       tipo:                    'contrato',
       nome:                    `Contrato — ${aluno.nome}`,
       observacao:              `Matrícula ${matricula.id} · ${duracaoLabel[(matricula as any).plano] ?? (matricula as any).plano} · ${modalidadesNomes}`,
-      docuseal_submission_id:  String(submission.id),
+      docuseal_submission_id:  String(signer?.submission_id ?? signer?.id ?? ''),
       docuseal_url:            docusealUrl,
       docuseal_status:         'pendente',
     } as any)
