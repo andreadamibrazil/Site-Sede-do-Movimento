@@ -488,9 +488,10 @@ export async function enviarContratoManual(
 
     const signer = submission[0]
     const signerSlug = signer?.slug
+    const docusealBase = (process.env.DOCUSEAL_URL ?? '').trim()
     const docusealUrl = signerSlug
-      ? `${process.env.DOCUSEAL_URL}/s/${signerSlug}`
-      : `${process.env.DOCUSEAL_URL}`
+      ? `${docusealBase}/s/${signerSlug}`
+      : docusealBase
 
     await supabase.from('documentos_aluno').insert({
       aluno_id:                alunoId,

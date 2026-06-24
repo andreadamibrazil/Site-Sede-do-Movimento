@@ -125,9 +125,10 @@ async function enviarContratoDocuSeal(
   // Salva na lista de documentos do aluno
   const signer = submission[0]
   const signerSlug = signer?.slug
+  const docusealBase = (process.env.DOCUSEAL_URL ?? '').trim()
   const docusealUrl = signerSlug
-    ? `${process.env.DOCUSEAL_URL}/s/${signerSlug}`
-    : `${process.env.DOCUSEAL_URL}/submissions/${signer?.submission_id ?? ''}`
+    ? `${docusealBase}/s/${signerSlug}`
+    : `${docusealBase}/submissions/${signer?.submission_id ?? ''}`
 
   await supabase.from('documentos_aluno').insert({
     aluno_id: dados.alunoId,
