@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { TOLERANCIA_PROFESSOR_MINUTOS } from '@/lib/constants/chamada'
 
 // POST /api/chamada/salvar
 // Salva presenças via service client (bypassa RLS do browser)
@@ -68,14 +69,26 @@ export async function POST(req: NextRequest) {
     // Professor tem 7 dias após o fim da aula; admin não passa por esta verificação
     const fimAula = new Date(`${aula.data}T${aula.hora_fim ?? '23:59'}:00-03:00`)
     const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
-    if (minutosDesdeOFim > 10080) {
+    if (minutosDesdeOFim > TOLERANCIA_PROFESSOR_MINUTOS) {
       return NextResponse.json({ error: 'prazo de 7 dias para editar esta chamada expirou — contate a secretaria' }, { status: 403 })
     }
   }
 
   // Salva presenças (inclui registrado_por para auditoria)
-  // aula_id é sempre forçado server-side — ignora qualquer valor enviado pelo cliente
+  // aula_id forçado server-side; aluno_id validado contra matriculados da turma
   if (presencas && presencas.length > 0) {
+    const { data: matriculados } = await sb
+      .from('matricula_turmas')
+      .select('aluno_id')
+      .eq('turma_id', aula.turma_id)
+      .is('data_saida', null)
+
+    const idsValidos = new Set((matriculados ?? []).map((m: any) => m.aluno_id))
+    const invalidos = presencas.filter((p: any) => !idsValidos.has(p.aluno_id))
+    if (invalidos.length > 0) {
+      return NextResponse.json({ error: 'aluno_id inválido para esta turma' }, { status: 400 })
+    }
+
     const presencasComRegistro = presencas.map((p: any) => ({
       ...p,
       aula_id: aulaId,
@@ -84,7 +97,10 @@ export async function POST(req: NextRequest) {
     const { error } = await sb
       .from('presencas')
       .upsert(presencasComRegistro, { onConflict: 'aula_id,aluno_id' })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[chamada/salvar] presencas upsert:', error)
+      return NextResponse.json({ error: 'Erro interno ao salvar chamada' }, { status: 500 })
+    }
   }
 
   // Substituto (professor faltou)
@@ -103,7 +119,10 @@ export async function POST(req: NextRequest) {
       registrado_por: user.id,
       atestado_url: atestadoUrl || null,
     } as any, { onConflict: 'aula_id' })
-    if (substError) return NextResponse.json({ error: `Erro ao registrar substituição: ${substError.message}` }, { status: 500 })
+    if (substError) {
+      console.error('[chamada/salvar] substituicoes upsert:', substError)
+      return NextResponse.json({ error: 'Erro interno ao registrar substituição' }, { status: 500 })
+    }
   }
 
   // Conclui a aula se pedido

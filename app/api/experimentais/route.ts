@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, experimental, notificou_professor: notificou })
+  return NextResponse.json({ ok: true, id: experimental.id, notificou_professor: notificou })
 }
 
 // PATCH /api/experimentais — atualiza status (presente/nao_compareceu)
@@ -107,12 +107,17 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = await createClient()
 
-  const { data: exp } = await supabase
+  const { data: exp, error: expErr } = await supabase
     .from('experimentais')
     .update({ status })
     .eq('id', id)
     .select('lead_id, aula_id, leads(nome, celular), aulas(data, turmas(nome))')
     .single()
+
+  if (expErr || !exp) {
+    console.error('[PATCH experimentais] update error:', expErr?.message)
+    return NextResponse.json({ error: expErr ? 'Erro interno' : 'não encontrado' }, { status: expErr ? 500 : 404 })
+  }
 
   // Se faltou → WhatsApp para o lead (Evolution API)
   if (status === 'nao_compareceu') {

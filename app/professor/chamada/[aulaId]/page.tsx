@@ -1,9 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import ChamadaClient from '@/app/painel/chamada/[aulaId]/ChamadaClient'
-import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
-
-const TOLERANCIA_PROFESSOR_MINUTOS = 10080 // 7 dias — prazo do professor; admin não tem restrição
+import { TOLERANCIA_PROFESSOR_MINUTOS } from '@/lib/constants/chamada'
 
 export default async function ProfessorChamadaPage({
   params,
@@ -28,7 +26,13 @@ export default async function ProfessorChamadaPage({
 
   if (!professor) redirect('/professor/login')
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+  const { data: perfilRow } = await service
+    .from('perfis_usuario')
+    .select('perfil')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const isAdmin = perfilRow?.perfil === 'admin' || perfilRow?.perfil === 'secretaria'
 
   // Dados da aula — verifica se é do professor
   const { data: aula } = await service

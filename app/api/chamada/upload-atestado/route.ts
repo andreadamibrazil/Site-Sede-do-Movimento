@@ -53,9 +53,48 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Upload para Supabase Storage ---
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-  const path = `${aulaId}/${user.id}_${Date.now()}.${ext}`
+  // Extensão derivada do MIME type validado, nunca do nome do arquivo (evita path traversal)
+  const MIME_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf' }
+  const ext = MIME_EXT[file.type]
+  if (!ext) return NextResponse.json({ error: 'tipo de arquivo não suportado' }, { status: 400 })
+
+  // aulaId deve ser UUID válido
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(aulaId)) {
+    return NextResponse.json({ error: 'aulaId inválido' }, { status: 400 })
+  }
+
   const sb = createServiceClient()
+
+  // Verifica que o professor autenticado pertence a esta aula
+  const { data: aulaCheck } = await sb
+    .from('aulas')
+    .select('turma_id, turmas!inner(professor_id)')
+    .eq('id', aulaId)
+    .maybeSingle()
+
+  if (!aulaCheck) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })
+
+  const { data: profCheck } = await sb
+    .from('professores')
+    .select('id')
+    .eq('email', user.email ?? '')
+    .eq('ativo', true)
+    .maybeSingle()
+
+  const isPrimario = (aulaCheck.turmas as any)?.professor_id === profCheck?.id
+  if (!isPrimario && profCheck) {
+    const { data: coReg } = await sb
+      .from('turma_professores' as any)
+      .select('professor_id')
+      .eq('turma_id', aulaCheck.turma_id)
+      .eq('professor_id', profCheck.id)
+      .maybeSingle()
+    if (!coReg) return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
+  } else if (!profCheck) {
+    return NextResponse.json({ error: 'professor não encontrado' }, { status: 403 })
+  }
+
+  const path = `${aulaId}/${user.id}_${Date.now()}.${ext}`
 
   // O bucket 'atestados' deve existir no Supabase Storage antes do deploy.
   // Não verificamos/criamos em runtime: listBuckets() é lento e cria race conditions.

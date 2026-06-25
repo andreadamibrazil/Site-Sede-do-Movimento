@@ -1,36 +1,46 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import PlanoAula from '@/app/painel/turmas/[id]/PlanoAula'
-import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 export default async function ProfessorPlanoPage({ params }: { params: Promise<{ turmaId: string }> }) {
   const { turmaId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/professor/login')
+  if (!user) redirect(`/professor/login?next=/professor/plano/${turmaId}`)
 
   const sb = createServiceClient()
 
-  // Verifica que é professor desta turma
-  const { data: professor } = await sb
-    .from('professores')
-    .select('id, nome')
-    .eq('email', user.email ?? '')
-    .eq('ativo', true)
-    .single()
+  const [{ data: professor }, { data: perfilRow }] = await Promise.all([
+    sb.from('professores').select('id, nome').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+    sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
+  ])
 
   if (!professor) redirect('/professor/login')
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+  const isAdmin = perfilRow?.perfil === 'admin' || perfilRow?.perfil === 'secretaria'
 
-  const turmaQuery = sb
+  // Busca turma sem filtro — verifica ownership abaixo
+  const { data: turma } = await sb
     .from('turmas')
-    .select('id, nome, professores!professor_id(nome)')
+    .select('id, nome, professor_id, professores!professor_id(nome)')
     .eq('id', turmaId)
-  if (!isAdmin) turmaQuery.eq('professor_id', professor.id)
-  const { data: turma } = await turmaQuery.maybeSingle()
+    .maybeSingle()
 
   if (!turma) notFound()
+
+  // Verifica acesso: professor primário ou co-regente
+  if (!isAdmin) {
+    const primario = turma.professor_id === professor.id
+    if (!primario) {
+      const { data: coReg } = await sb
+        .from('turma_professores' as any)
+        .select('professor_id')
+        .eq('turma_id', turmaId)
+        .eq('professor_id', professor.id)
+        .maybeSingle()
+      if (!coReg) notFound()
+    }
+  }
 
   // Datas do semestre atual para contextualizar o plano de aula
   const agora = new Date()
