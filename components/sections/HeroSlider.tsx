@@ -14,7 +14,6 @@ const AUTOPLAY_INTERVAL = 6000; // ms
 
 export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const [current, setCurrent] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -28,14 +27,14 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   // Autoplay — usa functional update pra não depender de goNext/current
   useEffect(() => {
-    if (!isPlaying || slides.length <= 1) return;
+    if (slides.length <= 1) return;
     timerRef.current = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length);
     }, AUTOPLAY_INTERVAL);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, slides.length]);
+  }, [slides.length]);
 
   // Touch swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -62,8 +61,6 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   return (
     <section
       className="relative w-full overflow-hidden bg-gray-900 mt-[72px] min-h-[360px] h-[calc(58vh-72px)] sm:h-[calc(72vh-72px)] lg:h-[calc(85vh-72px)] lg:max-h-[808px]"
-      onMouseEnter={() => setIsPlaying(false)}
-      onMouseLeave={() => setIsPlaying(true)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       aria-label="Galeria de destaques"
@@ -116,7 +113,7 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               {/* Background track */}
               <span className="absolute inset-0 bg-white/30 rounded-full" />
               {/* Active fill */}
-              {i === current && isPlaying && (
+              {i === current && (
                 <motion.span
                   className="absolute inset-y-0 left-0 bg-white rounded-full"
                   initial={{ width: "0%" }}
@@ -125,29 +122,11 @@ export default function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   key={`fill-${slide.id}`}
                 />
               )}
-              {i === current && !isPlaying && (
-                <span className="absolute inset-0 bg-white rounded-full" />
-              )}
             </button>
           ))}
         </div>
       )}
 
-      {/* ── Autoplay pause indicator ── */}
-      <AnimatePresence>
-        {!isPlaying && slides.length > 1 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute top-4 right-4 z-20 hidden md:flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 text-white/80 text-xs"
-          >
-            <span className="w-1 h-3 bg-current rounded-sm inline-block" />
-            <span className="w-1 h-3 bg-current rounded-sm inline-block" />
-            <span className="ml-1">Pausado</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }

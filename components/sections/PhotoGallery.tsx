@@ -18,21 +18,16 @@ interface PhotoGalleryProps {
 
 function WatermarkOverlay() {
   return (
-    <div className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden">
-      {/* 3×3 grid of logos covering all areas including light backgrounds */}
-      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-        {Array.from({ length: 9 }).map((_, i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={i}
-            src="/images/LogoBranco.png"
-            alt=""
-            aria-hidden="true"
-            className="w-16 opacity-35 rotate-[-20deg] m-auto"
-            draggable={false}
-          />
-        ))}
-      </div>
+    <div className="absolute inset-x-0 top-0 z-10 flex justify-center pointer-events-none select-none pt-3 sm:pt-4 md:pt-5">
+      {/* Logo branco único, centralizado no topo com margem */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/LogoBranco.png"
+        alt=""
+        aria-hidden="true"
+        className="w-1/5 max-w-[110px] opacity-80"
+        draggable={false}
+      />
     </div>
   );
 }
