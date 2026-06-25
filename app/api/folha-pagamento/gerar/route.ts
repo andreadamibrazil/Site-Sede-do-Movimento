@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   if (!guard.ok) return guard.response
 
   const sb = createServiceClient()
+  const gerado_por = guard.userId
   const { professor_id, mes } = await req.json()
   if (!professor_id || !mes) return NextResponse.json({ error: 'professor_id e mes obrigatórios' }, { status: 400 })
   if (!/^\d{4}-\d{2}$/.test(mes)) return NextResponse.json({ error: 'mes deve ter formato YYYY-MM' }, { status: 400 })
@@ -76,24 +77,28 @@ export async function POST(req: NextRequest) {
     .gte('data', inicioStr)
     .lte('data', fimStr)
 
-  // Query 2: aulas via turma (inclui independente do professor_id na aula — cobre casos onde
-  // a turma foi reatribuída a outro professor mas as aulas ainda têm o professor antigo)
+  // Query 2: aulas via turma onde professor_id não está preenchido (NULL)
+  // Só cobre aulas sem professor_id explícito — evita dupla contagem com Query 1
   const { data: aulas2 } = turmaIds_prof.length > 0
     ? await sb
         .from('aulas')
         .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
         .in('turma_id', turmaIds_prof)
+        .is('professor_id', null)
         .neq('status', 'cancelada')
         .gte('data', inicioStr)
         .lte('data', fimStr)
     : { data: [] }
 
   // Query 3: aulas via co-regência (turma_professores — Maju/Morvan/Douglas style)
+  // Só inclui aulas sem professor_id (genéricas da turma) ou do próprio professor (como regente)
+  // Evita duplicar aulas onde um substituto foi registrado com professor_id de outro prof
   const { data: aulas3 } = turmaIds_coregencia.length > 0
     ? await sb
         .from('aulas')
         .select('id, data, hora_inicio, hora_fim, turma_id, status, turmas(nome)')
         .in('turma_id', turmaIds_coregencia)
+        .or(`professor_id.is.null,professor_id.eq.${professor_id}`)
         .neq('status', 'cancelada')
         .gte('data', inicioStr)
         .lte('data', fimStr)
@@ -132,11 +137,13 @@ export async function POST(req: NextRequest) {
     const faixasTurma = (faixas ?? []).filter((f: any) => f.turma_id === turmaId)
     const faixasGlobais = (faixas ?? []).filter((f: any) => !f.turma_id)
     const pool = faixasTurma.length > 0 ? faixasTurma : faixasGlobais
+    const sorted = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)
+    // Se nenhuma faixa cobre o número de alunos, usa a maior faixa (teto) em vez do piso
     const faixa = pool.find((f: any) =>
       numAlunos >= f.min_alunos && (f.max_alunos === null || numAlunos <= f.max_alunos)
-    ) ?? pool[0]
+    ) ?? sorted[sorted.length - 1]
     const valorHora = faixa?.valor_hora ?? 31.50
-    const piso = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)[0]?.valor_hora ?? 31.50
+    const piso = sorted[0]?.valor_hora ?? 31.50
     return { valor: valorHora, bonus: Math.max(0, valorHora - piso), piso }
   }
 
@@ -196,11 +203,19 @@ export async function POST(req: NextRequest) {
     const numAlunos = alunosPorTurma[aula.turma_id] ?? 0
     const { valor: valorHora, bonus: bonusHora, piso: pisoHora } = calcularValorHora(numAlunos, aula.turma_id)
 
+    const semHorario = !aula.hora_inicio || !aula.hora_fim
     const [hi, mi] = (aula.hora_inicio ?? '00:00').split(':').map(Number)
     const [hf, mf] = (aula.hora_fim ?? '00:00').split(':').map(Number)
-    const horasAula = Number.isFinite(hi) && Number.isFinite(hf)
-      ? ((hf * 60 + mf) - (hi * 60 + mi)) / 60
+    const duracao = (hf * 60 + mf) - (hi * 60 + mi)
+    const horasAula = !semHorario && Number.isFinite(hi) && Number.isFinite(hf) && duracao > 0
+      ? duracao / 60
       : 0
+
+    // Aula com horário ausente: marca como não paga para evitar item pago com R$0
+    if (semHorario && pago) {
+      pago = false
+      motivo = 'sem_horario'
+    }
 
     const valor = pago ? Math.round(horasAula * valorHora * 100) / 100 : 0
 
@@ -253,6 +268,7 @@ export async function POST(req: NextRequest) {
       valor_aulas: totalAulas,
       valor_fixo: totalFixo,
       valor_total: totalGeral,
+      gerado_por,
     })
     .select('id')
     .single()

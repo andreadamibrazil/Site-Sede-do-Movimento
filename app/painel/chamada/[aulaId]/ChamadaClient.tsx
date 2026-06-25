@@ -114,7 +114,7 @@ export default function ChamadaClient({
     const pendente = localStorage.getItem(`pendente_${aulaId}`)
     if (!pendente) return
     const dados = JSON.parse(pendente)
-    await salvarNoBanco(dados.registros, dados.professorFaltou, dados.temAtestado, dados.nomeSubstituto, true)
+    await salvarNoBanco(dados.registros, dados.professorFaltou, dados.temAtestado, dados.nomeSubstituto, true, dados.cpfSubstituto, dados.celularSubstituto, dados.motivoAusencia, dados.termosAceitos)
     localStorage.removeItem(`pendente_${aulaId}`)
   }
 

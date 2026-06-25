@@ -112,7 +112,7 @@ async function handler(req: NextRequest) {
         await sb.from('lembretes_chamada').insert({ aula_id: aula.id, tipo: janela.tipo })
       }
       enviados++
-      log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${prof.nome} (${turma?.nome}) · ${prof.celular}`)
+      log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${prof.nome} (${turma?.nome}) · ***${prof.celular?.slice(-4)}`)
 
       // Após apos_1dia (último aviso): marcar professor ausente automaticamente
       if (janela.marcarAusenteApos && turma?.professor_id) {
@@ -138,11 +138,16 @@ async function handler(req: NextRequest) {
   }
 
   // ── Detecção e acompanhamento de reposições ─────────────────
+  const seisAtras = new Date(agora)
+  seisAtras.setDate(seisAtras.getDate() - 180)
+
   const { data: subsSemSubstituto } = await sb
     .from('substituicoes')
-    .select('id, professor_ausente_id, aula_id, tem_atestado, professores!professor_ausente_id(nome, celular), aulas(data, hora_inicio, hora_fim, turma_id, turmas(nome))')
+    .select('id, professor_ausente_id, aula_id, tem_atestado, professores!professor_ausente_id(nome, celular), aulas!inner(data, hora_inicio, hora_fim, turma_id, turmas(nome))')
     .is('professor_substituto_id', null)
     .eq('tem_atestado', false)
+    .gte('aulas.data', seisAtras.toISOString().slice(0, 10))
+    .limit(500)
 
   for (const sub of (subsSemSubstituto ?? [])) {
     const prof = (sub as any).professores
@@ -156,7 +161,7 @@ async function handler(req: NextRequest) {
       .eq('substituicao_id', sub.id)
       .maybeSingle()
 
-    const dataAula = new Date(aula.data + 'T12:00:00')
+    const dataAula = new Date(aula.data + 'T12:00:00-03:00')
     const prazo = new Date(dataAula)
     prazo.setDate(prazo.getDate() + 4)
     const hojeStr = agora.toISOString().slice(0, 10)

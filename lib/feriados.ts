@@ -32,6 +32,7 @@ export const FERIADOS_RJ: Record<string, string> = {
   '2026-04-23': 'Dia de São Jorge (RJ)',
   '2026-05-01': 'Dia do Trabalho',
   '2026-06-04': 'Corpus Christi',
+  '2026-06-24': 'Ponto facultativo — Copa do Mundo (Brasil)',
   '2026-09-07': 'Independência do Brasil',
   '2026-10-12': 'Nossa Senhora Aparecida',
   '2026-10-28': 'Dia do Servidor Público',

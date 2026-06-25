@@ -19,11 +19,16 @@ export async function PATCH(
 
   const { data: item, error: fetchErr } = await sb
     .from('itens_folha')
-    .select('id, folha_id, tipo, valor, pago, valor_hora_efetivo, horas_aula')
+    .select('id, folha_id, tipo, valor, pago, valor_hora_efetivo, horas_aula, folhas_pagamento(status)')
     .eq('id', itemId)
     .single()
 
   if (fetchErr || !item) return NextResponse.json({ error: 'Item não encontrado' }, { status: 404 })
+
+  const statusFolha = (item.folhas_pagamento as any)?.status
+  if (statusFolha && !['rascunho', 'revisao'].includes(statusFolha)) {
+    return NextResponse.json({ error: `Folha com status "${statusFolha}" não pode ser editada` }, { status: 409 })
+  }
 
   const updates: { pago?: boolean; descricao?: string | null; valor?: number } = {}
   if (typeof body.pago === 'boolean') updates.pago = body.pago

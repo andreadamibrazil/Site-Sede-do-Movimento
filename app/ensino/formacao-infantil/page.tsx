@@ -1,9 +1,14 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
+import Image from "next/image";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import PlaceholderImage from "@/components/ui/PlaceholderImage";
+import { sanityFetch } from "@/sanity/lib/live";
+import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { urlFor } from "@/sanity/lib/image";
+import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("ensino/formacao-infantil", {
@@ -12,7 +17,10 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function FormacaoInfantilPage() {
+export default async function FormacaoInfantilPage() {
+  const { data } = await sanityFetch({ query: siteSettingsQuery });
+  const foto = (data as SanitySiteSettings | null)?.imagens?.formacaoInfantilFoto;
+
   return (
     <>
       <PageHero eyebrow="Formação infantil" title="Arte desde o início" subtitle="Formação sensível, criativa e progressiva para crianças a partir de 2 anos." breadcrumbs={[{ label: "Ensino", href: "/ensino" }, { label: "Formação Infantil" }]} />
@@ -35,8 +43,18 @@ export default function FormacaoInfantilPage() {
               </ul>
             </ScrollReveal>
             <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <PlaceholderImage className="w-full h-full rounded-none border-none" label="Formação infantil" />
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+                {foto ? (
+                  <Image
+                    src={urlFor(foto).width(800).height(600).url()}
+                    alt="Formação infantil — Sede do Movimento"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                ) : (
+                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Formação infantil" />
+                )}
               </div>
             </ScrollReveal>
           </div>

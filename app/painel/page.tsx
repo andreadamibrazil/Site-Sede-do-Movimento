@@ -1,5 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
 import { RetencaoChart, MetaBar, InadimplentesTable } from './DashboardCharts'
 import AulasHoje, { type AulaLembrete, type ContatoLembrete, type Sexo } from './AulasHoje'
 

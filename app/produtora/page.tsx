@@ -1,19 +1,13 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
-import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, Mic2, Building2, Music, MessageCircle } from "lucide-react";
 import { Theater } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
-import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
-import { sanityFetch } from "@/sanity/lib/live";
-import { siteSettingsQuery } from "@/lib/sanity/queries";
-import { urlFor } from "@/sanity/lib/image";
-import type { SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("produtora", {
@@ -49,10 +43,7 @@ const services = [
   },
 ];
 
-export default async function ProdutoraPage() {
-  const { data } = await sanityFetch({ query: siteSettingsQuery });
-  const imagens = (data as SanitySiteSettings | null)?.imagens;
-
+export default function ProdutoraPage() {
   return (
     <>
       <PageHero
@@ -65,27 +56,11 @@ export default async function ProdutoraPage() {
         ]}
       />
 
-      {/* Split section: image left, text right */}
+      {/* Intro: text left-aligned */}
       <section className="section-padding bg-white">
         <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="max-w-3xl">
             <ScrollReveal>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
-                {imagens?.produtoraFoto ? (
-                  <Image
-                    src={urlFor(imagens.produtoraFoto).width(800).height(600).url()}
-                    alt="Fontinelle Criações em produção"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                  />
-                ) : (
-                  <PlaceholderImage className="w-full h-full rounded-none border-none" label="Fontinelle Criações em produção" />
-                )}
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.15}>
               <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">
                 Fontinelle Criações Artísticas
               </p>

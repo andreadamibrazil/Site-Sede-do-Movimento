@@ -1,6 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 const DIAS: Record<string, string> = {
   segunda: 'Seg', terca: 'Ter', quarta: 'Qua',
@@ -23,7 +22,13 @@ export default async function ProfessorPage() {
 
   if (!professor) redirect('/professor/login')
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
+  const { data: perfilRow } = await sb
+    .from('perfis_usuario')
+    .select('perfil')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const isAdmin = perfilRow?.perfil === 'admin' || perfilRow?.perfil === 'secretaria'
 
   // Usa horário de Brasília (UTC-3) para evitar que após 21h BRT "hoje" vire "amanhã"
   const agoraBRT = new Date(Date.now() - 3 * 60 * 60 * 1000)
@@ -64,6 +69,7 @@ export default async function ProfessorPage() {
     .select('id, data, hora_inicio, hora_fim, status, turmas(nome), professores(nome)')
     .gte('data', hoje)
     .lte('data', em7dias)
+    .neq('status', 'cancelada')
     .order('data')
     .order('hora_inicio')
   if (!isAdmin && turmaIds) aulasProximasQuery.in('turma_id', turmaIds.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])

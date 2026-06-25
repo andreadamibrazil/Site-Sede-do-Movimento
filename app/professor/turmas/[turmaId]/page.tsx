@@ -1,6 +1,5 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { ADMIN_EMAILS } from '@/lib/auth/adminEmails'
 
 export default async function FrequenciaTurmaPage({
   params,
@@ -13,14 +12,13 @@ export default async function FrequenciaTurmaPage({
   if (!user) redirect('/professor/login')
 
   const service = createServiceClient()
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? '')
 
-  const { data: professor } = await service
-    .from('professores')
-    .select('id, nome')
-    .eq('email', user.email ?? '')
-    .eq('ativo', true)
-    .maybeSingle()
+  const [{ data: professor }, { data: perfilRow }] = await Promise.all([
+    service.from('professores').select('id, nome').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+    service.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
+  ])
+
+  const isAdmin = perfilRow?.perfil === 'admin' || perfilRow?.perfil === 'secretaria'
 
   if (!professor) redirect('/professor/login')
 

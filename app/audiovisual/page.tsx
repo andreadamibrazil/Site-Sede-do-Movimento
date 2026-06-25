@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ExternalLink, Video, Film, Share2 } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
-import PlaceholderImage from "@/components/ui/PlaceholderImage";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
@@ -37,13 +36,6 @@ const services = [
   },
 ];
 
-const portfolioItems = [
-  { label: "Making off Arcanum" },
-  { label: "Espetáculo Tempo Vivo" },
-  { label: "Ensaio Ballet" },
-  { label: "Evento Especial" },
-];
-
 export default function AudiovisualPage() {
   return (
     <>
@@ -60,8 +52,7 @@ export default function AudiovisualPage() {
       {/* Full-width intro */}
       <section className="section-padding bg-white">
         <div className="container-main">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left: text */}
+          <div className="max-w-3xl">
             <ScrollReveal>
               <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">
                 Sede Audiovisual
@@ -89,16 +80,6 @@ export default function AudiovisualPage() {
                   Acessar plataforma
                 </Button>
               </Link>
-            </ScrollReveal>
-
-            {/* Right: image */}
-            <ScrollReveal delay={0.15}>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                <PlaceholderImage
-                  className="w-full h-full rounded-none border-none"
-                  label="Equipe audiovisual em ação"
-                />
-              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -128,35 +109,6 @@ export default function AudiovisualPage() {
         </div>
       </section>
 
-      {/* Portfolio preview */}
-      <section className="section-padding bg-white">
-        <div className="container-main">
-          <SectionTitle
-            eyebrow="Nosso trabalho"
-            title="Portfólio"
-            subtitle="Uma seleção de registros audiovisuais produzidos pelo nosso departamento."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-12">
-            {portfolioItems.map(({ label }, i) => (
-              <ScrollReveal key={label} delay={i * 0.08}>
-                <div className="aspect-video rounded-2xl overflow-hidden group relative">
-                  <PlaceholderImage
-                    className="w-full h-full rounded-none border-none"
-                    label={label}
-                  />
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <Link href={siteConfig.externalLinks.audiovisual} target="_blank" rel="noopener noreferrer">
-              <Button variant="ghost" size="lg" rightIcon={<ExternalLink size={16} />}>
-                Ver portfólio completo
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

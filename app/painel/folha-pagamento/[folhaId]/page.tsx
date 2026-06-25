@@ -22,6 +22,10 @@ export default async function FolhaDetalhePage({
 
   const service = createServiceClient() as any
 
+  const { data: perfilFolha } = await service
+    .from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle()
+  if (!perfilFolha || !['admin', 'secretaria'].includes(perfilFolha.perfil)) redirect('/painel')
+
   const { data: folha } = await service
     .from('folhas_pagamento')
     .select('*, professores(nome, celular, cpf, mei, email, valor_base, forma_pagamento)')

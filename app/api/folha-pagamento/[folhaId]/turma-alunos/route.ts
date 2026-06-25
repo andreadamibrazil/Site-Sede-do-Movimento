@@ -44,11 +44,12 @@ export async function PATCH(
     const faixasTurma = (faixas ?? []).filter((f: any) => f.turma_id === tId)
     const faixasGlobais = (faixas ?? []).filter((f: any) => !f.turma_id)
     const pool = faixasTurma.length > 0 ? faixasTurma : faixasGlobais
+    const sorted = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)
     const faixa = pool.find((f: any) =>
       n >= f.min_alunos && (f.max_alunos === null || n <= f.max_alunos)
-    ) ?? pool[0]
+    ) ?? sorted[sorted.length - 1]
     const valorHora = faixa?.valor_hora ?? 31.50
-    const piso = [...pool].sort((a: any, b: any) => a.min_alunos - b.min_alunos)[0]?.valor_hora ?? 31.50
+    const piso = sorted[0]?.valor_hora ?? 31.50
     return { valor: valorHora, bonus: Math.max(0, valorHora - piso), piso }
   }
 

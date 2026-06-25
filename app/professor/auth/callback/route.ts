@@ -7,7 +7,18 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const rawNext = searchParams.get('next') ?? ''
-  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/professor'
+
+  // Validate next= is a same-origin path — URL constructor catches backslash bypasses like /\evil.com
+  function safeNext(raw: string): string {
+    if (!raw.startsWith('/')) return '/professor'
+    try {
+      const parsed = new URL(raw, 'https://placeholder.invalid')
+      return parsed.origin === 'https://placeholder.invalid'
+        ? parsed.pathname + parsed.search + parsed.hash
+        : '/professor'
+    } catch { return '/professor' }
+  }
+  const next = safeNext(rawNext)
 
   if (code) {
     const cookieStore = await cookies()

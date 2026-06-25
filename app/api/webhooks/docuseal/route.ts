@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -7,8 +8,13 @@ export async function POST(req: NextRequest) {
   const secret = process.env.DOCUSEAL_WEBHOOK_SECRET
   if (!secret) return NextResponse.json({ error: 'webhook not configured' }, { status: 503 })
 
-  const headerToken = req.headers.get('x-auth-token')
-  if (headerToken !== secret) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  const headerToken = req.headers.get('x-auth-token') ?? ''
+  let authorized = false
+  try {
+    authorized = headerToken.length === secret.length &&
+      timingSafeEqual(Buffer.from(headerToken), Buffer.from(secret))
+  } catch { authorized = false }
+  if (!authorized) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
   let body: any
   try { body = await req.json() }
