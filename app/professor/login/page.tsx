@@ -7,6 +7,7 @@ import { Suspense } from 'react'
 function LoginButton() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/professor'
+  const aviso = searchParams.get('aviso')
 
   async function entrar() {
     const supabase = createClient()
@@ -19,6 +20,12 @@ function LoginButton() {
   }
 
   return (
+    <div className="space-y-3">
+      {aviso === 'sessao' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 text-left">
+          <strong>Sessão expirada.</strong> Sua chamada foi salva no dispositivo. Entre novamente para concluir o envio.
+        </div>
+      )}
     <button
       onClick={entrar}
       className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
@@ -31,6 +38,7 @@ function LoginButton() {
       </svg>
       Entrar com Google
     </button>
+    </div>
   )
 }
 

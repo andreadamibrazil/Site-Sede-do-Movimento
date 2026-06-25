@@ -32,10 +32,20 @@ export default async function ProfessorPage() {
 
   // Aulas pendentes (sem chamada) — mesma janela de 7 dias do prazo do professor
   const em7diasAtras = new Date(agoraBRT.getTime() - 7 * 86400000).toISOString().split('T')[0]
-  // Busca turmas do professor para filtrar aulas (aulas.professor_id não é preenchido no fluxo normal)
-  const turmaIds = !isAdmin
-    ? (await sb.from('turmas').select('id').eq('professor_id', professor.id).eq('status', 'ativa')).data?.map(t => t.id) ?? []
-    : null
+
+  // Turmas do professor: primário + co-regência (turma_professores)
+  let turmaIds: string[] | null = null
+  if (!isAdmin) {
+    const [primarias, coReg] = await Promise.all([
+      sb.from('turmas').select('id').eq('professor_id', professor.id).eq('status', 'ativa'),
+      sb.from('turma_professores' as any).select('turma_id').eq('professor_id', professor.id),
+    ])
+    const ids = [
+      ...(primarias.data?.map(t => t.id) ?? []),
+      ...((coReg.data ?? []) as any[]).map(t => t.turma_id),
+    ]
+    turmaIds = [...new Set(ids)]
+  }
 
   const aulasPendentesQuery = sb
     .from('aulas')
@@ -73,7 +83,7 @@ export default async function ProfessorPage() {
     `)
     .not('status', 'eq', 'encerrada')
     .order('nome')
-  if (!isAdmin) turmasQuery.eq('professor_id', professor.id)
+  if (!isAdmin) turmasQuery.in('id', turmaIds?.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
   const { data: turmas } = await turmasQuery
 
   const aulasHoje = (aulasProximas ?? []).filter(a => a.data === hoje)

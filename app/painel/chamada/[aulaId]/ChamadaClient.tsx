@@ -201,6 +201,13 @@ export default function ChamadaClient({
       })
       if (res.ok) {
         sucesso = true
+      } else if (res.status === 401) {
+        // Sessão expirada — salva estado local e redireciona para re-login
+        localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
+        const loginUrl = perfilUsuario === 'professor'
+          ? `/professor/login?next=${encodeURIComponent(window.location.pathname)}&aviso=sessao`
+          : `/painel/login?next=${encodeURIComponent(window.location.pathname)}`
+        window.location.href = loginUrl
       } else if (!silencioso) {
         const err = await res.json().catch(() => ({}))
         alert(err.error ?? 'Erro ao salvar chamada. Tente novamente.')
