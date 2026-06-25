@@ -74,8 +74,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Salva presenças (inclui registrado_por para auditoria)
+  // aula_id é sempre forçado server-side — ignora qualquer valor enviado pelo cliente
   if (presencas && presencas.length > 0) {
-    const presencasComRegistro = presencas.map((p: any) => ({ ...p, registrado_por: user.id }))
+    const presencasComRegistro = presencas.map((p: any) => ({
+      ...p,
+      aula_id: aulaId,
+      registrado_por: user.id,
+    }))
     const { error } = await sb
       .from('presencas')
       .upsert(presencasComRegistro, { onConflict: 'aula_id,aluno_id' })
@@ -103,10 +108,11 @@ export async function POST(req: NextRequest) {
 
   // Conclui a aula se pedido
   if (concluir) {
-    await sb
+    const { error: conclErr } = await sb
       .from('aulas')
       .update({ status: 'concluida', chamada_concluida_em: new Date().toISOString() })
       .eq('id', aulaId)
+    if (conclErr) return NextResponse.json({ error: `Erro ao concluir: ${conclErr.message}` }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

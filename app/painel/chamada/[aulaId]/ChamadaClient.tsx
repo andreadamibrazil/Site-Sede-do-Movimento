@@ -66,25 +66,13 @@ export default function ChamadaClient({
   const [atestadoDados, setAtestadoDados] = useState<Record<string, string | null> | null>(null)
   const [atestadoErro, setAtestadoErro] = useState<string | null>(null)
   const [uploadandoAtestado, setUploadandoAtestado] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [salvoLocalmente, setSalvoLocalmente] = useState(false)
   const [online, setOnline] = useState(true)
   const [concluida, setConcluida] = useState(aula.status === 'concluida')
 
-  useEffect(() => {
-    setOnline(navigator.onLine)
-    const on = () => { setOnline(true); sincronizarPendentes() }
-    const off = () => setOnline(false)
-    window.addEventListener('online', on)
-    window.addEventListener('offline', off)
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
-  }, [registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos, aulaId])
-
+  // Lê localStorage primeiro; só depois permite que o effect de escrita rode
   useEffect(() => {
     const salvo = localStorage.getItem(STORAGE_KEY(aulaId))
     if (salvo) {
@@ -100,6 +88,25 @@ export default function ChamadaClient({
         if (dados.termosAceitos) setTermosAceitos(dados.termosAceitos)
       } catch {}
     }
+    setHydrated(true)
+    // Sincroniza pendentes na montagem (cobre re-login após sessão expirada)
+    if (navigator.onLine) sincronizarPendentes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persiste estado apenas após leitura inicial — evita sobrescrever rascunho salvo
+  useEffect(() => {
+    if (!hydrated) return
+    localStorage.setItem(STORAGE_KEY(aulaId), JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
+  }, [hydrated, registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos, aulaId])
+
+  useEffect(() => {
+    setOnline(navigator.onLine)
+    const on = () => { setOnline(true); sincronizarPendentes() }
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
