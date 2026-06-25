@@ -61,7 +61,6 @@ export default function PhotoGallery({ photos, columns = 4, aspect = "square", c
             <div className="absolute inset-0 bg-brand-purple-950/0 group-hover:bg-brand-purple-950/60 transition-all duration-300 flex items-center justify-center">
               <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-all duration-300 scale-75 group-hover:scale-100" size={28} />
             </div>
-            {watermark && <WatermarkOverlay />}
             {/* Caption */}
             {photo.caption && (
               <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
