@@ -174,9 +174,10 @@ export default function AulasHoje({ aulas }: Props) {
   const [modal, setModal] = useState<{ aula: AulaLembrete; contato: ContatoLembrete } | null>(null)
   const [sent, setSent] = useState<Set<string>>(new Set())
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({})
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(0)
 
   useEffect(() => {
+    setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])
@@ -201,8 +202,8 @@ export default function AulasHoje({ aulas }: Props) {
         </h2>
         <div className="space-y-3">
           {aulas.map(aula => {
-            const todayStr = new Date().toISOString().slice(0, 10)
-            const classStarted = Date.now() >= new Date(`${todayStr}T${aula.horaInicio}`).getTime()
+            const todayStr = now ? new Date(now).toISOString().slice(0, 10) : ''
+            const classStarted = !!now && now >= new Date(`${todayStr}T${aula.horaInicio}`).getTime()
 
             return (
               <div key={aula.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
