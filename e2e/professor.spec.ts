@@ -198,10 +198,8 @@ test.describe('Chamada — presença e faltas', () => {
 
   test('lista de alunos é exibida (se turma tem alunos)', async ({ page }) => {
     if (!chamadaUrl) return test.skip()
-    // Deve ter pelo menos um card de aluno OU mensagem de turma vazia
-    const alunos = page.locator('[data-aluno-id], .rounded-xl.px-4.py-3').filter({
-      hasNot: page.locator('.bg-gray-50')
-    })
+    // Deve ter pelo menos um card de aluno (border rounded-xl) OU mensagem de turma vazia
+    const alunos = page.locator('.border.rounded-xl').filter({ has: page.locator('p.font-medium, .font-medium') })
     const nenhumAluno = page.locator('text=/sem alunos|nenhum aluno/i')
     const temAlguma = await alunos.count() > 0 || await nenhumAluno.count() > 0
     expect(temAlguma).toBe(true)
@@ -509,7 +507,7 @@ test.describe('Login — fluxo de sessão expirada', () => {
     await page.goto('/professor/login?aviso=sessao&next=/professor/chamada/test-id', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('button, h1', { timeout: 10000 })
 
-    const banner = page.locator('text=/Sessão expirada/i, text=/sessão expirada/i')
+    const banner = page.locator('.bg-amber-50').filter({ hasText: /Sessão expirada/i })
     await expect(banner).toBeVisible()
     // Banner deve mencionar que a chamada foi salva
     const texto = await banner.textContent()
