@@ -534,6 +534,99 @@ export async function enviarContratoManual(
   }
 }
 
+// ── Ver modelo (preview preenchido, sem enviar email) ────────
+export async function preVisualizarContrato(
+  alunoId: string,
+): Promise<{ url: string } | { error: string }> {
+  try {
+    const supabase = createServiceClient()
+
+    const { data: aluno, error: errAluno } = await supabase
+      .from('alunos')
+      .select(`
+        nome, data_nascimento, cpf, endereco, bairro, cep, email, celular,
+        responsavel_principal:responsaveis!alunos_responsavel_principal_id_fkey(nome, cpf, celular, email)
+      `)
+      .eq('id', alunoId)
+      .single()
+
+    if (errAluno || !aluno) return { error: 'Aluno não encontrado' }
+
+    const { data: matricula, error: errMat } = await supabase
+      .from('matriculas')
+      .select('id, plano, data_inicio, dia_vencimento, valor_final')
+      .eq('aluno_id', alunoId)
+      .eq('status', 'ativa')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (errMat) return { error: errMat.message }
+    if (!matricula) return { error: 'Nenhuma matrícula ativa encontrada' }
+
+    const { data: turmasData } = await supabase
+      .from('matricula_turmas')
+      .select('turmas(nome, modalidades(nome), turma_horarios(dia_semana, hora_inicio, hora_fim))')
+      .eq('matricula_id', matricula.id)
+
+    const responsavel = (aluno as any).responsavel_principal
+    const emailDestino = responsavel?.email || aluno.email || 'preview@sededomovimento.art'
+
+    const turmasNomes = turmasData?.map((mt: any) => mt.turmas?.nome).filter(Boolean).join(', ') ?? ''
+    const modalidadesNomes = [...new Set(
+      turmasData?.map((mt: any) => mt.turmas?.modalidades?.nome).filter(Boolean)
+    )].join(', ')
+
+    const totalHoras = turmasData?.reduce((acc: number, mt: any) => {
+      const horarios = mt.turmas?.turma_horarios ?? []
+      return acc + horarios.reduce((h: number, hr: any) => {
+        const [ih, im] = (hr.hora_inicio ?? '00:00').split(':').map(Number)
+        const [fh, fm] = (hr.hora_fim ?? '00:00').split(':').map(Number)
+        return h + ((fh * 60 + fm) - (ih * 60 + im)) / 60
+      }, 0)
+    }, 0) ?? 0
+
+    const duracaoLabel: Record<string, string> = {
+      mensal: '1 mês', trimestral: '3 meses',
+      semestral: '6 meses', anual: '12 meses', fidelidade: '12 meses',
+    }
+
+    const celularResp = responsavel?.celular ?? (aluno as any).celular ?? ''
+    const submission = await criarSubmission('contrato_matricula', [{
+      email: emailDestino,
+      role: 'Responsável',
+      values: {
+        nome_responsavel: responsavel?.nome ?? aluno.nome,
+        data_nascimento:  (aluno as any).data_nascimento ?? '',
+        cpf:              responsavel?.cpf ?? (aluno as any).cpf ?? '',
+        endereco:         (aluno as any).endereco ?? '',
+        cep:              (aluno as any).cep ?? '',
+        bairro:           (aluno as any).bairro ?? '',
+        cidade:           'Rio de Janeiro',
+        celular:          celularResp,
+        email:            emailDestino,
+        nome_aluno:       aluno.nome,
+        modalidades:      modalidadesNomes,
+        turmas:           turmasNomes,
+        carga_horaria:    `${totalHoras.toFixed(1)}h/semana`,
+        data_inicio:      (matricula as any).data_inicio,
+        duracao_plano:    duracaoLabel[(matricula as any).plano] ?? (matricula as any).plano,
+        dia_vencimento:   String((matricula as any).dia_vencimento),
+        valor_mensal:     `R$ ${((matricula as any).valor_final as number).toFixed(2).replace('.', ',')}`,
+        data_contrato:    new Date().toLocaleDateString('pt-BR'),
+      },
+    }], { sendEmail: false })
+
+    const signer = submission[0]
+    const signerSlug = signer?.slug
+    if (!signerSlug) return { error: 'DocuSeal não retornou URL de preview' }
+
+    return { url: `${(process.env.DOCUSEAL_URL ?? '').trim()}/s/${signerSlug}` }
+  } catch (err: any) {
+    return { error: err?.message ?? 'Erro desconhecido' }
+  }
+}
+
 // ── Editar matrícula (valor, desconto) ───────────────────────
 export async function editarMatricula(
   matriculaId: string,

@@ -8,7 +8,7 @@ import { PDFDocument } from 'pdf-lib'
 import AbaUniforme from './AbaUniforme'
 import AbaInteligencia from './AbaInteligencia'
 import { atualizarAluno, atualizarResponsavel } from './actions'
-import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento, enviarContratoManual } from '../actions'
+import { lancarMensalidadesAsaas, darBaixaMensalidade, renegociarMensalidade, editarMatricula, cancelarMatricula, justificarFalta as justificarFaltaAction, criarTrancamento, enviarContratoManual, preVisualizarContrato } from '../actions'
 
 const ABAS = [
   { id: 'dados',          label: 'Dados pessoais' },
@@ -485,6 +485,18 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
   const [cancelando, setCancelando] = useState<string | null>(null)
   const [editErro, setEditErro] = useState('')
   const [contratoEstado, setContratoEstado] = useState<Record<string, 'loading' | 'ok' | 'erro'>>({})
+  const [modeloCarregando, setModeloCarregando] = useState(false)
+
+  async function handleVerModelo() {
+    setModeloCarregando(true)
+    const res = await preVisualizarContrato(alunoId)
+    setModeloCarregando(false)
+    if ('error' in res) {
+      alert('Erro ao gerar preview: ' + res.error)
+    } else {
+      window.open(res.url, '_blank', 'noopener,noreferrer')
+    }
+  }
 
   async function handleEnviarContrato(matriculaId: string) {
     setContratoEstado(s => ({ ...s, [matriculaId]: 'loading' }))
@@ -585,15 +597,14 @@ function AbaMatriculas({ matriculas, alunoId }: { matriculas: any[], alunoId: st
                     >
                       ↺ Renovar
                     </a>
-                    <a
-                      href="https://docuseal.sededomovimento.art/templates/1"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                      title="Ver modelo do contrato antes de enviar"
+                    <button
+                      onClick={handleVerModelo}
+                      disabled={modeloCarregando}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      title="Ver como vai ficar o contrato preenchido antes de enviar"
                     >
-                      👁 Ver modelo
-                    </a>
+                      {modeloCarregando ? '⏳...' : '👁 Ver modelo'}
+                    </button>
                     <button
                       onClick={() => handleEnviarContrato(m.id)}
                       disabled={contratoEstado[m.id] === 'loading'}
