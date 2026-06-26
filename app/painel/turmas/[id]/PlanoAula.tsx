@@ -18,14 +18,17 @@ export default function PlanoAula({ turmaId, dataInicio, dataFim }: {
 
   useEffect(() => {
     fetch(`/api/turmas/${turmaId}/plano-aula`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(d => {
         if (d.plano) {
           setPlano(d.plano)
           setTexto(d.plano.texto_original ?? '')
         }
       })
-      .catch(() => setErro('Erro ao carregar plano de aula'))
+      .catch((err: Error) => setErro(err.message.startsWith('HTTP') ? 'Erro ao carregar plano de aula' : 'Sem conexão'))
   }, [turmaId])
 
   async function processar() {

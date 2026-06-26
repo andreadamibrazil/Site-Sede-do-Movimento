@@ -153,9 +153,17 @@ Regras:
     const raw = await callGeminiVision(base64, mimeType || 'image/jpeg', prompt, { maxOutputTokens: 600 })
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return { legivel: false, eh_atestado: false, limiteAtingido: false, dados: {} }
-    return JSON.parse(match[0]) as Analise
+    try {
+      return JSON.parse(match[0]) as Analise
+    } catch {
+      return { legivel: false, eh_atestado: false, limiteAtingido: false, dados: {} }
+    }
   } catch (err) {
-    const isQuota = err instanceof Error && (err.message.includes('429') || err.message.includes('quota'))
+    const isQuota = err instanceof Error && (
+      err.message.includes('429') ||
+      err.message.includes('quota') ||
+      err.message.includes('RESOURCE_EXHAUSTED')
+    )
     console.error('[upload-atestado] Gemini error:', err instanceof Error ? err.message : err)
     return { legivel: false, eh_atestado: false, limiteAtingido: isQuota, dados: {} }
   }

@@ -42,10 +42,10 @@ export default async function ProfessorPlanoPage({ params }: { params: Promise<{
     }
   }
 
-  // Datas do semestre atual para contextualizar o plano de aula
-  const agora = new Date()
-  const ano = agora.getFullYear()
-  const mes = agora.getMonth() + 1
+  // Datas do semestre atual — usa BRT (UTC-3) para evitar troca errada de semestre em servidor UTC
+  const agoraBRT = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const ano = agoraBRT.getUTCFullYear()
+  const mes = agoraBRT.getUTCMonth() + 1
   const dataInicio = mes <= 6 ? `${ano}-01-01` : `${ano}-07-01`
   const dataFim    = mes <= 6 ? `${ano}-06-30` : `${ano}-12-31`
 
