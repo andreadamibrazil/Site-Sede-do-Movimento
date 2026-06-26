@@ -79,11 +79,11 @@ export async function POST(req: NextRequest) {
   if (presencas && presencas.length > 0) {
     const { data: matriculados } = await sb
       .from('matricula_turmas')
-      .select('aluno_id')
+      .select('matriculas!inner(aluno_id)')
       .eq('turma_id', aula.turma_id)
       .is('data_saida', null)
 
-    const idsValidos = new Set((matriculados ?? []).map((m: any) => m.aluno_id))
+    const idsValidos = new Set((matriculados ?? []).map((m: any) => m.matriculas?.aluno_id).filter(Boolean))
     const invalidos = presencas.filter((p: any) => !idsValidos.has(p.aluno_id))
     if (invalidos.length > 0) {
       return NextResponse.json({ error: 'aluno_id inválido para esta turma' }, { status: 400 })
