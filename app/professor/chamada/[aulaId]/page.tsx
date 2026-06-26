@@ -63,35 +63,31 @@ export default async function ProfessorChamadaPage({
     redirect('/professor')
   }
 
-  // Alunos da turma
-  const { data: matriculaTurmas } = await service
-    .from('matricula_turmas')
-    .select('matriculas!inner(aluno_id, status, alunos(id, nome, nome_social, data_nascimento, status_pedagogico, status_financeiro))')
-    .eq('turma_id', aula.turma_id)
-    .is('data_saida', null)
+  // Carrega alunos, presenças e experimentais em paralelo
+  const [{ data: matriculaTurmas }, { data: presencasExistentes }, { data: experimentaisData }] = await Promise.all([
+    service.from('matricula_turmas')
+      .select('matriculas!inner(aluno_id, status, alunos(id, nome, nome_social, data_nascimento, status_pedagogico, status_financeiro))')
+      .eq('turma_id', aula.turma_id)
+      .is('data_saida', null),
+    service.from('presencas')
+      .select('aluno_id, status, observacao')
+      .eq('aula_id', aulaId),
+    service.from('experimentais')
+      .select('id, status, leads(id, nome, celular, modalidade_interesse)')
+      .eq('aula_id', aulaId)
+      .neq('status', 'convertido'),
+  ])
 
   const alunos = matriculaTurmas
-    ?.map((mt: any) => mt.matriculas?.alunos)
+    ?.filter((mt: any) => mt.matriculas?.status === 'ativa')
+    .map((mt: any) => mt.matriculas?.alunos)
     .filter(Boolean)
     .filter((a: any) => a.status_pedagogico === 'ativo')
     .sort((a: any, b: any) => a.nome.localeCompare(b.nome)) ?? []
 
-  // Presenças já registradas
-  const { data: presencasExistentes } = await service
-    .from('presencas')
-    .select('aluno_id, status, observacao')
-    .eq('aula_id', aulaId)
-
   const mapaPresencas = Object.fromEntries(
     (presencasExistentes ?? []).map(p => [p.aluno_id, p])
   )
-
-  // Experimentais
-  const { data: experimentaisData } = await service
-    .from('experimentais')
-    .select('id, status, leads(id, nome, celular, modalidade_interesse)')
-    .eq('aula_id', aulaId)
-    .neq('status', 'convertido')
 
   const experimentais = (experimentaisData ?? []).map((e: any) => ({
     id: e.id,

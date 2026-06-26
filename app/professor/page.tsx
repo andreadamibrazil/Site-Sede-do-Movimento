@@ -52,7 +52,7 @@ export default async function ProfessorPage() {
     turmaIds = [...new Set(ids)]
   }
 
-  const aulasPendentesQuery = sb
+  let aulasPendentesQuery = sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, turmas(nome), professores(nome)')
     .is('chamada_concluida_em', null)
@@ -60,11 +60,12 @@ export default async function ProfessorPage() {
     .gte('data', em7diasAtras)
     .lt('data', hoje)
     .order('data', { ascending: false })
-  if (!isAdmin && turmaIds) aulasPendentesQuery.in('turma_id', turmaIds.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
+  const vazia = ['00000000-0000-0000-0000-000000000000']
+  if (!isAdmin && turmaIds) aulasPendentesQuery = aulasPendentesQuery.in('turma_id', turmaIds.length ? turmaIds : vazia)
   const { data: aulasPendentes } = await aulasPendentesQuery
 
   // Aulas dos próximos 7 dias
-  const aulasProximasQuery = sb
+  let aulasProximasQuery = sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, status, turmas(nome), professores(nome)')
     .gte('data', hoje)
@@ -72,11 +73,11 @@ export default async function ProfessorPage() {
     .neq('status', 'cancelada')
     .order('data')
     .order('hora_inicio')
-  if (!isAdmin && turmaIds) aulasProximasQuery.in('turma_id', turmaIds.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
+  if (!isAdmin && turmaIds) aulasProximasQuery = aulasProximasQuery.in('turma_id', turmaIds.length ? turmaIds : vazia)
   const { data: aulasProximas } = await aulasProximasQuery
 
   // Turmas
-  const turmasQuery = sb
+  let turmasQuery = sb
     .from('turmas')
     .select(`
       id, nome, nivel, capacidade,
@@ -89,7 +90,7 @@ export default async function ProfessorPage() {
     `)
     .not('status', 'eq', 'encerrada')
     .order('nome')
-  if (!isAdmin) turmasQuery.in('id', turmaIds?.length ? turmaIds : ['00000000-0000-0000-0000-000000000000'])
+  if (!isAdmin) turmasQuery = turmasQuery.in('id', turmaIds?.length ? turmaIds : vazia)
   const { data: turmas } = await turmasQuery
 
   const aulasHoje = (aulasProximas ?? []).filter(a => a.data === hoje)
@@ -114,7 +115,7 @@ export default async function ProfessorPage() {
             <h2 className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-2">⚠️ Chamadas pendentes ({aulasPendentes.length})</h2>
             <div className="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
               <div className="px-4 py-3 border-b border-red-100">
-                <p className="text-xs text-red-600">Aulas sem chamada registrada. <strong>É importante fazer a chamada</strong> para que os alunos não sejam penalizados com faltas indevidas.</p>
+                <p className="text-xs text-red-600">⚠️ <strong>Lançar a chamada é obrigatório para receber por esta aula.</strong> Prazo: 7 dias após o fim da aula.</p>
               </div>
               <div className="divide-y divide-red-100">
                 {aulasPendentes.map(aula => {
@@ -131,8 +132,8 @@ export default async function ProfessorPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-red-600 font-medium">
-                          {diasAtras === 0 ? 'hoje' : `${diasAtras}d atrás`}
+                        <span className={`text-xs font-semibold ${diasAtras >= 6 ? 'text-red-700' : diasAtras >= 4 ? 'text-orange-600' : 'text-red-600'}`}>
+                          {diasAtras === 0 ? 'hoje' : `${7 - diasAtras}d restantes`}
                         </span>
                         <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-lg">Fazer →</span>
                       </div>

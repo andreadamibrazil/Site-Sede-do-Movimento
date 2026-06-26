@@ -18,12 +18,15 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
-  // Verifica se o usuário tem acesso a esta aula
-  const { data: aula } = await sb
-    .from('aulas')
-    .select('id, data, hora_fim, professor_id, turma_id, status, turmas(professor_id)')
-    .eq('id', aulaId)
-    .single()
+  // Busca aula + perfil + professor em paralelo
+  const [{ data: aula }, { data: perfil }, { data: prof }] = await Promise.all([
+    sb.from('aulas')
+      .select('id, data, hora_fim, professor_id, turma_id, status, turmas(professor_id)')
+      .eq('id', aulaId)
+      .single(),
+    sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
+    sb.from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+  ])
 
   if (!aula) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })
   if (aula.status === 'cancelada') return NextResponse.json({ error: 'chamada não permitida em aula cancelada' }, { status: 403 })
@@ -31,23 +34,10 @@ export async function POST(req: NextRequest) {
   // professor_id efetivo: aulas.professor_id ou turmas.professor_id (fluxo normal não preenche aulas.professor_id)
   const professorIdEfetivo = aula.professor_id ?? (aula.turmas as any)?.professor_id ?? null
 
-  // Se for professor, verifica se é a aula dele
-  const { data: perfil } = await sb
-    .from('perfis_usuario')
-    .select('perfil')
-    .eq('id', user.id)
-    .maybeSingle()
-
   const isAdmin = perfil?.perfil === 'admin' || perfil?.perfil === 'secretaria'
 
   if (!isAdmin) {
     // Verifica se é professor desta aula (checa aulas.professor_id e turmas.professor_id)
-    const { data: prof } = await sb
-      .from('professores')
-      .select('id')
-      .eq('email', user.email ?? '')
-      .eq('ativo', true)
-      .maybeSingle()
 
     let pertenceAoProfessor =
       prof && (aula.professor_id === prof.id || (aula.turmas as any)?.professor_id === prof.id)
@@ -67,7 +57,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Professor tem 7 dias após o fim da aula; admin não passa por esta verificação
-    const fimAula = new Date(`${aula.data}T${aula.hora_fim ?? '23:59'}:00-03:00`)
+    // slice(0,5) garante HH:MM mesmo que hora_fim venha com segundos ('18:30:00')
+    const horaFimNorm = (aula.hora_fim ?? '23:59').slice(0, 5)
+    const fimAula = new Date(`${aula.data}T${horaFimNorm}:00-03:00`)
     const minutosDesdeOFim = (Date.now() - fimAula.getTime()) / 60000
     if (minutosDesdeOFim > TOLERANCIA_PROFESSOR_MINUTOS) {
       return NextResponse.json({ error: 'prazo de 7 dias para editar esta chamada expirou — contate a secretaria' }, { status: 403 })
@@ -77,13 +69,22 @@ export async function POST(req: NextRequest) {
   // Salva presenças (inclui registrado_por para auditoria)
   // aula_id forçado server-side; aluno_id validado contra matriculados da turma
   if (presencas && presencas.length > 0) {
+    const STATUS_VALIDOS = new Set(['presente', 'falta', 'falta_justificada', 'reposicao', 'experimental'])
+    const statusInvalido = presencas.find((p: any) => !STATUS_VALIDOS.has(p.status))
+    if (statusInvalido) return NextResponse.json({ error: 'status de presença inválido' }, { status: 400 })
+
     const { data: matriculados } = await sb
       .from('matricula_turmas')
-      .select('matriculas!inner(aluno_id)')
+      .select('matriculas!inner(aluno_id, status)')
       .eq('turma_id', aula.turma_id)
       .is('data_saida', null)
 
-    const idsValidos = new Set((matriculados ?? []).map((m: any) => m.matriculas?.aluno_id).filter(Boolean))
+    const idsValidos = new Set(
+      (matriculados ?? [])
+        .filter((m: any) => m.matriculas?.status === 'ativa')
+        .map((m: any) => m.matriculas?.aluno_id)
+        .filter(Boolean)
+    )
     const invalidos = presencas.filter((p: any) => !idsValidos.has(p.aluno_id))
     if (invalidos.length > 0) {
       return NextResponse.json({ error: 'aluno_id inválido para esta turma' }, { status: 400 })
@@ -104,6 +105,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Substituto (professor faltou)
+  if (profFaltou && !professorIdEfetivo) {
+    return NextResponse.json({ error: 'Turma sem professor definido — contate a secretaria' }, { status: 422 })
+  }
   if (profFaltou && professorIdEfetivo) {
     const { error: substError } = await sb.from('substituicoes').upsert({
       aula_id: aulaId,

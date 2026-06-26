@@ -65,33 +65,29 @@ export async function POST(req: NextRequest) {
 
   const sb = createServiceClient()
 
-  // Verifica que o professor autenticado pertence a esta aula
-  const { data: aulaCheck } = await sb
-    .from('aulas')
-    .select('turma_id, turmas!inner(professor_id)')
-    .eq('id', aulaId)
-    .maybeSingle()
+  // Verifica perfil + aula + professor em paralelo
+  const [{ data: perfilCheck }, { data: aulaCheck }, { data: profCheck }] = await Promise.all([
+    sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
+    sb.from('aulas').select('turma_id, turmas!inner(professor_id)').eq('id', aulaId).maybeSingle(),
+    sb.from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+  ])
 
   if (!aulaCheck) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })
 
-  const { data: profCheck } = await sb
-    .from('professores')
-    .select('id')
-    .eq('email', user.email ?? '')
-    .eq('ativo', true)
-    .maybeSingle()
+  const isAdmin = perfilCheck?.perfil === 'admin' || perfilCheck?.perfil === 'secretaria'
 
-  const isPrimario = (aulaCheck.turmas as any)?.professor_id === profCheck?.id
-  if (!isPrimario && profCheck) {
-    const { data: coReg } = await sb
-      .from('turma_professores' as any)
-      .select('professor_id')
-      .eq('turma_id', aulaCheck.turma_id)
-      .eq('professor_id', profCheck.id)
-      .maybeSingle()
-    if (!coReg) return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
-  } else if (!profCheck) {
-    return NextResponse.json({ error: 'professor não encontrado' }, { status: 403 })
+  if (!isAdmin) {
+    if (!profCheck) return NextResponse.json({ error: 'professor não encontrado' }, { status: 403 })
+    const isPrimario = (aulaCheck.turmas as any)?.professor_id === profCheck.id
+    if (!isPrimario) {
+      const { data: coReg } = await sb
+        .from('turma_professores' as any)
+        .select('professor_id')
+        .eq('turma_id', aulaCheck.turma_id)
+        .eq('professor_id', profCheck.id)
+        .maybeSingle()
+      if (!coReg) return NextResponse.json({ error: 'sem permissão para esta aula' }, { status: 403 })
+    }
   }
 
   const path = `${aulaId}/${user.id}_${Date.now()}.${ext}`
@@ -104,10 +100,10 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Bucket privado (dados médicos sensíveis) — URL assinada com 1 ano de validade
+  // Bucket privado (dados médicos sensíveis — LGPD art. 11) — URL assinada curta, regenerada sob demanda
   const { data: signedData, error: signErr } = await sb.storage
     .from(BUCKET)
-    .createSignedUrl(path, 60 * 60 * 24 * 365)
+    .createSignedUrl(path, 60 * 60 * 24 * 7) // 7 dias (suficiente para o fluxo de chamada)
 
   if (signErr || !signedData) return NextResponse.json({ error: 'Erro ao gerar URL do atestado' }, { status: 500 })
 
@@ -158,7 +154,9 @@ Regras:
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return { legivel: false, eh_atestado: false, limiteAtingido: false, dados: {} }
     return JSON.parse(match[0]) as Analise
-  } catch {
-    return { legivel: false, eh_atestado: false, limiteAtingido: true, dados: {} }
+  } catch (err) {
+    const isQuota = err instanceof Error && (err.message.includes('429') || err.message.includes('quota'))
+    console.error('[upload-atestado] Gemini error:', err instanceof Error ? err.message : err)
+    return { legivel: false, eh_atestado: false, limiteAtingido: isQuota, dados: {} }
   }
 }

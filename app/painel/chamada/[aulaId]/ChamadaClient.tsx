@@ -69,8 +69,10 @@ export default function ChamadaClient({
   const [hydrated, setHydrated] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [salvoLocalmente, setSalvoLocalmente] = useState(false)
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null)
   const [online, setOnline] = useState(true)
   const [concluida, setConcluida] = useState(aula.status === 'concluida')
+  const [mostrarAvisoPrazo, setMostrarAvisoPrazo] = useState(false)
 
   // Lê localStorage primeiro; só depois permite que o effect de escrita rode
   useEffect(() => {
@@ -113,9 +115,13 @@ export default function ChamadaClient({
   async function sincronizarPendentes() {
     const pendente = localStorage.getItem(`pendente_${aulaId}`)
     if (!pendente) return
-    const dados = JSON.parse(pendente)
-    await salvarNoBanco(dados.registros, dados.professorFaltou, dados.temAtestado, dados.nomeSubstituto, true, dados.cpfSubstituto, dados.celularSubstituto, dados.motivoAusencia, dados.termosAceitos)
-    localStorage.removeItem(`pendente_${aulaId}`)
+    try {
+      const dados = JSON.parse(pendente)
+      await salvarNoBanco(dados.registros, dados.professorFaltou, dados.temAtestado, dados.nomeSubstituto, true, dados.cpfSubstituto, dados.celularSubstituto, dados.motivoAusencia, dados.termosAceitos)
+      localStorage.removeItem(`pendente_${aulaId}`)
+    } catch {
+      localStorage.removeItem(`pendente_${aulaId}`)
+    }
   }
 
   function setStatus(alunoId: string, status: StatusPresenca) {
@@ -176,6 +182,7 @@ export default function ChamadaClient({
     motivo = motivoAusencia,
     termos = termosAceitos,
     urlAtestado = atestadoUrl,
+    concluirAula = false,
   ) {
     if (!silencioso) setSalvando(true)
 
@@ -204,6 +211,7 @@ export default function ChamadaClient({
           aulaId, presencas, profFaltou, atestado, substituto,
           cpfSubstituto: cpfSub, celularSubstituto: celularSub,
           motivoAusencia: motivo, termosAceitos: termos, atestadoUrl: urlFinal,
+          concluir: concluirAula,
         }),
       })
       if (res.ok) {
@@ -217,16 +225,16 @@ export default function ChamadaClient({
         window.location.href = loginUrl
       } else if (!silencioso) {
         const err = await res.json().catch(() => ({}))
-        alert(err.error ?? 'Erro ao salvar chamada. Tente novamente.')
+        setErroSalvar(err.error ?? 'Erro ao salvar chamada. Tente novamente.')
       }
     } catch {
-      if (!silencioso) alert('Sem conexão ao salvar. Os dados foram preservados localmente.')
+      if (!silencioso) setErroSalvar('Sem conexão ao salvar. Os dados foram preservados localmente.')
     }
 
     if (!silencioso) setSalvando(false)
     if (sucesso) {
       setSalvoLocalmente(true)
-      setTimeout(() => setSalvoLocalmente(false), 2000)
+      setTimeout(() => setSalvoLocalmente(false), 5000)
     }
     return sucesso
   }
@@ -235,21 +243,21 @@ export default function ChamadaClient({
     if (!online) {
       localStorage.setItem(`pendente_${aulaId}`, JSON.stringify({ registros, professorFaltou, temAtestado, nomeSubstituto, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos }))
       setSalvoLocalmente(true)
-      setTimeout(() => setSalvoLocalmente(false), 2000)
+      setTimeout(() => setSalvoLocalmente(false), 5000)
       return false
     }
     return await salvarNoBanco(registros, professorFaltou, temAtestado, nomeSubstituto) ?? false
   }
 
   async function concluir() {
-    // Verificar se há mais de 50% de faltas antes de concluir
-    if (alunos.length > 0) {
+    setErroSalvar(null)
+    // Aviso quando >50% de faltas (não bloqueia, só confirma)
+    if (!professorFaltou && alunos.length > 0) {
       const totalFaltas = alunos.filter(a => {
         const s = statusAtual(a.id)
         return s === 'falta' || s === 'falta_justificada'
       }).length
-      const percentualFaltas = totalFaltas / alunos.length
-      if (percentualFaltas > 0.5) {
+      if (totalFaltas / alunos.length > 0.5) {
         const confirmou = window.confirm(
           `${totalFaltas} de ${alunos.length} alunos estão com falta. Confirmar conclusão da chamada?`
         )
@@ -257,25 +265,13 @@ export default function ChamadaClient({
       }
     }
 
-    const salvou = await salvar()
-    if (!salvou) {
-      alert('Não foi possível salvar as presenças. Corrija e tente concluir novamente.')
-      return
-    }
-    try {
-      const res = await fetch('/api/chamada/salvar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ aulaId, presencas: [], profFaltou: false, concluir: true }),
-      })
-      if (!res.ok) {
-        alert('Erro ao concluir chamada. Tente novamente.')
-        return
-      }
-    } catch {
-      alert('Sem conexão. Tente concluir novamente quando online.')
-      return
-    }
+    // Um único POST que salva e conclui atomicamente
+    const salvou = await salvarNoBanco(
+      registros, professorFaltou, temAtestado, nomeSubstituto,
+      false, cpfSubstituto, celularSubstituto, motivoAusencia, termosAceitos, atestadoUrl,
+      true, // concluirAula
+    )
+    if (!salvou) return
     localStorage.removeItem(STORAGE_KEY(aulaId))
     localStorage.removeItem(`pendente_${aulaId}`)
     setConcluida(true)
@@ -308,9 +304,12 @@ export default function ChamadaClient({
                 ✏️ Corrigir
               </button>
             ) : (
-              <span className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full" title={`Prazo de 7 dias expirado — contate a secretaria`}>
+              <button
+                onClick={() => setMostrarAvisoPrazo(v => !v)}
+                className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full hover:bg-gray-50"
+              >
                 🔒 Prazo expirado
-              </span>
+              </button>
             )}
           </div>
           <h1 className="text-base font-semibold text-gray-900">{(aula.turmas as any)?.nome}</h1>
@@ -325,6 +324,13 @@ export default function ChamadaClient({
             )}
           </p>
         </div>
+
+        {mostrarAvisoPrazo && (
+          <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <p className="text-sm font-medium text-amber-800">🔒 Prazo de edição expirado</p>
+            <p className="text-xs text-amber-700 mt-1">O prazo de 7 dias para editar esta chamada já encerrou. Contate a secretaria para fazer alguma correção.</p>
+          </div>
+        )}
 
         {/* Lista read-only */}
         <div className="px-4 mt-4 space-y-2">
@@ -505,12 +511,14 @@ export default function ChamadaClient({
                   value={cpfSubstituto}
                   onChange={e => setCpfSubstituto(e.target.value)}
                   placeholder="CPF"
+                  inputMode="numeric"
                   className="border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 />
                 <input
                   value={celularSubstituto}
                   onChange={e => setCelularSubstituto(e.target.value)}
                   placeholder="Celular"
+                  inputMode="tel"
                   className="border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
@@ -676,26 +684,33 @@ export default function ChamadaClient({
       )}
 
       {/* Rodapé fixo */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 max-w-lg mx-auto">
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 pt-3 max-w-lg mx-auto"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      >
+        {erroSalvar && (
+          <div className="mb-3 bg-red-50 border border-red-200 rounded-xl px-3 py-2 flex items-start gap-2">
+            <span className="text-red-500 text-sm mt-0.5 flex-shrink-0">⚠</span>
+            <p className="text-xs text-red-700 flex-1">{erroSalvar}</p>
+            <button onClick={() => setErroSalvar(null)} className="text-red-400 hover:text-red-600 text-xs flex-shrink-0">✕</button>
+          </div>
+        )}
         <div className="flex gap-3">
           <button
             onClick={salvar}
             disabled={salvando}
-            className="flex-1 border border-gray-200 text-gray-700 text-sm font-medium py-3 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="border border-gray-300 text-gray-600 text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition-colors whitespace-nowrap"
           >
-            {salvando ? 'Salvando...' : 'Salvar rascunho'}
+            {salvando ? '...' : 'Rascunho'}
           </button>
           <button
             onClick={concluir}
-            disabled={salvando || uploadandoAtestado || (professorFaltou && !termosAceitos) || (temAtestado && !!atestadoErro)}
-            title={
-              professorFaltou && !termosAceitos ? 'Aceite os termos de ausência antes de concluir' :
-              temAtestado && atestadoErro ? 'Corrija o atestado antes de concluir' : undefined
-            }
-            className="flex-1 bg-indigo-600 text-white text-sm font-medium py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={salvando || uploadandoAtestado || (professorFaltou && !termosAceitos) || (professorFaltou && !motivoAusencia.trim()) || (temAtestado && !!atestadoErro)}
+            className="flex-1 bg-indigo-600 text-white text-sm font-semibold py-3 rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {uploadandoAtestado ? 'Verificando atestado...' :
              professorFaltou && !termosAceitos ? '⚠ Aceite os termos' :
+             professorFaltou && !motivoAusencia.trim() ? '⚠ Informe o motivo' :
              temAtestado && atestadoErro ? '⚠ Atestado inválido' :
              'Concluir chamada ✓'}
           </button>

@@ -52,12 +52,14 @@ export default async function FrequenciaTurmaPage({
     .is('data_saida', null)
 
   const alunos = (matriculaTurmas ?? [])
+    .filter((mt: any) => mt.matriculas?.status === 'ativa')
     .map((mt: any) => mt.matriculas?.alunos)
     .filter(Boolean)
     .sort((a: any, b: any) => a.nome.localeCompare(b.nome))
 
-  // Aulas concluídas da turma (últimos 6 meses)
-  const seisAtras = new Date()
+  // Aulas concluídas da turma (últimos 6 meses) — BRT offset para evitar off-by-one
+  const agoraBRT = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const seisAtras = new Date(agoraBRT)
   seisAtras.setMonth(seisAtras.getMonth() - 6)
 
   const { data: aulas } = await service
@@ -77,13 +79,19 @@ export default async function FrequenciaTurmaPage({
         .in('aula_id', aulaIds)
     : { data: [] }
 
-  // Calcular frequência por aluno
+  // Calcular frequência por aluno (Map evita O(n×m))
   const totalAulas = aulas?.length ?? 0
+  const presencasPorAluno = new Map<string, { status: string }[]>()
+  for (const p of (presencas ?? [])) {
+    const lista = presencasPorAluno.get(p.aluno_id) ?? []
+    lista.push(p)
+    presencasPorAluno.set(p.aluno_id, lista)
+  }
   const frequencias = alunos.map((aluno: any) => {
-    const minhas = (presencas ?? []).filter((p: any) => p.aluno_id === aluno.id)
-    const presentes = minhas.filter((p: any) => p.status === 'presente' || p.status === 'reposicao').length
-    const faltas = minhas.filter((p: any) => p.status === 'falta').length
-    const justificadas = minhas.filter((p: any) => p.status === 'falta_justificada').length
+    const minhas = presencasPorAluno.get(aluno.id) ?? []
+    const presentes = minhas.filter((p) => p.status === 'presente' || p.status === 'reposicao').length
+    const faltas = minhas.filter((p) => p.status === 'falta').length
+    const justificadas = minhas.filter((p) => p.status === 'falta_justificada').length
     const semRegistro = totalAulas - minhas.length
     const pct = totalAulas > 0 ? Math.round((presentes / totalAulas) * 100) : null
     return { aluno, presentes, faltas, justificadas, semRegistro, pct }
