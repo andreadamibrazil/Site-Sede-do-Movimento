@@ -17,6 +17,21 @@ export interface SubmissionSubmitter {
   metadata?: Record<string, string>
 }
 
+export async function downloadContratoAssinado(submissionId: string | number): Promise<Buffer | null> {
+  if (!BASE_URL || !API_KEY) return null
+  const res = await fetch(`${BASE_URL}/api/submissions/${submissionId}`, {
+    headers: { 'X-Auth-Token': API_KEY },
+  })
+  if (!res.ok) return null
+  const sub = await res.json() as { documents?: Array<{ url: string }> }
+  const docUrl = sub.documents?.[0]?.url
+  if (!docUrl) return null
+  const fileUrl = docUrl.startsWith('http') ? docUrl : `${BASE_URL}${docUrl}`
+  const pdfRes = await fetch(fileUrl, { headers: { 'X-Auth-Token': API_KEY } })
+  if (!pdfRes.ok) return null
+  return Buffer.from(await pdfRes.arrayBuffer())
+}
+
 export async function criarSubmission(
   template: DocuSealTemplate,
   submitters: SubmissionSubmitter[],

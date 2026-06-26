@@ -17,10 +17,14 @@
  *   └── SPDRJ/
  */
 
-const TOKEN_URI = process.env.GOOGLE_DRIVE_TOKEN_URI ?? 'https://oauth2.googleapis.com/token'
-const CLIENT_ID = process.env.GOOGLE_DRIVE_CLIENT_ID ?? ''
-const CLIENT_SECRET = process.env.GOOGLE_DRIVE_CLIENT_SECRET ?? ''
-const REFRESH_TOKEN = process.env.GOOGLE_DRIVE_REFRESH_TOKEN ?? ''
+// Remove BOM, literal \n e espaços que corrompem credenciais OAuth (mesma lógica do MoviRio)
+const clean = (v: string | undefined) =>
+  (v ?? '').replace(/\\n|\\r/g, '').replace(/^[﻿​\s]+|[﻿​\s]+$/g, '')
+
+const TOKEN_URI = clean(process.env.GOOGLE_DRIVE_TOKEN_URI) || 'https://oauth2.googleapis.com/token'
+const CLIENT_ID = clean(process.env.GOOGLE_DRIVE_CLIENT_ID)
+const CLIENT_SECRET = clean(process.env.GOOGLE_DRIVE_CLIENT_SECRET)
+const REFRESH_TOKEN = clean(process.env.GOOGLE_DRIVE_REFRESH_TOKEN)
 
 // IDs das pastas no Drive (pasta raiz: Sites/)
 export const DRIVE_FOLDERS = {

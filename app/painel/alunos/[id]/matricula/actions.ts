@@ -150,6 +150,21 @@ async function enviarContratoDocuSeal(
 
 export async function criarMatricula(dados: MatriculaDados) {
   const supabase = createServiceClient()
+
+  // Impede matrícula duplicada: mesma turma + aluno com matrícula ativa
+  if (dados.turmaIds.length > 0) {
+    const { data: conflito } = await supabase
+      .from('matricula_turmas')
+      .select('turma_id, matriculas!inner(aluno_id, status)')
+      .in('turma_id', dados.turmaIds)
+      .eq('matriculas.aluno_id', dados.alunoId)
+      .eq('matriculas.status', 'ativa')
+      .limit(1)
+    if (conflito?.length) {
+      return { error: 'Este aluno já possui matrícula ativa nessa turma.' }
+    }
+  }
+
   const meses = dados.plano === 'fidelidade' ? 12
     : dados.plano === 'personalizado' ? (dados.mesesPersonalizado ?? 1)
     : 1
