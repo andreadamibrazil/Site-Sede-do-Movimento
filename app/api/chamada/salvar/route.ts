@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'não autenticado' }, { status: 401 })
+  if (!user.email) return NextResponse.json({ error: 'usuário sem email associado' }, { status: 401 })
 
   const {
     aulaId, presencas, profFaltou, atestado, substituto, concluir,
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
       .eq('id', aulaId)
       .single(),
     sb.from('perfis_usuario').select('perfil').eq('id', user.id).maybeSingle(),
-    sb.from('professores').select('id').eq('email', user.email ?? '').eq('ativo', true).maybeSingle(),
+    sb.from('professores').select('id').eq('email', user.email).eq('ativo', true).maybeSingle(),
   ])
 
   if (!aula) return NextResponse.json({ error: 'aula não encontrada' }, { status: 404 })

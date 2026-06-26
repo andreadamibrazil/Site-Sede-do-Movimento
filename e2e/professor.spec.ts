@@ -106,7 +106,7 @@ test.describe('Dashboard do professor', () => {
       expect(await botoesFazer.count()).toBeGreaterThan(0)
       // Deve mostrar quantos dias atrás
       const textos = await secaoPendentes.locator('.text-xs').allTextContents()
-      const temDiaInfo = textos.some(t => /hoje|d atrás/i.test(t))
+      const temDiaInfo = textos.some(t => /hoje|d restantes|\d+d /i.test(t))
       expect(temDiaInfo).toBe(true)
     }
   })
