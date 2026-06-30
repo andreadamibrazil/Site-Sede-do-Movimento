@@ -71,8 +71,10 @@ export default function ChamadaClient({
   const [salvoLocalmente, setSalvoLocalmente] = useState(false)
   const [erroSalvar, setErroSalvar] = useState<string | null>(null)
   const [online, setOnline] = useState(true)
-  const [concluida, setConcluida] = useState(aula.status === 'concluida')
+  // Fonte de verdade única: chamada feita = chamada_concluida_em preenchido (não o status da aula)
+  const [concluida, setConcluida] = useState(Boolean(aula.chamada_concluida_em))
   const [mostrarAvisoPrazo, setMostrarAvisoPrazo] = useState(false)
+  const [confirmarMuitasFaltas, setConfirmarMuitasFaltas] = useState(false)
 
   // Lê localStorage primeiro; só depois permite que o effect de escrita rode
   useEffect(() => {
@@ -249,22 +251,28 @@ export default function ChamadaClient({
     return await salvarNoBanco(registros, professorFaltou, temAtestado, nomeSubstituto) ?? false
   }
 
+  function totalFaltasAtual() {
+    return alunos.filter(a => {
+      const s = statusAtual(a.id)
+      return s === 'falta' || s === 'falta_justificada'
+    }).length
+  }
+
   async function concluir() {
     setErroSalvar(null)
-    // Aviso quando >50% de faltas (não bloqueia, só confirma)
-    if (!professorFaltou && alunos.length > 0) {
-      const totalFaltas = alunos.filter(a => {
-        const s = statusAtual(a.id)
-        return s === 'falta' || s === 'falta_justificada'
-      }).length
-      if (totalFaltas / alunos.length > 0.5) {
-        const confirmou = window.confirm(
-          `${totalFaltas} de ${alunos.length} alunos estão com falta. Confirmar conclusão da chamada?`
-        )
-        if (!confirmou) return
-      }
+    // Aviso quando >50% de faltas (não bloqueia, só confirma via modal in-app).
+    // Modal em vez de window.confirm: em PWA/webview mobile o confirm nativo pode ser
+    // descartado silenciosamente, abortando a conclusão (professor achava que concluiu
+    // mas o POST nunca rodava — caso "não deixa marcar que todos faltaram").
+    if (!professorFaltou && alunos.length > 0 && totalFaltasAtual() / alunos.length > 0.5) {
+      setConfirmarMuitasFaltas(true)
+      return
     }
+    await concluirDeFato()
+  }
 
+  async function concluirDeFato() {
+    setConfirmarMuitasFaltas(false)
     // Um único POST que salva e conclui atomicamente
     const salvou = await salvarNoBanco(
       registros, professorFaltou, temAtestado, nomeSubstituto,
@@ -680,6 +688,35 @@ export default function ChamadaClient({
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Modal de confirmação (>50% faltas) — substitui window.confirm (falha em PWA mobile) */}
+      {confirmarMuitasFaltas && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 space-y-4">
+            <div>
+              <p className="text-base font-semibold text-gray-900">Confirmar conclusão?</p>
+              <p className="text-sm text-gray-600 mt-1">
+                {totalFaltasAtual()} de {alunos.length} alunos estão com falta. Deseja concluir a chamada assim mesmo?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmarMuitasFaltas(false)}
+                className="flex-1 border border-gray-300 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50"
+              >
+                Revisar
+              </button>
+              <button
+                onClick={concluirDeFato}
+                disabled={salvando}
+                className="flex-1 bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {salvando ? '...' : 'Confirmar conclusão'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

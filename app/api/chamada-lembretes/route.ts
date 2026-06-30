@@ -1,11 +1,17 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { PRAZO_REPOSICAO_DIAS } from '@/lib/constants/chamada'
 
 // Cron a cada 5 minutos — dispara WhatsApp para professor quando chamada não foi lançada.
 //
 // Sequência (máx. 2 avisos por aula):
 //   0 min  → professor: "sua aula acabou, lance a chamada"
-//   +1 dia → professor: "o ponto é importante" → depois marca professor ausente automaticamente
+//   +1 dia → professor: "o ponto é importante" → e AVISA A SECRETARIA p/ verificar manualmente.
+//
+// IMPORTANTE: o cron NUNCA marca o professor como ausente automaticamente.
+// "Chamada não lançada" ≠ "professor faltou" — a falta é sempre uma decisão humana
+// (secretaria/coordenação), feita no painel. Marcar falta automática gerava reposições
+// e bloqueio de pagamento indevidos (incidente 25/06/2026).
 
 // Número da secretaria (env var, pode ter vários separados por vírgula)
 const CELULARES_SECRETARIA = (process.env.CELULAR_SECRETARIA ?? '').split(',').filter(Boolean)
@@ -18,11 +24,11 @@ const MSG_PROFESSOR: Record<string, (p: string, t: string, h: string, email?: st
     `${p}, um ponto importante: a chamada de *${t}* (${h} de ontem) ainda não foi lançada.\n\nSe precisar de ajuda para acessar o sistema, fale com a secretaria. 🙏`,
 }
 
-type Janela = { tipo: string; minutos: number; marcarAusenteApos?: boolean }
+type Janela = { tipo: string; minutos: number; avisarSecretariaApos?: boolean }
 
 const JANELAS: Janela[] = [
   { tipo: 'apos_0min', minutos: 0 },
-  { tipo: 'apos_1dia', minutos: 1440, marcarAusenteApos: true },
+  { tipo: 'apos_1dia', minutos: 1440, avisarSecretariaApos: true },
 ]
 
 async function whatsapp(celular: string, mensagem: string) {
@@ -68,16 +74,19 @@ async function handler(req: NextRequest) {
 
   const sb = createServiceClient()
   const agora = new Date()
-  const tresDiasAtras = new Date(agora)
-  tresDiasAtras.setDate(tresDiasAtras.getDate() - 2)
+  // Janela de varredura: aulas dos últimos 2 dias (cobre apos_0min e apos_1dia).
+  const janelaInicio = new Date(agora)
+  janelaInicio.setDate(janelaInicio.getDate() - 2)
 
+  // Fonte de verdade única: chamada feita = chamada_concluida_em preenchido.
+  // (status segue o ciclo da aula; não decide se a chamada foi lançada.)
   // Professor vem via turmas.professor_id — aulas.professor_id não é preenchido no fluxo normal
   const { data: aulas } = await sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, status, turma_id, turmas!inner(nome, professor_id, professores!professor_id(nome, celular, email, ativo))')
     .neq('status', 'cancelada')
-    .neq('status', 'concluida')
-    .gte('data', tresDiasAtras.toISOString().slice(0, 10))
+    .is('chamada_concluida_em', null)
+    .gte('data', janelaInicio.toISOString().slice(0, 10))
     .lte('data', agora.toISOString().slice(0, 10))
 
   let enviados = 0
@@ -86,11 +95,26 @@ async function handler(req: NextRequest) {
   for (const aula of (aulas ?? [])) {
     const turma = (aula as any).turmas
     const prof = turma?.professores
-    if (!prof?.celular || prof.ativo === false) continue
+    const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)
+
+    // Responsáveis pela aula: professor titular + co-regentes (turma_professores).
+    // Todos recebem o lembrete; nenhum é marcado ausente automaticamente.
+    const { data: coRegs } = await sb
+      .from('turma_professores' as any)
+      .select('professores!professor_id(nome, celular, email, ativo)')
+      .eq('turma_id', aula.turma_id)
+    const vistos = new Set<string>()
+    const recipientes = [prof, ...(((coRegs ?? []) as any[]).map(c => c.professores))]
+      .filter((p: any) => {
+        if (!p?.celular || p.ativo === false) return false
+        if (vistos.has(p.celular)) return false
+        vistos.add(p.celular)
+        return true
+      })
+    if (recipientes.length === 0) continue
 
     const fimAula = new Date(`${aula.data}T${aula.hora_fim}-03:00`)
     const diffMin = (agora.getTime() - fimAula.getTime()) / 60000
-    const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)
 
     const { data: jaSent } = await sb
       .from('lembretes_chamada')
@@ -103,36 +127,33 @@ async function handler(req: NextRequest) {
       if (enviados_tipos.has(janela.tipo)) continue
       if (!skipWindow && (diffMin < janela.minutos - 3 || diffMin > janela.minutos + 8)) continue
 
-      const msgProf = MSG_PROFESSOR[janela.tipo]?.(prof.nome, turma?.nome ?? 'sua turma', horaFormatada, prof.email)
-      if (!msgProf) continue
-
-      if (!dryRun) {
-        const ok = await whatsapp(prof.celular, msgProf)
-        if (!ok) continue
+      let enviouAlgum = false
+      for (const p of recipientes) {
+        const msgProf = MSG_PROFESSOR[janela.tipo]?.(p.nome, turma?.nome ?? 'sua turma', horaFormatada, p.email)
+        if (!msgProf) continue
+        if (!dryRun) {
+          const ok = await whatsapp(p.celular, msgProf)
+          if (!ok) continue
+        }
+        enviouAlgum = true
+        enviados++
+        log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${p.nome} (${turma?.nome}) · ***${p.celular?.slice(-4)}`)
+      }
+      if (enviouAlgum && !dryRun) {
         await sb.from('lembretes_chamada').insert({ aula_id: aula.id, tipo: janela.tipo })
       }
-      enviados++
-      log.push(`${dryRun ? '○ [DRY]' : '✓'} prof [${janela.tipo}] → ${prof.nome} (${turma?.nome}) · ***${prof.celular?.slice(-4)}`)
 
-      // Após apos_1dia (último aviso): marcar professor ausente automaticamente
-      if (janela.marcarAusenteApos && turma?.professor_id) {
-        const { data: subExist } = await sb
-          .from('substituicoes')
-          .select('id')
-          .eq('aula_id', aula.id)
-          .maybeSingle()
-
-        if (!subExist && !dryRun) {
-          await sb.from('substituicoes').insert({
-            aula_id: aula.id,
-            professor_ausente_id: turma.professor_id,
-            tem_atestado: false,
-            motivo: 'chamada_nao_lancada',
-          })
-          log.push(`  → professor marcado ausente (chamada não lançada após 24h)`)
-        } else if (!subExist && dryRun) {
-          log.push(`  → [DRY] marcaria professor ausente`)
+      // Após apos_1dia: AVISA A SECRETARIA para verificar manualmente — NUNCA marca falta.
+      // A falta é decisão humana (painel). Auto-marcar gerava reposições/bloqueio de pagamento indevidos.
+      if (janela.avisarSecretariaApos && !enviados_tipos.has('sec_sem_chamada_24h')) {
+        const [, mes, dia] = String(aula.data).split('-')
+        const nomesProfs = recipientes.map((p: any) => p.nome).join(', ')
+        const msgSec = `⚠️ *Chamada pendente há 24h*\n\n${nomesProfs} ainda não lançou a chamada de *${turma?.nome ?? '?'}* (${horaFormatada} · ${dia}/${mes}).\n\nVerifiquem se a aula aconteceu. Se o professor faltou de verdade, registrem a falta no painel — o sistema não marca falta sozinho.`
+        if (!dryRun) {
+          for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
+          await sb.from('lembretes_chamada').insert({ aula_id: aula.id, tipo: 'sec_sem_chamada_24h' })
         }
+        log.push(`  → ${dryRun ? '[DRY] ' : ''}secretaria avisada (chamada pendente 24h, SEM marcar falta)`)
       }
     }
   }
@@ -143,9 +164,11 @@ async function handler(req: NextRequest) {
 
   const { data: subsSemSubstituto } = await sb
     .from('substituicoes')
-    .select('id, professor_ausente_id, aula_id, tem_atestado, professores!professor_ausente_id(nome, celular), aulas!inner(data, hora_inicio, hora_fim, turma_id, turmas(nome))')
+    .select('id, professor_ausente_id, aula_id, tem_atestado, motivo, professores!professor_ausente_id(nome, celular), aulas!inner(data, hora_inicio, hora_fim, turma_id, turmas(nome))')
     .is('professor_substituto_id', null)
     .eq('tem_atestado', false)
+    // Defensivo: nunca gerar reposição a partir de "chamada não lançada" (falta operacional, não real)
+    .or('motivo.is.null,motivo.neq.chamada_nao_lancada')
     .gte('aulas.data', seisAtras.toISOString().slice(0, 10))
     .limit(500)
 
@@ -163,7 +186,7 @@ async function handler(req: NextRequest) {
 
     const dataAula = new Date(aula.data + 'T12:00:00-03:00')
     const prazo = new Date(dataAula)
-    prazo.setDate(prazo.getDate() + 4)
+    prazo.setDate(prazo.getDate() + PRAZO_REPOSICAO_DIAS)
     const hojeStr = agora.toISOString().slice(0, 10)
     const prazoStr = prazo.toISOString().slice(0, 10)
     const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)

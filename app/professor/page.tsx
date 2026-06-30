@@ -52,11 +52,13 @@ export default async function ProfessorPage() {
     turmaIds = [...new Set(ids)]
   }
 
+  // Fonte de verdade única: pendente = sem chamada_concluida_em e não cancelada.
+  // (inclui status 'agendada' — antes ficavam invisíveis na home mesmo sem chamada lançada)
   let aulasPendentesQuery = sb
     .from('aulas')
     .select('id, data, hora_inicio, hora_fim, turmas(nome), professores(nome)')
     .is('chamada_concluida_em', null)
-    .in('status', ['aberta', 'concluida'])
+    .neq('status', 'cancelada')
     .gte('data', em7diasAtras)
     .lt('data', hoje)
     .order('data', { ascending: false })
