@@ -91,13 +91,13 @@ async function handler(req: NextRequest) {
 
   // Calendário: dias confirmados sem aula (feriado/recesso) — não cobrar chamada nesses dias.
   const { data: bloqueios } = await sb
-    .from('calendario_bloqueios')
+    .from('calendario_bloqueios' as any)
     .select('data')
     .eq('status', 'confirmado')
     .eq('tem_aula', false)
     .gte('data', janelaInicio.toISOString().slice(0, 10))
     .lte('data', agora.toISOString().slice(0, 10))
-  const datasBloqueadas = new Set((bloqueios ?? []).map((b: { data: string }) => b.data))
+  const datasBloqueadas = new Set(((bloqueios ?? []) as any[]).map(b => b.data))
 
   let enviados = 0
   const log: string[] = []

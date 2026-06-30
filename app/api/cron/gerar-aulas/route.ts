@@ -49,13 +49,13 @@ export async function POST(req: NextRequest) {
   // NÃO cancelamos nada automaticamente — apenas SINALIZAMOS aulas já existentes
   // em dias bloqueados para a secretaria revisar e decidir no painel.
   const { data: bloqueios } = await sb
-    .from('calendario_bloqueios')
+    .from('calendario_bloqueios' as any)
     .select('data')
     .eq('status', 'confirmado')
     .eq('tem_aula', false)
     .gte('data', hojeStr)
     .lte('data', fimStr)
-  const datasBloqueadas = new Set((bloqueios ?? []).map((b: { data: string }) => b.data))
+  const datasBloqueadas = new Set(((bloqueios ?? []) as any[]).map(b => b.data))
 
   let aulas_em_dia_bloqueado = 0
   if (datasBloqueadas.size > 0) {
