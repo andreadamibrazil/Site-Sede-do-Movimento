@@ -88,6 +88,23 @@ export const allEspetaculosQuery = groq`
   }
 `;
 
+// Espetáculos puxados automaticamente dos álbuns de galeria com a tag "Espetáculos".
+// Cada card linka para a galeria de fotos do álbum (/galerias/fotos/[slug]).
+// venue/featured são cruzados (por ano) com o documento "espetaculo" quando existir.
+export const espetaculoAlbunsQuery = groq`
+  *[_type == "galleryAlbum" && category == "Espetáculos" && active == true] | order(year desc) {
+    _id,
+    title,
+    "slug": slug.current,
+    year,
+    description,
+    coverImage,
+    "photoCount": count(photos),
+    "venue": *[_type == "espetaculo" && year == string(^.year)][0].venue,
+    "featured": *[_type == "espetaculo" && year == string(^.year)][0].featured
+  }
+`;
+
 // ─── Site Settings ───────────────────────────────────────────────────────────
 
 export const siteSettingsQuery = groq`

@@ -24,10 +24,10 @@ import { stats } from "@/lib/constants/mockData";
 import { siteConfig } from "@/lib/constants/siteConfig";
 import { formatDate } from "@/lib/utils/formatDate";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allPostsQuery, allEspetaculosQuery, siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
+import { allPostsQuery, espetaculoAlbunsQuery, siteSettingsQuery, recentGalleryPhotosQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
 import type { SanityImageSource } from "@sanity/image-url/lib/types/types";
-import type { SanityPost, SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
+import type { SanityPost, SanityEspetaculoAlbum, SanitySiteSettings } from "@/lib/sanity/types";
 
 const categorias = [
   { emoji: "💃", color: "from-brand-purple-600 to-brand-secondary", title: "Dança", tagline: "Disciplina, expressão e desenvolvimento corporal desde cedo.", description: "Ballet, jazz, sapateado, danças urbanas e contemporânea. Formação conjunta para todas as idades, do iniciante ao avançado." },
@@ -76,12 +76,12 @@ const faqItems = [
 export default async function HomePage() {
   const [{ data: postsData }, { data: espetaculosData }, { data: settingsData }, { data: galleryData }] = await Promise.all([
     sanityFetch({ query: allPostsQuery }),
-    sanityFetch({ query: allEspetaculosQuery }),
+    sanityFetch({ query: espetaculoAlbunsQuery }),
     sanityFetch({ query: siteSettingsQuery }),
     sanityFetch({ query: recentGalleryPhotosQuery }),
   ]);
   const recentPosts = ((postsData as SanityPost[]) ?? []).slice(0, 3);
-  const espetaculos = ((espetaculosData as SanityEspetaculo[]) ?? []).slice(0, 3);
+  const espetaculos = ((espetaculosData as SanityEspetaculoAlbum[]) ?? []).slice(0, 3);
   const imagens = (settingsData as SanitySiteSettings | null)?.imagens;
   const galleryAlbums = (galleryData as { photos: { img: SanityImageSource; alt?: string }[] }[] | null) ?? [];
   return (

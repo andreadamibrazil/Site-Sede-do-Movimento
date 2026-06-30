@@ -5,8 +5,8 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import EspetaculoCard from "@/components/sections/EspetaculoCard";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allEspetaculosQuery } from "@/lib/sanity/queries";
-import type { SanityEspetaculo } from "@/lib/sanity/types";
+import { allEspetaculosQuery, espetaculoAlbunsQuery } from "@/lib/sanity/queries";
+import type { SanityEspetaculo, SanityEspetaculoAlbum } from "@/lib/sanity/types";
 import EventSchema from "@/components/schema/EventSchema";
 import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 
@@ -18,17 +18,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function EspetaculosPage() {
-  const { data } = await sanityFetch({ query: allEspetaculosQuery });
-  const espetaculos = (data ?? []) as SanityEspetaculo[];
+  const [{ data: albunsData }, { data: docsData }] = await Promise.all([
+    sanityFetch({ query: espetaculoAlbunsQuery }),
+    sanityFetch({ query: allEspetaculosQuery }),
+  ]);
+  const espetaculos = (albunsData ?? []) as SanityEspetaculoAlbum[];
+  const espetaculoDocs = (docsData ?? []) as SanityEspetaculo[];
 
   return (
     <>
-      <EventSchema espetaculos={espetaculos} />
+      {/* SEO estruturado a partir dos documentos "espetaculo" (com teatro/venue) */}
+      <EventSchema espetaculos={espetaculoDocs} />
       <BreadcrumbSchema items={[{ label: "A Escola", href: "/a-escola" }, { label: "Espetáculos" }]} />
       <PageHero eyebrow="Espetáculos" title="A arte que vai ao palco" subtitle="Produções anuais nos principais teatros do Rio de Janeiro, com alunos de todas as idades." breadcrumbs={[{ label: "A Escola", href: "/a-escola" }, { label: "Espetáculos" }]} />
       <section className="section-padding bg-white">
         <div className="container-main">
-          <SectionTitle eyebrow="Nossas produções" title="Do estúdio ao grande palco" />
+          <SectionTitle eyebrow="Nossas produções" title="Do estúdio ao grande palco" subtitle="Clique em um espetáculo para ver a galeria de fotos completa." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {espetaculos.map((esp, i) => (
               <ScrollReveal key={esp.slug} delay={i * 0.07}>

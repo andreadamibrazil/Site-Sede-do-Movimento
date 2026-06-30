@@ -14,9 +14,9 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { stats, timelineEntries } from "@/lib/constants/mockData";
 import { sanityFetch } from "@/sanity/lib/live";
-import { allEspetaculosQuery, siteSettingsQuery } from "@/lib/sanity/queries";
+import { espetaculoAlbunsQuery, siteSettingsQuery } from "@/lib/sanity/queries";
 import { urlFor } from "@/sanity/lib/image";
-import type { SanityEspetaculo, SanitySiteSettings } from "@/lib/sanity/types";
+import type { SanityEspetaculoAlbum, SanitySiteSettings } from "@/lib/sanity/types";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("a-escola", {
@@ -36,10 +36,10 @@ const subPages = [
 
 export default async function AEscolaPage() {
   const [{ data }, { data: settingsData }] = await Promise.all([
-    sanityFetch({ query: allEspetaculosQuery }),
+    sanityFetch({ query: espetaculoAlbunsQuery }),
     sanityFetch({ query: siteSettingsQuery }),
   ]);
-  const espetaculos = ((data as SanityEspetaculo[]) ?? []).slice(0, 3);
+  const espetaculos = ((data as SanityEspetaculoAlbum[]) ?? []).slice(0, 3);
   const espacoFotos = (settingsData as SanitySiteSettings | null)?.imagens?.espacoFotos ?? [];
   return (
     <>

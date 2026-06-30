@@ -68,6 +68,20 @@ export interface SanityEspetaculo {
   featured: boolean;
 }
 
+// Espetáculo derivado de um álbum de galeria (category == "Espetáculos").
+// slug aponta para o álbum de fotos: /galerias/fotos/[slug].
+export interface SanityEspetaculoAlbum {
+  _id: string;
+  title: string;
+  slug: string;
+  year?: number;
+  description?: string;
+  coverImage?: SanityImageSource;
+  photoCount?: number;
+  venue?: string | null;
+  featured?: boolean | null;
+}
+
 // ─── SEO ─────────────────────────────────────────────────────────────────────
 
 export interface SanitySeoFields {
