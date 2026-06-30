@@ -193,26 +193,28 @@ async function handler(req: NextRequest) {
     const dataFormatada = dataAula.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
     if (!repExist) {
-      await sb.from('reposicoes').insert({
-        substituicao_id: sub.id,
-        turma_id: aula.turma_id,
-        professor_id: sub.professor_ausente_id,
-        prazo: prazoStr,
-        status: 'pendente',
-        notificou_secretaria: false,
-      })
+      if (!dryRun) {
+        await sb.from('reposicoes').insert({
+          substituicao_id: sub.id,
+          turma_id: aula.turma_id,
+          professor_id: sub.professor_ausente_id,
+          prazo: prazoStr,
+          status: 'pendente',
+          notificou_secretaria: false,
+        })
 
-      if (CELULARES_SECRETARIA.length > 0) {
-        const msgSec = `⚠️ *Reposição pendente*\n\nProfessor *${prof.nome}* faltou sem substituto na aula de *${turma?.nome ?? '?'}* (${horaFormatada} · ${dataFormatada}).\n\nEle tem até *${prazo.toLocaleDateString('pt-BR')}* para agendar a reposição.\n\nCobre ele agora! 📞`
-        for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
-        await sb.from('reposicoes').update({ notificou_secretaria: true }).eq('substituicao_id', sub.id)
-      }
+        if (CELULARES_SECRETARIA.length > 0) {
+          const msgSec = `⚠️ *Reposição pendente*\n\nProfessor *${prof.nome}* faltou sem substituto na aula de *${turma?.nome ?? '?'}* (${horaFormatada} · ${dataFormatada}).\n\nEle tem até *${prazo.toLocaleDateString('pt-BR')}* para agendar a reposição.\n\nCobre ele agora! 📞`
+          for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
+          await sb.from('reposicoes').update({ notificou_secretaria: true }).eq('substituicao_id', sub.id)
+        }
 
-      if (prof.celular) {
-        const msgProf = `Olá ${prof.nome}! 🙏\n\nSabemos que imprevistos acontecem. Como você não pôde estar na aula de *${turma?.nome ?? '?'}* (${horaFormatada} · ${dataFormatada}), precisamos garantir que os alunos não fiquem sem a aula deles.\n\nVocê tem até *${prazo.toLocaleDateString('pt-BR')}* para combinar uma *aula de reposição* com seus alunos — um horário que funcione para a maioria.\n\nQuando definir, avise a secretaria para registrar. Obrigada! 💙\nsededomovimento.art/professor`
-        await whatsapp(prof.celular, msgProf)
+        if (prof.celular) {
+          const msgProf = `Olá ${prof.nome}! 🙏\n\nSabemos que imprevistos acontecem. Como você não pôde estar na aula de *${turma?.nome ?? '?'}* (${horaFormatada} · ${dataFormatada}), precisamos garantir que os alunos não fiquem sem a aula deles.\n\nVocê tem até *${prazo.toLocaleDateString('pt-BR')}* para combinar uma *aula de reposição* com seus alunos — um horário que funcione para a maioria.\n\nQuando definir, avise a secretaria para registrar. Obrigada! 💙\nsededomovimento.art/professor`
+          await whatsapp(prof.celular, msgProf)
+        }
       }
-      log.push(`⚠ Reposição criada: ${prof.nome} → ${turma?.nome} (prazo: ${prazoStr})`)
+      log.push(`${dryRun ? '○ [DRY] ' : '⚠ '}Reposição criada: ${prof.nome} → ${turma?.nome} (prazo: ${prazoStr})`)
 
     } else if (repExist.status === 'pendente') {
       const diasRestantes = Math.ceil((prazo.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24))
@@ -225,18 +227,22 @@ async function handler(req: NextRequest) {
       if (!lembJaSent && diasRestantes >= 0 && diasRestantes <= 3 && prof.celular) {
         const urgencia = diasRestantes === 0 ? '🚨 HOJE é o prazo!' : `Faltam *${diasRestantes} dia(s)*`
         const msgProf = `${prof.nome}, lembrete de reposição! ⏰\n\nAula de *${turma?.nome ?? '?'}* (${dataFormatada}) ainda sem reposição agendada.\n\n${urgencia}\n\nCombine com os alunos e avise a secretaria.`
-        await whatsapp(prof.celular, msgProf)
-        await sb.from('lembretes_chamada').insert({ aula_id: sub.aula_id, tipo: tipoLembrete })
-        log.push(`↩ Lembrete reposição D${diasRestantes}: ${prof.nome}`)
+        if (!dryRun) {
+          await whatsapp(prof.celular, msgProf)
+          await sb.from('lembretes_chamada').insert({ aula_id: sub.aula_id, tipo: tipoLembrete })
+        }
+        log.push(`${dryRun ? '○ [DRY] ' : '↩ '}Lembrete reposição D${diasRestantes}: ${prof.nome}`)
       }
 
       if (hojeStr > prazoStr) {
-        await sb.from('reposicoes').update({ status: 'expirada' }).eq('substituicao_id', sub.id)
-        if (CELULARES_SECRETARIA.length > 0) {
-          const msgSec = `🔴 *Reposição expirada*\n\n*${prof.nome}* não agendou a reposição de *${turma?.nome ?? '?'}* (${dataFormatada}) no prazo.\n\nTomar providências.`
-          for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
+        if (!dryRun) {
+          await sb.from('reposicoes').update({ status: 'expirada' }).eq('substituicao_id', sub.id)
+          if (CELULARES_SECRETARIA.length > 0) {
+            const msgSec = `🔴 *Reposição expirada*\n\n*${prof.nome}* não agendou a reposição de *${turma?.nome ?? '?'}* (${dataFormatada}) no prazo.\n\nTomar providências.`
+            for (const cel of CELULARES_SECRETARIA) await whatsapp(cel, msgSec)
+          }
         }
-        log.push(`✗ Reposição expirada: ${prof.nome} → ${turma?.nome}`)
+        log.push(`${dryRun ? '○ [DRY] ' : '✗ '}Reposição expirada: ${prof.nome} → ${turma?.nome}`)
       }
     }
   }
