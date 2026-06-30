@@ -89,10 +89,21 @@ async function handler(req: NextRequest) {
     .gte('data', janelaInicio.toISOString().slice(0, 10))
     .lte('data', agora.toISOString().slice(0, 10))
 
+  // Calendário: dias confirmados sem aula (feriado/recesso) — não cobrar chamada nesses dias.
+  const { data: bloqueios } = await sb
+    .from('calendario_bloqueios')
+    .select('data')
+    .eq('status', 'confirmado')
+    .eq('tem_aula', false)
+    .gte('data', janelaInicio.toISOString().slice(0, 10))
+    .lte('data', agora.toISOString().slice(0, 10))
+  const datasBloqueadas = new Set((bloqueios ?? []).map((b: { data: string }) => b.data))
+
   let enviados = 0
   const log: string[] = []
 
   for (const aula of (aulas ?? [])) {
+    if (datasBloqueadas.has(aula.data)) continue // feriado/recesso — não cobra chamada
     const turma = (aula as any).turmas
     const prof = turma?.professores
     const horaFormatada = aula.hora_inicio?.slice(0, 5) + '–' + aula.hora_fim?.slice(0, 5)

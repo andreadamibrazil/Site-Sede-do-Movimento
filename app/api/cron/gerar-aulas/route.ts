@@ -41,6 +41,32 @@ export async function POST(req: NextRequest) {
   hoje.setHours(0, 0, 0, 0)
   const fim = new Date(hoje)
   fim.setDate(fim.getDate() + SEMANAS_ANTECEDENCIA * 7)
+  const hojeStr = hoje.toISOString().slice(0, 10)
+  const fimStr = fim.toISOString().slice(0, 10)
+
+  // Calendário de bloqueios: dias confirmados como SEM aula (feriado/recesso).
+  // NÃO geramos aula nesses dias (não criar phantom é seguro e não destrói nada).
+  // NÃO cancelamos nada automaticamente — apenas SINALIZAMOS aulas já existentes
+  // em dias bloqueados para a secretaria revisar e decidir no painel.
+  const { data: bloqueios } = await sb
+    .from('calendario_bloqueios')
+    .select('data')
+    .eq('status', 'confirmado')
+    .eq('tem_aula', false)
+    .gte('data', hojeStr)
+    .lte('data', fimStr)
+  const datasBloqueadas = new Set((bloqueios ?? []).map((b: { data: string }) => b.data))
+
+  let aulas_em_dia_bloqueado = 0
+  if (datasBloqueadas.size > 0) {
+    const { data: existentes } = await sb
+      .from('aulas')
+      .select('id')
+      .in('data', [...datasBloqueadas])
+      .is('chamada_concluida_em', null)
+      .in('status', ['agendada', 'aberta'])
+    aulas_em_dia_bloqueado = existentes?.length ?? 0
+  }
 
   const rows: {
     turma_id: string
@@ -67,12 +93,13 @@ export async function POST(req: NextRequest) {
       cursor.setDate(cursor.getDate() + diff)
 
       while (cursor <= fim) {
-        if (!dataFim || cursor <= dataFim) {
+        const dataStr = cursor.toISOString().slice(0, 10)
+        if ((!dataFim || cursor <= dataFim) && !datasBloqueadas.has(dataStr)) {
           rows.push({
             turma_id: turma.id,
             professor_id: turma.professor_id ?? null,
             sala_id: turma.sala_id ?? null,
-            data: cursor.toISOString().slice(0, 10),
+            data: dataStr,
             hora_inicio: h.hora_inicio,
             hora_fim: h.hora_fim,
             status: 'agendada',
@@ -84,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (rows.length === 0) {
-    return NextResponse.json({ ok: true, criadas: 0, mensagem: 'sem aulas a gerar' })
+    return NextResponse.json({ ok: true, criadas: 0, dias_bloqueados: datasBloqueadas.size, aulas_em_dia_bloqueado_p_revisar: aulas_em_dia_bloqueado, mensagem: 'sem aulas a gerar' })
   }
 
   // Batch insert in chunks of 500 to stay within payload limits
@@ -112,5 +139,7 @@ export async function POST(req: NextRequest) {
     candidatas: rows.length,
     criadas,
     erros,
+    dias_bloqueados: datasBloqueadas.size,
+    aulas_em_dia_bloqueado_p_revisar: aulas_em_dia_bloqueado,
   })
 }
