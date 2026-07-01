@@ -34,6 +34,10 @@ export const navigationItems: NavItem[] = [
     href: "/ensino/horarios",
   },
   {
+    label: "Seletiva",
+    href: "/seletiva",
+  },
+  {
     label: "Projetos",
     href: "/companhia-profissional",
     children: [
