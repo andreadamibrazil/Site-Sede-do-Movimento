@@ -79,7 +79,9 @@ export async function POST(req: NextRequest) {
 
     // ---- coleta ----
     const criancaNome = str(fd, "crianca_nome");
+    const nomeArtistico = str(fd, "nome_artistico");
     const criancaNascimento = str(fd, "crianca_nascimento");
+    const altura = str(fd, "altura");
     const criancaCidade = str(fd, "crianca_cidade");
     const responsavelNome = str(fd, "responsavel_nome");
     const responsavelParentesco = str(fd, "responsavel_parentesco");
@@ -90,6 +92,8 @@ export async function POST(req: NextRequest) {
     const experienciaDescricao = str(fd, "experiencia_descricao");
     const portfolioUrl = str(fd, "portfolio_url");
     const selftapeUrl = str(fd, "selftape_url");
+    const fazBallet = bool(fd, "faz_ballet");
+    const balletVideoUrl = str(fd, "ballet_video_url");
     const materialProfissional = bool(fd, "material_profissional");
     const materialProfissionalLink = str(fd, "material_profissional_link");
     const consentimentoMenor = bool(fd, "consentimento_menor");
@@ -128,6 +132,9 @@ export async function POST(req: NextRequest) {
       experienciaDescricao.length > LIMITS.texto ||
       portfolioUrl.length > LIMITS.url ||
       selftapeUrl.length > LIMITS.url ||
+      balletVideoUrl.length > LIMITS.url ||
+      nomeArtistico.length > LIMITS.nome ||
+      altura.length > 20 ||
       materialProfissionalLink.length > LIMITS.url
     ) {
       return NextResponse.json({ error: "Um ou mais campos excedem o tamanho permitido." }, { status: 400 });
@@ -138,15 +145,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "E-mail do responsável inválido." }, { status: 400 });
     }
 
-    // ---- data de nascimento + faixa etária 10 a 14 ----
+    // ---- data de nascimento + faixa etária 11 a 14 ----
     const nascimento = new Date(criancaNascimento);
     if (Number.isNaN(nascimento.getTime())) {
       return NextResponse.json({ error: "Data de nascimento inválida." }, { status: 400 });
     }
     const idade = calcularIdade(nascimento);
-    if (idade < 10 || idade > 14) {
+    if (idade < 11 || idade > 14) {
       return NextResponse.json(
-        { error: "Esta seletiva é para candidatas de 10 a 14 anos. A idade informada está fora dessa faixa." },
+        { error: "Esta seletiva é para candidatas de 11 a 14 anos. A idade informada está fora dessa faixa." },
         { status: 400 }
       );
     }
@@ -155,6 +162,7 @@ export async function POST(req: NextRequest) {
     for (const [label, url] of [
       ["portfólio", portfolioUrl],
       ["self-tape", selftapeUrl],
+      ["vídeo de ballet", balletVideoUrl],
       ["material profissional", materialProfissionalLink],
     ] as const) {
       if (url && !isSafeUrl(url)) {
@@ -234,8 +242,10 @@ export async function POST(req: NextRequest) {
       .from("seletiva_longa_2026_inscricoes")
       .insert({
         crianca_nome: criancaNome,
+        nome_artistico: nomeArtistico || null,
         crianca_nascimento: criancaNascimento,
         crianca_idade: idade,
+        altura: altura || null,
         crianca_cidade: criancaCidade || null,
         responsavel_nome: responsavelNome,
         responsavel_parentesco: responsavelParentesco || null,
@@ -246,6 +256,8 @@ export async function POST(req: NextRequest) {
         experiencia_descricao: experienciaDescricao || null,
         portfolio_url: portfolioUrl || null,
         selftape_url: selftapeUrl || null,
+        faz_ballet: fazBallet,
+        ballet_video_url: balletVideoUrl || null,
         foto_drive_url: fotoDriveUrl,
         foto_drive_id: fotoDriveId,
         material_profissional: materialProfissional,
@@ -280,6 +292,8 @@ export async function POST(req: NextRequest) {
       const sMail = escapeHtml(responsavelEmail);
       const linhas = [
         ["Candidata", `${sName} (${idade} anos)`],
+        ["Nome artístico", escapeHtml(nomeArtistico) || "—"],
+        ["Altura", escapeHtml(altura) || "—"],
         ["Cidade", escapeHtml(criancaCidade) || "—"],
         ["Responsável", `${sResp}${responsavelParentesco ? ` (${escapeHtml(responsavelParentesco)})` : ""}`],
         ["WhatsApp", sWhats],
@@ -287,6 +301,7 @@ export async function POST(req: NextRequest) {
         ["Já fez TV/Cinema", experienciaTvCinema ? escapeHtml(experienciaDescricao) || "Sim" : "Não"],
         ["Portfólio", portfolioUrl ? escapeHtml(portfolioUrl) : "—"],
         ["Self-tape", selftapeUrl ? escapeHtml(selftapeUrl) : "—"],
+        ["Faz ballet", fazBallet ? (balletVideoUrl ? `Sim — ${escapeHtml(balletVideoUrl)}` : "Sim") : "Não"],
         ["Foto", fotoDriveUrl ? escapeHtml(fotoDriveUrl) : "não enviada"],
         [
           "Material profissional pronto",

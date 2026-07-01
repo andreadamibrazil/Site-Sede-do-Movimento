@@ -5,13 +5,13 @@ import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import SeletivaForm from "@/components/sections/SeletivaForm";
-import { Drama, PersonStanding, Music, ShieldCheck, ClipboardList, Video, Clapperboard, Trophy } from "lucide-react";
+import { Drama, PersonStanding, Music, ShieldCheck, ClipboardList, Video, Clapperboard, Trophy, Calendar, MapPin } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("seletiva", {
     title: "Seletiva para longa-metragem",
     description:
-      "Seletiva de elenco da Sede do Movimento para longa-metragem — candidatas de 10 a 14 anos. Faça a inscrição com o material de audição.",
+      "Seletiva de elenco da Sede do Movimento para longa-metragem — candidatas de 11 a 14 anos. Faça a inscrição com o material de audição.",
   });
 }
 
@@ -41,9 +41,21 @@ export default function SeletivaPage() {
       <PageHero
         eyebrow="Seletiva de Elenco"
         title={"Seletiva para longa‑metragem"}
-        subtitle="Estamos avaliando candidatas de 10 a 14 anos para um longa-metragem. Inscreva-se com o material de audição."
+        subtitle="Estamos avaliando candidatas de 11 a 14 anos para um longa-metragem. Inscreva-se com o material de audição."
         breadcrumbs={[{ label: "Seletiva" }]}
       />
+
+      {/* Data e local da seletiva presencial */}
+      <section className="bg-brand-purple-600 text-white">
+        <div className="container-main py-4 flex flex-col sm:flex-row items-center justify-center gap-x-10 gap-y-2 text-center">
+          <span className="flex items-center gap-2 font-semibold">
+            <Calendar size={18} className="shrink-0" /> Seletiva presencial: 07 de julho
+          </span>
+          <span className="flex items-center gap-2">
+            <MapPin size={18} className="shrink-0" /> Sede do Movimento — Av. Paulo de Frontin, 698, Rio Comprido – RJ
+          </span>
+        </div>
+      </section>
 
       {/* Manifesto — artistas completos */}
       <section className="section-padding bg-white">
