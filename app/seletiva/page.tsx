@@ -5,7 +5,7 @@ import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import PageHero from "@/components/sections/PageHero";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import SeletivaForm from "@/components/sections/SeletivaForm";
-import { Drama, PersonStanding, Music, ShieldCheck, ClipboardList, Video, Clapperboard, Trophy, Calendar, MapPin } from "lucide-react";
+import { Drama, PersonStanding, Music, ShieldCheck, ClipboardList, Video, Clapperboard, Trophy, Calendar, MapPin, Clock } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("seletiva", {
@@ -49,7 +49,10 @@ export default function SeletivaPage() {
       <section className="bg-brand-purple-600 text-white">
         <div className="container-main py-4 flex flex-col sm:flex-row items-center justify-center gap-x-10 gap-y-2 text-center">
           <span className="flex items-center gap-2 font-semibold">
-            <Calendar size={18} className="shrink-0" /> Seletiva presencial: 07 de julho
+            <Clock size={18} className="shrink-0" /> Inscrições até 06/07
+          </span>
+          <span className="flex items-center gap-2 font-semibold">
+            <Calendar size={18} className="shrink-0" /> Seletiva presencial: 07/07
           </span>
           <span className="flex items-center gap-2">
             <MapPin size={18} className="shrink-0" /> Sede do Movimento — Av. Paulo de Frontin, 698, Rio Comprido – RJ
@@ -139,7 +142,10 @@ export default function SeletivaPage() {
             <div className="text-center mb-10">
               <p className="text-brand-purple-600 font-bold text-xs uppercase tracking-widest mb-3">Inscrição</p>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Faça a inscrição</h2>
-              <p className="text-gray-500 mt-3">Preencha os dados da candidata e do responsável e envie o material.</p>
+              <p className="text-gray-500 mt-3">
+                Preencha os dados da candidata e do responsável e envie o material.{" "}
+                <strong className="text-gray-700">As inscrições vão até 06/07</strong> — a seletiva presencial é no dia 07/07.
+              </p>
             </div>
             <div className="bg-gray-50 rounded-2xl border border-gray-100 p-6 sm:p-8">
               <SeletivaForm />
