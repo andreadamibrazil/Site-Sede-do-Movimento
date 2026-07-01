@@ -90,15 +90,6 @@ export default function SeletivaPage() {
               Não passou nesta seletiva? Isso não é o fim do caminho — é o começo. Nossas turmas de teatro, dança e
               música existem justamente para preparar quem sonha em viver da arte.
             </p>
-            <div className="mt-8 max-w-sm mx-auto">
-              <Image
-                src="/images/seletiva/zion-artista-completo.jpg"
-                alt="Zion, aluno da Sede do Movimento, fantasiado de príncipe — acredite, ensaie e seja o príncipe, o bailarino, o músico e o artista."
-                width={1080}
-                height={1080}
-                className="rounded-2xl shadow-brand-md w-full h-auto"
-              />
-            </div>
           </ScrollReveal>
         </div>
       </section>
@@ -210,6 +201,41 @@ export default function SeletivaPage() {
                 >
                   Ver no Instagram
                 </a>
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* Reel do Auto da Paixão de Cristo */}
+          <ScrollReveal>
+            <div className="max-w-md mx-auto mb-12">
+              <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm bg-white">
+                <iframe
+                  src="https://www.instagram.com/reel/DJCbcE5uug0/embed/"
+                  className="w-full"
+                  style={{ minHeight: 560, border: "none" }}
+                  scrolling="no"
+                  title="Reel do Auto da Paixão de Cristo — Sede do Movimento"
+                />
+              </div>
+              <p className="text-gray-500 text-sm text-center mt-3">
+                Alunos, professores e o diretor da Sede na apresentação do Auto da Paixão de Cristo.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* Zion — artista completo (musical 2025) */}
+          <ScrollReveal>
+            <div className="max-w-sm mx-auto mb-12">
+              <Image
+                src="/images/seletiva/zion-artista-completo.jpg"
+                alt="Zion, aluno da Sede do Movimento, fantasiado de príncipe no musical de 2025 — acredite, ensaie e seja o príncipe, o bailarino, o músico e o artista."
+                width={1080}
+                height={1080}
+                className="rounded-2xl shadow-brand-md w-full h-auto"
+              />
+              <p className="text-gray-500 text-sm text-center mt-4">
+                Zion, aos 7 anos, cantou, dançou e interpretou no nosso musical de 2025 — porque aqui a gente forma
+                artistas completos.
               </p>
             </div>
           </ScrollReveal>
