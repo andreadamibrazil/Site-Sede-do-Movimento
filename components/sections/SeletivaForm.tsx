@@ -17,6 +17,7 @@ export default function SeletivaForm() {
   const [error, setError] = useState("");
   const [temExperiencia, setTemExperiencia] = useState(false);
   const [temMaterial, setTemMaterial] = useState(false);
+  const [temBallet, setTemBallet] = useState(false);
   const [fotoNome, setFotoNome] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -88,11 +89,21 @@ export default function SeletivaForm() {
               <input name="crianca_nascimento" type="date" required className={cn(inputClass, "cursor-pointer")} />
             </div>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Nome artístico</label>
+              <input name="nome_artistico" type="text" placeholder="Se tiver" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>Altura</label>
+              <input name="altura" type="text" placeholder="Ex: 1,52 m" className={inputClass} />
+            </div>
+          </div>
           <div>
             <label className={labelClass}>Cidade / bairro</label>
             <input name="crianca_cidade" type="text" placeholder="Onde mora" className={inputClass} />
           </div>
-          <p className="text-xs text-gray-400">Esta seletiva é para meninas de 10 a 14 anos.</p>
+          <p className="text-xs text-gray-400">Esta seletiva é para meninas de 11 a 14 anos.</p>
         </div>
       </div>
 
@@ -189,6 +200,28 @@ export default function SeletivaForm() {
             <p className="text-xs text-gray-400 mt-1">
               Um vídeo curto (até 1 min) da criança se apresentando. Suba no YouTube/Drive e cole o link.
             </p>
+          </div>
+
+          <div>
+            <label className={labelClass}>Faz ballet?</label>
+            <div className="flex gap-4 mb-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="radio" name="faz_ballet" value="true" onChange={() => setTemBallet(true)} className="w-4 h-4 accent-brand-purple-600" />
+                Sim
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="radio" name="faz_ballet" value="false" defaultChecked onChange={() => setTemBallet(false)} className="w-4 h-4 accent-brand-purple-600" />
+                Não
+              </label>
+            </div>
+            {temBallet && (
+              <input
+                name="ballet_video_url"
+                type="url"
+                placeholder="Link de um vídeo dançando (YouTube/Drive/Instagram)"
+                className={inputClass}
+              />
+            )}
           </div>
 
           <div>
