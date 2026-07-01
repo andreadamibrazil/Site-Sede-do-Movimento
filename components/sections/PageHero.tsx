@@ -75,7 +75,7 @@ export default function PageHero({ eyebrow, title, subtitle, breadcrumbs, classN
           <p className="text-brand-pink font-bold text-xs uppercase tracking-[0.14em] mb-3">{eyebrow}</p>
         )}
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 max-w-2xl">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4 max-w-2xl text-balance">
           {title}
         </h1>
 
