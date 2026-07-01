@@ -6,6 +6,10 @@ import YouTubeEmbed from "@/components/ui/YouTubeEmbed";
 import Badge from "@/components/ui/Badge";
 
 const CATEGORY_BADGE: Record<string, "accent" | "secondary" | "primary" | "success" | "neutral"> = {
+  "Web série": "accent",
+  "Vídeo dança": "secondary",
+  "Musical": "primary",
+  "Cobertura de eventos": "success",
   "Espetáculos": "accent",
   "Bastidores": "secondary",
   "Aulas": "primary",

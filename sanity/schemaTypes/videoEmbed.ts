@@ -2,6 +2,10 @@ import { defineField, defineType } from "sanity";
 import { PlayIcon } from "@sanity/icons";
 
 const CATEGORY_OPTIONS = [
+  { title: "Web série", value: "Web série" },
+  { title: "Vídeo dança", value: "Vídeo dança" },
+  { title: "Musical", value: "Musical" },
+  { title: "Cobertura de eventos", value: "Cobertura de eventos" },
   { title: "Espetáculos", value: "Espetáculos" },
   { title: "Bastidores", value: "Bastidores" },
   { title: "Aulas", value: "Aulas" },
