@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
 import BreadcrumbSchema from "@/components/schema/BreadcrumbSchema";
 import PageHero from "@/components/sections/PageHero";
@@ -89,6 +90,15 @@ export default function SeletivaPage() {
               Não passou nesta seletiva? Isso não é o fim do caminho — é o começo. Nossas turmas de teatro, dança e
               música existem justamente para preparar quem sonha em viver da arte.
             </p>
+            <div className="mt-8 max-w-sm mx-auto">
+              <Image
+                src="/images/seletiva/zion-artista-completo.jpg"
+                alt="Zion, aluno da Sede do Movimento, fantasiado de príncipe — acredite, ensaie e seja o príncipe, o bailarino, o músico e o artista."
+                width={1080}
+                height={1080}
+                className="rounded-2xl shadow-brand-md w-full h-auto"
+              />
+            </div>
           </ScrollReveal>
         </div>
       </section>
@@ -165,6 +175,44 @@ export default function SeletivaPage() {
             Esta não é a nossa primeira seletiva. Conheça um pouco do que já produzimos e das trajetórias que começaram
             aqui.
           </p>
+
+          {/* Corpus Christi 2026 — Auto da Paixão de Cristo */}
+          <ScrollReveal>
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative aspect-[3/2] rounded-2xl overflow-hidden">
+                  <Image
+                    src="/images/seletiva/corpus-christi-2026-palco.jpg"
+                    alt="Alunos da Sede do Movimento cantando e atuando no palco do Auto da Paixão de Cristo 2026"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                  />
+                </div>
+                <div className="relative aspect-[3/2] rounded-2xl overflow-hidden">
+                  <Image
+                    src="/images/seletiva/corpus-christi-2026-tv.jpg"
+                    alt="Aluno da Sede do Movimento sendo entrevistado pela TV no Auto da Paixão de Cristo 2026"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, 50vw"
+                  />
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm text-center mt-4">
+                No <strong className="text-gray-700">Auto da Paixão de Cristo 2026</strong>, alunos, professores e o
+                diretor da Sede foram parte importante da apresentação — com ensaios aqui na escola.{" "}
+                <a
+                  href="https://www.instagram.com/sededomovimento/reel/DJCbcE5uug0/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-purple-600 font-semibold hover:underline"
+                >
+                  Ver no Instagram
+                </a>
+              </p>
+            </div>
+          </ScrollReveal>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
             {jaFizemos.map(({ icon: Icon, title, desc, href }, i) => (
               <ScrollReveal key={href} delay={i * 0.1}>

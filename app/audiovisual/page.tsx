@@ -1,12 +1,9 @@
 import { Metadata } from "next";
 import { getPageMetadata } from "@/lib/utils/getPageMetadata";
-import Link from "next/link";
-import { ExternalLink, Video, Film, Share2 } from "lucide-react";
+import { Video, Film, Share2 } from "lucide-react";
 import PageHero from "@/components/sections/PageHero";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import Button from "@/components/ui/Button";
-import { siteConfig } from "@/lib/constants/siteConfig";
 import { sanityFetch } from "@/sanity/lib/live";
 import { activeVideosQuery } from "@/lib/sanity/queries";
 import type { SanityVideoEmbed } from "@/lib/sanity/types";
@@ -54,10 +51,7 @@ export default async function AudiovisualPage() {
         eyebrow="Sede Audiovisual"
         title="Audiovisual"
         subtitle="Registro, produção e criação audiovisual das artes cênicas"
-        breadcrumbs={[
-          { label: "Início", href: "/" },
-          { label: "Audiovisual" },
-        ]}
+        breadcrumbs={[{ label: "Audiovisual" }]}
       />
 
       {/* Full-width intro */}
@@ -82,15 +76,6 @@ export default async function AudiovisualPage() {
                   empresas que buscam qualidade cinematográfica para registrar seus trabalhos.
                 </p>
               </div>
-              <Link href={siteConfig.externalLinks.audiovisual} target="_blank" rel="noopener noreferrer">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  rightIcon={<ExternalLink size={16} />}
-                >
-                  Acessar plataforma
-                </Button>
-              </Link>
             </ScrollReveal>
           </div>
         </div>
