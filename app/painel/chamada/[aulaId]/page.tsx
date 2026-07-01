@@ -61,11 +61,14 @@ export default async function ChamadaPage({
     .eq('turma_id', aula.turma_id)
     .is('data_saida', null)
 
-  const alunos = matriculaTurmas
+  const alunosRaw = matriculaTurmas
     ?.map((mt: any) => mt.matriculas?.alunos)
     .filter(Boolean)
-    .filter((a: any) => a.status_pedagogico === 'ativo')
-    .sort((a: any, b: any) => a.nome.localeCompare(b.nome)) ?? []
+    .filter((a: any) => a.status_pedagogico === 'ativo') ?? []
+  // Dedupe por id: aluno com >1 matrícula ativa na mesma turma aparecia repetido
+  // e quebrava o upsert de presenças (onConflict aula_id,aluno_id)
+  const alunos = Array.from(new Map(alunosRaw.map((a: any) => [a.id, a])).values())
+    .sort((a: any, b: any) => a.nome.localeCompare(b.nome))
 
   // Presenças já registradas
   const { data: presencasExistentes } = await supabase

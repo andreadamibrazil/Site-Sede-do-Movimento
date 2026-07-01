@@ -91,11 +91,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'aluno_id inválido para esta turma' }, { status: 400 })
     }
 
-    const presencasComRegistro = presencas.map((p: any) => ({
-      ...p,
-      aula_id: aulaId,
-      registrado_por: user.id,
-    }))
+    // Dedupe por aluno_id: aluno com >1 matrícula ativa na mesma turma gerava
+    // linhas repetidas → upsert com onConflict(aula_id,aluno_id) falhava com
+    // "ON CONFLICT DO UPDATE command cannot affect row a second time" (21000)
+    const porAluno = new Map<string, any>()
+    for (const p of presencas) {
+      porAluno.set(p.aluno_id, { ...p, aula_id: aulaId, registrado_por: user.id })
+    }
+    const presencasComRegistro = Array.from(porAluno.values())
     const { error } = await sb
       .from('presencas')
       .upsert(presencasComRegistro, { onConflict: 'aula_id,aluno_id' })

@@ -78,12 +78,15 @@ export default async function ProfessorChamadaPage({
       .neq('status', 'convertido'),
   ])
 
-  const alunos = matriculaTurmas
+  const alunosRaw = matriculaTurmas
     ?.filter((mt: any) => mt.matriculas?.status === 'ativa')
     .map((mt: any) => mt.matriculas?.alunos)
     .filter(Boolean)
-    .filter((a: any) => a.status_pedagogico === 'ativo')
-    .sort((a: any, b: any) => a.nome.localeCompare(b.nome)) ?? []
+    .filter((a: any) => a.status_pedagogico === 'ativo') ?? []
+  // Dedupe por id: aluno com >1 matrícula ativa na mesma turma aparecia repetido
+  // e quebrava o upsert de presenças (onConflict aula_id,aluno_id)
+  const alunos = Array.from(new Map(alunosRaw.map((a: any) => [a.id, a])).values())
+    .sort((a: any, b: any) => a.nome.localeCompare(b.nome))
 
   const mapaPresencas = Object.fromEntries(
     (presencasExistentes ?? []).map(p => [p.aluno_id, p])
