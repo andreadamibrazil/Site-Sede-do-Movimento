@@ -40,7 +40,7 @@ export default function SeletivaPage() {
       <BreadcrumbSchema items={[{ label: "Seletiva" }]} />
       <PageHero
         eyebrow="Seletiva de Elenco"
-        title="Seletiva para longa-metragem"
+        title={"Seletiva para longa‑metragem"}
         subtitle="Estamos avaliando candidatas de 10 a 14 anos para um longa-metragem. Inscreva-se com o material de audição."
         breadcrumbs={[{ label: "Seletiva" }]}
       />
