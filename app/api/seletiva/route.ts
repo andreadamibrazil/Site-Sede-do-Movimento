@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { createServiceClient } from "@/lib/supabase/server";
 import { uploadParaDrive, DRIVE_FOLDERS } from "@/lib/google-drive";
@@ -262,11 +261,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Erro ao salvar a inscrição. Tente novamente." }, { status: 500 });
     }
 
-    // ---- e-mails (best-effort) ----
+    // ---- e-mails (best-effort) via SMTP (mesmo envio do sistema da Sede) ----
     try {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const fromEmail = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-      const toEmail = process.env.RESEND_TO_EMAIL ?? "contato@sededomovimento.art";
+      const { createTransport } = await import("nodemailer");
+      const SMTP_FROM = process.env.SMTP_FROM_EMAIL ?? "andreadami@sededomovimento.art";
+      const transport = createTransport({
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        auth: { user: process.env.SMTP_USERNAME ?? SMTP_FROM, pass: process.env.SMTP_PASSWORD },
+      });
+      const from = `"Sede do Movimento" <${SMTP_FROM}>`;
+      const toEmail = process.env.EMAIL_ADMIN ?? SMTP_FROM;
 
       const sName = escapeHtml(criancaNome);
       const sResp = escapeHtml(responsavelNome);
@@ -292,8 +298,8 @@ export async function POST(req: NextRequest) {
       ];
 
       // Notificação interna
-      await resend.emails.send({
-        from: fromEmail,
+      await transport.sendMail({
+        from,
         to: toEmail,
         replyTo: responsavelEmail,
         subject: `[Seletiva Longa 2026] ${criancaNome} — ${idade} anos`,
@@ -323,8 +329,8 @@ export async function POST(req: NextRequest) {
       });
 
       // Confirmação ao responsável
-      await resend.emails.send({
-        from: fromEmail,
+      await transport.sendMail({
+        from,
         to: responsavelEmail,
         subject: "Recebemos a inscrição na Seletiva — Sede do Movimento",
         html: `
