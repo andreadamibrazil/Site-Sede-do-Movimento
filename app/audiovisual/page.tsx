@@ -7,6 +7,12 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import Button from "@/components/ui/Button";
 import { siteConfig } from "@/lib/constants/siteConfig";
+import { sanityFetch } from "@/sanity/lib/live";
+import { activeVideosQuery } from "@/lib/sanity/queries";
+import type { SanityVideoEmbed } from "@/lib/sanity/types";
+import VideosClient from "../galerias/videos/VideosClient";
+
+const AUDIOVISUAL_CATS = ["Web série", "Vídeo dança", "Musical", "Cobertura de eventos"];
 
 export async function generateMetadata(): Promise<Metadata> {
   return getPageMetadata("audiovisual", {
@@ -36,7 +42,12 @@ const services = [
   },
 ];
 
-export default function AudiovisualPage() {
+export default async function AudiovisualPage() {
+  const { data } = await sanityFetch({ query: activeVideosQuery });
+  const videos = ((data as SanityVideoEmbed[] | null) ?? []).filter(
+    (v) => v.category && AUDIOVISUAL_CATS.includes(v.category)
+  );
+
   return (
     <>
       <PageHero
@@ -109,6 +120,21 @@ export default function AudiovisualPage() {
         </div>
       </section>
 
+      {/* Acervo de vídeos por categoria */}
+      {videos.length > 0 && (
+        <section className="section-padding bg-white">
+          <div className="container-main">
+            <SectionTitle
+              eyebrow="Nossa produção"
+              title="Assista aos nossos trabalhos"
+              subtitle="Web séries, vídeo danças, musicais e cobertura dos nossos eventos."
+            />
+            <div className="mt-12">
+              <VideosClient videos={videos} />
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
