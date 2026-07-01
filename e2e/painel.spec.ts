@@ -5,7 +5,7 @@
 import { test, expect } from '@playwright/test'
 
 const PAGINAS_PAINEL = [
-  { path: '/painel/dashboard',       titulo: /dashboard|painel|sede/i },
+  { path: '/painel',                 titulo: /dashboard|painel|sede/i },
   { path: '/painel/alunos',          titulo: /alunos/i },
   { path: '/painel/turmas',          titulo: /turmas/i },
   { path: '/painel/professores',     titulo: /professores/i },
@@ -91,10 +91,10 @@ test.describe('Chamada via painel — sem restrição de prazo para admin', () =
       // Admin nunca deve ver "Prazo expirado" — essa é a verificação crítica
       await expect(page.locator('text=🔒 Prazo expirado')).toHaveCount(0)
 
-      // Se a chamada já foi feita, deve ter botão Corrigir; se não, deve ter Salvar
+      // Se a chamada já foi feita, deve ter botão Corrigir; se não, Rascunho/Concluir
       const temCorrigir = await page.locator('button:has-text("Corrigir")').count()
-      const temSalvar = await page.locator('button:has-text("Salvar"), button:has-text("Lançar")').count()
-      expect(temCorrigir + temSalvar, 'Admin deve ter acesso à chamada (Corrigir ou Salvar)').toBeGreaterThan(0)
+      const temEditar = await page.locator('button:has-text("Concluir"), button:has-text("Rascunho"), button:has-text("Salvar"), button:has-text("Lançar")').count()
+      expect(temCorrigir + temEditar, 'Admin deve ter acesso à chamada (Corrigir ou concluir/rascunho)').toBeGreaterThan(0)
     }
   })
 })
