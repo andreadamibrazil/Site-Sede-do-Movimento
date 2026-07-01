@@ -47,6 +47,9 @@ export default function SeletivaForm() {
         throw new Error(json.error ?? "Erro ao enviar.");
       }
       setSubmitted(true);
+      // Meta Pixel: conversão (sem dados pessoais) para otimizar o anúncio
+      const w = window as unknown as { fbq?: (...args: unknown[]) => void };
+      if (typeof w.fbq === "function") w.fbq("track", "Lead");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao enviar. Tente novamente.");
     } finally {

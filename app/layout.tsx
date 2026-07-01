@@ -7,6 +7,7 @@ import { SanityLive } from "@/sanity/lib/live";
 import { VisualEditing } from "@/components/shared/VisualEditing";
 import { DisableDraftMode } from "@/components/shared/DisableDraftMode";
 import GoogleTagManager from "@/components/analytics/GoogleTagManager";
+import MetaPixel from "@/components/analytics/MetaPixel";
 import OrganizationSchema from "@/components/schema/OrganizationSchema";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
@@ -26,6 +27,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID ?? "";
+const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { data: settings } = await sanityFetch({ query: siteSettingsQuery });
@@ -85,6 +87,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="font-sans antialiased">
         {GTM_ID && <GoogleTagManager gtmId={GTM_ID} />}
+        {META_PIXEL_ID && <MetaPixel pixelId={META_PIXEL_ID} />}
         <Script
           id="microsoft-clarity"
           strategy="afterInteractive"

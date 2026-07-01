@@ -14,6 +14,7 @@ const ContentSecurityPolicy = [
     "https://*.clarity.ms",
     "https://va.vercel-scripts.com",
     "https://*.sanity-cdn.com",  // Sanity Studio bridge + modules
+    "https://connect.facebook.net",  // Meta Pixel
   ].join(" "),
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
@@ -25,6 +26,7 @@ const ContentSecurityPolicy = [
     "https://www.google-analytics.com",
     "https://www.googletagmanager.com",
     "https://lh3.googleusercontent.com",  // Google profile photos in Studio
+    "https://www.facebook.com",  // Meta Pixel (beacon tr)
   ].join(" "),
   [
     "connect-src 'self'",
@@ -39,6 +41,8 @@ const ContentSecurityPolicy = [
     "https://*.clarity.ms",
     "https://vitals.vercel-insights.com",
     "https://va.vercel-scripts.com",
+    "https://www.facebook.com",       // Meta Pixel eventos
+    "https://connect.facebook.net",   // Meta Pixel script
   ].join(" "),
   // 'self' needed so Studio can iframe /api/draft-mode/enable on same domain
   "frame-src 'self' https://www.youtube.com https://www.instagram.com https://www.googletagmanager.com https://*.sanity.io",
